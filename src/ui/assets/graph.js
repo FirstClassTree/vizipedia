@@ -23,7 +23,7 @@ function step() {
       const dy = a.y - b.y;
       const d2 = dx * dx + dy * dy + 0.01;
       const d = Math.sqrt(d2);
-      const push = 2600 / d2;
+      const push = 5200 / d2;
       a.vx += (dx / d) * push;
       a.vy += (dy / d) * push;
       b.vx -= (dx / d) * push;
@@ -34,7 +34,7 @@ function step() {
     const dx = b.x - a.x;
     const dy = b.y - a.y;
     const d = Math.sqrt(dx * dx + dy * dy) + 0.01;
-    const pull = (d - 130) * 0.02;
+    const pull = (d - 110) * 0.03;
     a.vx += (dx / d) * pull;
     a.vy += (dy / d) * pull;
     b.vx -= (dx / d) * pull;
@@ -74,13 +74,23 @@ function draw() {
   for (const node of nodes) {
     context.beginPath();
     context.arc(node.x, node.y, node.r, 0, Math.PI * 2);
-    context.fillStyle = `oklch(0.8 0.16 ${node.hue})`;
-    context.shadowColor = `oklch(0.7 0.2 ${node.hue})`;
-    context.shadowBlur = node === hover ? 28 : 12;
-    context.fill();
-    context.shadowBlur = 0;
-    context.font = `${node === hover ? 600 : 500} ${label}px ui-sans-serif, system-ui, sans-serif`;
-    context.fillStyle = node === hover ? "#fff" : "rgba(255,255,255,0.82)";
+    if (node.written) {
+      context.fillStyle = `oklch(0.8 0.16 ${node.hue})`;
+      context.shadowColor = `oklch(0.7 0.2 ${node.hue})`;
+      context.shadowBlur = node === hover ? 28 : 12;
+      context.fill();
+      context.shadowBlur = 0;
+    } else {
+      // A page that is asked for and not written: a hollow, dashed node.
+      context.setLineDash([3 / view.k, 3 / view.k]);
+      context.strokeStyle = node === hover ? "#fff" : "rgba(255,255,255,0.5)";
+      context.stroke();
+      context.setLineDash([]);
+    }
+    const near = node === hover || (hover && edges.some(([a, b]) => (a === hover && b === node) || (b === hover && a === node)));
+    if (!node.written && !near && view.k < 1.3) continue;
+    context.font = `${node.written ? 600 : 400} ${node.written ? label : label * 0.85}px ui-sans-serif, system-ui, sans-serif`;
+    context.fillStyle = node === hover || node.written ? "#fff" : "rgba(255,255,255,0.72)";
     context.fillText(node.title, node.x, node.y + node.r + label * 1.25);
   }
   context.restore();
@@ -166,9 +176,10 @@ nodes = graph.nodes.map((node, index) => {
     slug: node.slug,
     title: node.title,
     hue: node.hue,
-    r: 7 + Math.min(14, Math.sqrt(node.weight) * 2.2),
-    x: Math.cos(angle) * 160,
-    y: Math.sin(angle) * 160,
+    written: node.written,
+    r: node.written ? 9 + Math.min(14, Math.sqrt(node.weight) * 2.2) : 5,
+    x: Math.cos(angle) * 220,
+    y: Math.sin(angle) * 220,
     vx: 0,
     vy: 0,
   };

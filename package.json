@@ -8,7 +8,7 @@
     "node": ">=24"
   },
   "scripts": {
-    "dev": "node --watch src/server.ts",
+    "dev": "node --watch-path=src src/server.ts",
     "start": "node src/server.ts",
     "seed": "node seed/seed.ts",
     "typecheck": "tsc --noEmit",

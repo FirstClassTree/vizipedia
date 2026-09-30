@@ -192,7 +192,7 @@ export function graphView(site: Site, count: number): Html {
     robots: "noindex,follow",
     bodyClass: "graph-page",
     stage: html`<div class="graph-wrap">
-      <div class="graph-head"><h1>Graph</h1><p>${plural(count, "page")} and the links between them. Drag to move, scroll to zoom, click to open.</p></div>
+      <div class="graph-head"><h1>Graph</h1><p>${plural(count, "page")} and the links between them. Hollow nodes are pages that are asked for and not written yet. Drag to move, scroll to zoom, click to open.</p></div>
       <canvas id="graph" data-src="${site.base}/api/graph" role="img" aria-label="Pages and the links between them" tabindex="0"></canvas>
     </div>`,
     scripts: [site.assets.graph],

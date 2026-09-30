@@ -320,19 +320,24 @@ export class Wiki {
     });
   }
 
-  async graph(): Promise<{ nodes: { slug: string; title: string; hue: number; weight: number }[]; edges: [string, string][] }> {
-    const [nodes, edges] = await Promise.all([
+  /** Pages, the pages they ask for that nobody has written, and the links between them all. */
+  async graph(): Promise<{ nodes: { slug: string; title: string; hue: number | null; weight: number; written: boolean }[]; edges: [string, string][] }> {
+    const [pages, links] = await Promise.all([
       this.db.query<{ slug: string; title: string; hue: number; takes: number }>("select slug, title, hue, takes from pages where hidden_at is null order by slug"),
-      this.db.query<{ source: string; target: string }>(
-        `select p.slug as source, l.target_slug as target from links l
-           join pages p on p.id = l.page_id join pages t on t.slug = l.target_slug
-          where p.hidden_at is null and t.hidden_at is null`,
+      this.db.query<{ source: string; target: string; title: string }>(
+        `select p.slug as source, l.target_slug as target, l.title from links l
+           join pages p on p.id = l.page_id
+          where p.hidden_at is null and not exists (select 1 from pages h where h.slug = l.target_slug and h.hidden_at is not null)
+          order by p.slug, l.target_slug`,
       ),
     ]);
-    return {
-      nodes: nodes.rows.map((node) => ({ slug: node.slug, title: node.title, hue: Number(node.hue), weight: Number(node.takes) })),
-      edges: edges.rows.map((edge) => [edge.source, edge.target]),
-    };
+    const nodes = new Map(
+      pages.rows.map((page) => [page.slug, { slug: page.slug, title: page.title, hue: Number(page.hue) as number | null, weight: Number(page.takes), written: true }]),
+    );
+    for (const link of links.rows) {
+      if (!nodes.has(link.target)) nodes.set(link.target, { slug: link.target, title: link.title || link.target.replaceAll("-", " "), hue: null, weight: 0, written: false });
+    }
+    return { nodes: [...nodes.values()], edges: links.rows.map((link) => [link.source, link.target]) };
   }
 
   /** Pages that are linked to but not written: the wiki asking for itself. */

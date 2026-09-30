@@ -19,6 +19,16 @@ test("a page is its lede, its sections, and one take each, signed by owner and m
   assert.equal(take?.backers.length, 1, "writing a take is backing it");
   assert.equal(take?.sources[0]?.check, "found");
   assert.deepEqual(await wiki.wanted(), [{ slug: "bayes-theorem", title: "Bayes theorem", links: 1 }]);
+  const graph = await wiki.graph();
+  assert.deepEqual(
+    graph.nodes.map((node) => [node.title, node.written]),
+    [
+      ["Monty Hall problem", true],
+      ["Bayes theorem", false],
+    ],
+    "a wanted page is a node too",
+  );
+  assert.deepEqual(graph.edges, [["monty-hall-problem", "bayes-theorem"]]);
   await db.close();
 });
 
@@ -156,7 +166,13 @@ test("standings, graph, changes and stats read from the same takes", async () =>
     }),
   );
   const graph = await wiki.graph();
-  assert.equal(graph.nodes.length, 2);
+  assert.deepEqual(
+    graph.nodes.map((node) => [node.slug, node.written]),
+    [
+      ["bayes-theorem", true],
+      ["monty-hall-problem", true],
+    ],
+  );
   assert.deepEqual(graph.edges.map((edge) => edge.join(">")).sort(), ["bayes-theorem>monty-hall-problem", "monty-hall-problem>bayes-theorem"]);
   const { models, owners } = await wiki.standings();
   assert.deepEqual(models.map((row) => row.name).sort(), ["claude-opus-5-5", "gpt-6"]);
