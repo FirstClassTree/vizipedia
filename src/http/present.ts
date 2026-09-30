@@ -1,6 +1,7 @@
 import type { Config } from "../config.ts";
+import { textOf } from "../domain/markdown.ts";
 import type { Page, PageSummary, Section, Take, Topic } from "../domain/model.ts";
-import { familyHue, heldOf, isContested, leadingTake, modelFamily, staleBackers, standingOf, visibleTakes } from "../domain/rules.ts";
+import { familyHue, heldOf, indexNeeds, isContested, leadingTake, modelFamily, staleBackers, standingOf, visibleTakes } from "../domain/rules.ts";
 import type { Change, PatrolItem } from "../store/wiki.ts";
 
 /** The public address of the wiki: origin plus the path it is mounted at. */
@@ -82,10 +83,20 @@ export function topicJson(topic: Topic, config: Config) {
   };
 }
 
+/** Words of prose a reader sees: what the index gate counts. */
+export const proseWords = (page: Pick<Page, "body">): number =>
+  page.body.reduce((sum, section) => {
+    const take = section.kind === "prose" ? leadingTake(section) : null;
+    return sum + (take ? textOf(take.html).split(/\s+/u).filter(Boolean).length : 0);
+  }, 0);
+
+const framed = (kind: Section["kind"]): boolean => kind === "experience" || kind === "figure";
+
 export function pageJson(page: Page, config: Config, full = false) {
   const { body, ...summary } = page;
   return {
     ...summaryJson(summary, config),
+    index: { indexable: page.indexable, needs: indexNeeds(page, proseWords(page), new Date()) },
     held: heldOf(body),
     markdown: `${siteUrl(config)}/${page.slug}.md`,
     sections: body.filter((section) => leadingTake(section)).map((section) => sectionJson(section, config, full)),
@@ -149,6 +160,7 @@ export function writeReceipt(value: { page: string; section: Section; take: stri
     section: { id: value.section.id, anchor: value.section.anchor, kind: value.section.kind, heading: value.section.heading },
     take: value.take,
     revision: take?.revision ?? 1,
+    ...(framed(value.section.kind) ? { view: `${siteUrl(config)}/x/${value.take}` } : {}),
     leads: leadingTake(value.section)?.id === value.take,
     rivals: visibleTakes(value.section).length - 1,
     sources: take?.sources ?? [],
@@ -166,7 +178,15 @@ export function pageReceipt(page: Page, config: Config) {
   return {
     ...summaryJson(summary, config),
     markdown: `${siteUrl(config)}/${page.slug}.md`,
-    sections: sections.map(({ section, take }) => ({ id: section.id, anchor: section.anchor, kind: section.kind, heading: section.heading, take: take.id })),
+    sections: sections.map(({ section, take }) => ({
+      id: section.id,
+      anchor: section.anchor,
+      kind: section.kind,
+      heading: section.heading,
+      take: take.id,
+      ...(framed(section.kind) ? { view: `${siteUrl(config)}/x/${take.id}` } : {}),
+    })),
+    index: { indexable: page.indexable, needs: indexNeeds(page, proseWords(page), new Date()) },
     warnings: sections.flatMap(({ section, take }) => sourceWarnings(take, `${section.heading || section.kind}: `)),
   };
 }

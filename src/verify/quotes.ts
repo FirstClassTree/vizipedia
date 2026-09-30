@@ -103,7 +103,7 @@ async function readPage(raw: string, agent: string, signal: AbortSignal): Promis
       dispatcher,
       signal,
       redirect: "manual",
-      headers: { "user-agent": agent, accept: "text/html,application/xhtml+xml,text/plain;q=0.9" },
+      headers: { "user-agent": agent, accept: "text/html,application/xhtml+xml,text/plain;q=0.9,text/markdown;q=0.9" },
     });
     if (response.status >= 300 && response.status < 400) {
       const next = response.headers.get("location");
@@ -112,7 +112,7 @@ async function readPage(raw: string, agent: string, signal: AbortSignal): Promis
       continue;
     }
     const type = response.headers.get("content-type") ?? "";
-    if (!response.ok || !/text\/html|text\/plain|application\/xhtml/iu.test(type) || !response.body) {
+    if (!response.ok || !/text\/(?:html|plain|markdown)|application\/xhtml/iu.test(type) || !response.body) {
       await response.body?.cancel();
       return null;
     }
@@ -148,23 +148,29 @@ const ENTITIES: Readonly<Record<string, string>> = {
   ldquo: '"',
 };
 
+const INLINE_TAG = /<\/?(?:a|abbr|b|bdi|cite|code|del|dfn|em|font|i|ins|kbd|mark|q|s|small|span|strong|sub|sup|time|u|var|wbr)\b[^>]*>/giu;
+
 /** Text as a reader would compare it: no markup, one kind of quote and dash, single spaces, lower case. */
 export function comparable(text: string): string {
-  return text
-    .replace(/<(script|style|noscript|template)\b[\s\S]*?<\/\1>/giu, " ")
-    .replace(/<[^>]*>/gu, " ")
-    .replace(/&#(\d+);/gu, (_all, code: string) => String.fromCodePoint(Number(code)))
-    .replace(/&#x([0-9a-f]+);/giu, (_all, code: string) => String.fromCodePoint(Number.parseInt(code, 16)))
-    .replace(/&([a-z]+);/giu, (all, name: string) => ENTITIES[name.toLowerCase()] ?? all)
-    .normalize("NFKC")
-    .replace(/[\u2018\u2019\u201a\u2032]/gu, "'")
-    .replace(/[\u201c\u201d\u201e\u2033]/gu, '"')
-    .replace(/[\u2010-\u2015\u2212]/gu, "-")
-    .replace(/\u2026/gu, "...")
-    .replace(/\[\d+\]/gu, "")
-    .replace(/\s+/gu, " ")
-    .trim()
-    .toLowerCase();
+  return (
+    text
+      .replace(/<(script|style|noscript|template)\b[\s\S]*?<\/\1>/giu, " ")
+      // A link or an emphasis sits inside a sentence: dropping it must not put a space before the comma that follows.
+      .replace(INLINE_TAG, "")
+      .replace(/<[^>]*>/gu, " ")
+      .replace(/&#(\d+);/gu, (_all, code: string) => String.fromCodePoint(Number(code)))
+      .replace(/&#x([0-9a-f]+);/giu, (_all, code: string) => String.fromCodePoint(Number.parseInt(code, 16)))
+      .replace(/&([a-z]+);/giu, (all, name: string) => ENTITIES[name.toLowerCase()] ?? all)
+      .normalize("NFKC")
+      .replace(/[\u2018\u2019\u201a\u2032]/gu, "'")
+      .replace(/[\u201c\u201d\u201e\u2033]/gu, '"')
+      .replace(/[\u2010-\u2015\u2212]/gu, "-")
+      .replace(/\u2026/gu, "...")
+      .replace(/\[\d+\]/gu, "")
+      .replace(/\s+/gu, " ")
+      .trim()
+      .toLowerCase()
+  );
 }
 
 export const quoteIsIn = (quote: string, page: string): boolean => {

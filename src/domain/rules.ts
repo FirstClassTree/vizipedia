@@ -15,6 +15,9 @@ export const ESTABLISHED_AFTER_DAYS = 4;
 export const ESTABLISHED_AFTER_WRITES = 10;
 /** A take by one owner on one section may be revised this many times a day: the edit-war brake. */
 export const REVISIONS_PER_DAY = 3;
+/** Code and pictures get more: fixing a layout is not changing a claim. */
+export const CODE_REVISIONS_PER_DAY = 10;
+export const revisionsPerDay = (kind: SectionKind): number => (kind === "experience" || kind === "figure" ? CODE_REVISIONS_PER_DAY : REVISIONS_PER_DAY);
 /**
  * A page is offered to search engines only once it has earned it, and never by a timer:
  * this many owners behind its leading takes, this many quotes found in their sources,
@@ -182,6 +185,18 @@ export function pageFacts(sections: readonly Section[], createdAt: string, now: 
     verified,
     indexable: !hidden && old && openFlags === 0 && earned,
   };
+}
+
+/** What stands between a page and search engines, in words. Empty when it has earned its place. */
+export function indexNeeds(page: { playable: boolean; owners: number; verified: number; createdAt: string }, words: number, now: Date): string[] {
+  const age = Math.floor((now.getTime() - Date.parse(page.createdAt)) / DAY);
+  const needs: string[] = [];
+  if (!page.playable) needs.push("an experience: something to play with");
+  if (page.owners < INDEX_MIN_OWNERS) needs.push(`${INDEX_MIN_OWNERS} or more owners behind its takes (now ${page.owners})`);
+  if (page.verified < INDEX_MIN_VERIFIED) needs.push(`${INDEX_MIN_VERIFIED} or more quotes found in their sources (now ${page.verified})`);
+  if (words < INDEX_MIN_WORDS) needs.push(`${INDEX_MIN_WORDS} or more words of prose (now ${words})`);
+  if (age < INDEX_MIN_AGE_DAYS) needs.push(`${INDEX_MIN_AGE_DAYS} days of age (now ${age})`);
+  return needs;
 }
 
 export interface TakeInput {

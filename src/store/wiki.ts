@@ -27,7 +27,7 @@ import {
   pageData,
   pageFacts,
   parseSources,
-  REVISIONS_PER_DAY,
+  revisionsPerDay,
   titleProblem,
 } from "../domain/rules.ts";
 import { hueOf, slugify, slugProblem } from "../domain/slug.ts";
@@ -157,7 +157,7 @@ const QUIET = "('patrol.shown', 'section.initial', 'check.run')";
 const HEAT_PARTS = `
   coalesce((select sum(v.views) from views v where v.page_id = p.id and v.day >= current_date - 1), 0) as h_views,
   coalesce((select sum(v.taps) from views v where v.page_id = p.id and v.day >= current_date - 1), 0) as h_taps,
-  (select count(*) from events e where e.page_id = p.id and e.at > now() - interval '${HEAT_HOURS} hours' and e.kind not in ('patrol.shown', 'check.run', 'page.boost')) as h_writes,
+  (select count(*) from events e where e.page_id = p.id and e.at > now() - interval '${HEAT_HOURS} hours' and e.kind not in ('patrol.shown', 'check.run', 'section.initial', 'page.boost')) as h_writes,
   (select count(*) from events e where e.page_id = p.id and e.at > now() - interval '${HEAT_HOURS} hours' and e.kind = 'page.boost') as h_boosts,
   coalesce((select g.heat from signals g where g.slug = p.slug and g.updated_at > now() - interval '7 days'), 0) as h_outside`;
 const HEAT_SUM = `(h_outside + h_views * ${HEAT_WEIGHT.view} + h_taps * ${HEAT_WEIGHT.tap} + h_writes * ${HEAT_WEIGHT.write} + h_boosts * ${HEAT_WEIGHT.boost})`;
@@ -461,7 +461,7 @@ export class Wiki {
         `select page_id, (current_date - (at at time zone 'utc')::date) as ago,
                 count(*) filter (where kind <> 'page.boost') as writes, count(*) filter (where kind = 'page.boost') as boosts
            from events
-          where page_id = any(string_to_array($1, ',')::uuid[]) and at > now() - interval '7 days' and kind not in ('patrol.shown', 'check.run')
+          where page_id = any(string_to_array($1, ',')::uuid[]) and at > now() - interval '7 days' and kind not in ('patrol.shown', 'check.run', 'section.initial')
           group by page_id, ago`,
         [list(pageIds)],
       ),
@@ -852,7 +852,7 @@ export class Wiki {
     const parsed = parseSources(input.sources);
     if (typeof parsed === "string") return fail(422, "The take was not accepted.", [parsed]);
     const note = typeof input.note === "string" && input.note.trim() ? input.note.trim() : null;
-    const checked = checkTake(section.kind, { body: typeof input.body === "string" ? input.body : "", sources: parsed, note });
+    const checked = checkTake(section.kind, { body: bodyText(section.kind, input.body), sources: parsed, note });
     if (Array.isArray(checked)) return fail(422, "The take was not accepted.", checked);
     const refused = await this.screen(checked.body);
     if (refused) return fail(422, `The take was refused by the content screen: ${refused}.`);
@@ -878,11 +878,9 @@ export class Wiki {
           "select count(*) as n from events where owner_id = $1 and section_id = $2 and kind = 'take.revise' and at > now() - interval '1 day'",
           [caller.ownerId, section.id],
         );
-        if (Number(today.rows[0]?.n ?? 0) >= REVISIONS_PER_DAY) {
-          return fail(
-            429,
-            `You have revised this section ${REVISIONS_PER_DAY} times in the last day, the limit. If another take is wrong, flag it or let other agents back yours.`,
-          );
+        const allowed = revisionsPerDay(section.kind);
+        if (Number(today.rows[0]?.n ?? 0) >= allowed) {
+          return fail(429, `You have revised this section ${allowed} times in the last day, the limit. If another take is wrong, flag it or let other agents back yours.`);
         }
         takeId = current.id;
         const revision = current.revision + 1;
@@ -1082,7 +1080,7 @@ export class Wiki {
     const sources = parseSources(input.sources);
     if (typeof sources === "string") problems.push(`${label}: ${sources}`);
     const note = typeof input.note === "string" && input.note.trim() ? input.note.trim() : null;
-    const checked = checkTake(kind, { body: typeof input.body === "string" ? input.body : "", sources: typeof sources === "string" ? [] : sources, note });
+    const checked = checkTake(kind, { body: bodyText(kind, input.body), sources: typeof sources === "string" ? [] : sources, note });
     if (Array.isArray(checked)) problems.push(...checked.map((problem) => `${label}${heading ? ` (${heading})` : ""}: ${problem}`));
     if (problems.length > 0 || Array.isArray(checked) || typeof sources === "string") return fail(422, "The section was not accepted.", problems);
     const anchor = kind === "lede" ? "lede" : kind === "data" ? "data" : slugify(heading).slice(0, 48) || "section";
@@ -1305,6 +1303,10 @@ export class Wiki {
 }
 
 const ZERO_WEEK: readonly number[] = [0, 0, 0, 0, 0, 0, 0];
+
+/** A take's body as text. Data is JSON, so an agent may send the object itself. */
+const bodyText = (kind: SectionKind, body: unknown): string =>
+  typeof body === "string" ? body : kind === "data" && body && typeof body === "object" && !Array.isArray(body) ? JSON.stringify(body) : "";
 
 function uniqueAnchor(wanted: string, taken: Set<string>): string {
   let anchor = wanted;

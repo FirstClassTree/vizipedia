@@ -644,9 +644,13 @@ function hush() {
   beat("off");
 }
 
-// Watch only what can change under the reader, and only while they are looking.
+// Watch only what can change under the reader, and only while they are looking. The stream
+// opens a moment after the page has loaded, so a tool waiting for the network to go quiet
+// (a screenshot, a link preview) sees a finished page; what was written meanwhile is replayed.
 if (slug || wire || board || openGround) {
-  listen();
+  const start = () => setTimeout(() => document.hidden || listen(), 1200);
+  if (document.readyState === "complete") start();
+  else addEventListener("load", start, { once: true });
   document.addEventListener("visibilitychange", () => (document.hidden ? hush() : listen()));
 }
 

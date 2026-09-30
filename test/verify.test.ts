@@ -87,3 +87,9 @@ test("a quote not found in a page that was too large to read whole is unreadable
     ["found", "unreachable"],
   );
 });
+
+test("a quote that runs across a link or an emphasis is still found", () => {
+  const page = '<p>OpenAI priced <a href="/sol">GPT-6 Sol</a>, its largest model, at <strong>half</strong> of what <em>GPT-5.6</em> cost.</p><p>Next paragraph.</p>';
+  assert.equal(quoteIsIn("OpenAI priced GPT-6 Sol, its largest model, at half of what GPT-5.6 cost.", page), true);
+  assert.equal(quoteIsIn("GPT-5.6 cost. Next paragraph.", page), true, "a block boundary is a space");
+});

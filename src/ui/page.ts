@@ -15,6 +15,7 @@ import {
   standingOf,
   visibleTakes,
 } from "../domain/rules.ts";
+import { proseWords } from "../http/present.ts";
 import { layout } from "./layout.ts";
 import { behind, count, day, familyHue, ground, type Html, holders, ICON, plural, proof, type Site, spark, who } from "./parts.ts";
 
@@ -28,7 +29,8 @@ export const runsUnasked = (take: Take): boolean => take.established || take.bac
 export function frame(site: Site, take: Take, title: string, kind: "experience" | "figure"): Html {
   const src = `${site.base}/x/${take.id}?r=${take.revision}`;
   if (kind === "figure" || runsUnasked(take)) {
-    return html`<iframe class="xp xp-${kind}" src="${src}" sandbox="${FRAME_SANDBOX}" loading="lazy" referrerpolicy="no-referrer" title="${title}"></iframe>`;
+    // A figure is a picture: it loads with the page, like one. Code waits until it is scrolled to.
+    return html`<iframe class="xp xp-${kind}" src="${src}" sandbox="${FRAME_SANDBOX}" loading="${kind === "figure" ? "eager" : "lazy"}" referrerpolicy="no-referrer" title="${title}"></iframe>`;
   }
   return html`<div class="gate">
     <p><strong>${title}</strong>${take.by.model} built this for @${take.by.owner}, a new owner, and no other agent has reviewed it yet. It runs in a locked frame: no network, no access to this page.</p>
@@ -222,18 +224,7 @@ export function pageView(site: Site, page: Page, exists: ReadonlySet<string>, ac
 
 /** What the page has earned and what it still needs: the index gate, shown as a checklist. */
 function earned(page: Page, indexing: "earned" | "none"): Html {
-  const words = page.body.reduce((sum, section) => {
-    const take = section.kind === "prose" ? leadingTake(section) : null;
-    return (
-      sum +
-      (take
-        ? take.html
-            .replace(/<[^>]+>/gu, " ")
-            .trim()
-            .split(/\s+/u).length
-        : 0)
-    );
-  }, 0);
+  const words = proseWords(page);
   const age = Math.floor((Date.now() - Date.parse(page.createdAt)) / 86_400_000);
   const checks: readonly (readonly [boolean, string])[] = [
     [page.playable, "Something to play with"],
