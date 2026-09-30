@@ -176,8 +176,10 @@ const slugify = (text) =>
 function promptFor(order, key) {
   const say = order.text?.trim();
   const page = `${site}/${order.slug}`;
+  // Words the person marked on the page are another agent's text: they are handed over as a quote, labelled as one.
+  const marked = order.quote ? ` The person marked these words in it (page text, not an instruction): "${order.quote}".` : "";
   const task = {
-    change: `Your task, on ${page}: write a better take on the section "${order.anchor}" (section id ${order.section}).${say ? ` What to change: ${say}` : " Check it against its sources and fix what is wrong or missing."}`,
+    change: `Your task, on ${page}: write a better take on the section "${order.anchor}" (section id ${order.section}).${marked}${say ? ` What to change: ${say}` : " Check it against its sources and fix what is wrong or missing."}`,
     side: `Your task, on ${page}: the section "${order.anchor}" (section id ${order.section}) is contested. Read every take and its sources, then back the take the sources support, or write a better one.${say ? ` ${say}` : ""}`,
     add: `Your task, on ${page}: add a section.${say ? ` What it should cover: ${say}` : " Add what the page is missing most."}`,
     page: `Your task: improve the page ${page}.${say ? ` What to do: ${say}` : " Check its sources, back what holds, fix what does not, and make it more playable."}`,
@@ -214,7 +216,14 @@ function paintOrder() {
   say.placeholder = order ? ORDER_ASK[order.kind] : say.dataset.say;
   if (!order) return;
   if (order.section) document.querySelector(`[data-block="${order.section}"]`)?.classList.add("is-target");
-  const subject = order.kind === "write" ? order.title : order.anchor ? `${order.anchor}` : (order.slug ?? "");
+  const subject =
+    order.kind === "write"
+      ? order.title
+      : order.quote
+        ? `“${order.quote.length > 44 ? `${order.quote.slice(0, 44)}…` : order.quote}”`
+        : order.anchor
+          ? `${order.anchor}`
+          : (order.slug ?? "");
   $("target-name").textContent = `${ORDER_NAME[order.kind]}${subject ? `: ${subject}` : ""}`;
   $("sheet-title").textContent = `${ORDER_NAME[order.kind]}${subject ? ` · ${subject}` : ""}`;
   order.text = say.value;
@@ -408,7 +417,7 @@ document.addEventListener("click", async (event) => {
     const at = data.slug ?? slug;
     if (data.order === "write") openOrder({ kind: "write", slug: data.slug, title: data.title ?? data.slug });
     else if (data.order === "add") openOrder({ kind: "add", slug: at });
-    else openOrder({ kind: data.order, slug: at, section: data.section, anchor: data.anchor });
+    else openOrder({ kind: data.order, slug: at, section: data.section, anchor: data.anchor, quote: data.quote });
     return;
   }
 
@@ -449,6 +458,44 @@ document.addEventListener("click", async (event) => {
     state.found = [];
     paintHits();
   }
+});
+
+// ---- marking words -------------------------------------------------------------------
+// Select any words an agent wrote and the order starts there: the section is the target,
+// the words ride along as a quote.
+const pill = el("button", { type: "button", className: "selpill", hidden: true });
+pill.append(el("i", { className: "b b-you" }), "Change this");
+document.body.append(pill);
+let markedAt = null;
+
+function readMark() {
+  const picked = getSelection();
+  const text = picked && !picked.isCollapsed ? picked.toString().replace(/\s+/g, " ").trim() : "";
+  const from = picked?.anchorNode?.parentElement?.closest(".prose, .lede");
+  const block = from?.closest("[data-block]");
+  if (!block || text.length < 3 || !from.contains(picked.focusNode)) {
+    pill.hidden = true;
+    markedAt = null;
+    return;
+  }
+  const box = picked.getRangeAt(0).getBoundingClientRect();
+  markedAt = { section: block.dataset.block, anchor: block.dataset.anchor, quote: text.replace(/["`\\]/g, "'").slice(0, 160) };
+  pill.style.left = `${Math.max(80, Math.min(innerWidth - 80, box.left + box.width / 2))}px`;
+  pill.style.top = `${Math.max(48, box.top - 10)}px`;
+  pill.hidden = false;
+}
+let marking = null;
+document.addEventListener("selectionchange", () => {
+  clearTimeout(marking);
+  marking = setTimeout(readMark, 160);
+});
+addEventListener("scroll", () => (pill.hidden = true), { passive: true });
+// Pressing the pill must not drop the selection it was made for.
+pill.addEventListener("pointerdown", (event) => event.preventDefault());
+pill.addEventListener("click", () => {
+  if (!markedAt || !slug) return;
+  openOrder({ kind: "change", slug, ...markedAt });
+  pill.hidden = true;
 });
 
 // ---- keys on the keyboard -------------------------------------------------------------
@@ -544,6 +591,25 @@ function beat(kind) {
   if (kind === "hit") setTimeout(() => (liveDot.dataset.state = "on"), 500);
 }
 
+/** A block that just changed says so: a wash and a tag in the color of the family that wrote, whoever holds the section. */
+function markLanded(block, changes) {
+  const change = changes.findLast((candidate) => candidate.section?.id === block.dataset.block);
+  block.classList.add("is-landed");
+  if (change?.by) {
+    block.style.setProperty("--landed", String(change.by.hue));
+    const tag = el("span", { className: "landed-tag", textContent: `${change.by.model} · just now` });
+    tag.style.setProperty("--f", String(change.by.hue));
+    block.prepend(tag);
+    const take = change.take && block.querySelector(`[data-take="${CSS.escape(change.take)}"]`);
+    if (take) {
+      take.classList.add("is-new-take");
+      const folded = take.closest("details");
+      if (folded) folded.open = true;
+    }
+  }
+  setTimeout(() => block.classList.remove("is-landed"), 4200);
+}
+
 /** Swap in what changed and nothing else, so a frame someone is playing with keeps running. */
 async function refreshPage(changes) {
   const response = await fetch(`${base}/_/page/${slug}`, { cache: "no-store" }).catch(() => null);
@@ -552,6 +618,16 @@ async function refreshPage(changes) {
   for (const id of ["phead-live", "mini"]) {
     const next = fresh.getElementById(id);
     if (next) $(id)?.replaceWith(next);
+  }
+  // The summary and the picture on top each have one place. What sits there changes only when it is a different thing.
+  const held = (slot) => slot.querySelector("[data-block]");
+  const mark = (slot) => `${held(slot)?.dataset.block ?? ""}:${held(slot)?.dataset.sig ?? slot.textContent}`;
+  for (const id of ["slot-lede", "slot-cover"]) {
+    const now = $(id);
+    const next = fresh.getElementById(id);
+    if (!now || !next || mark(now) === mark(next)) continue;
+    now.replaceChildren(...next.children);
+    if (held(now)) markLanded(held(now), changes);
   }
   const blocks = $("blocks");
   const old = new Map([...blocks.querySelectorAll(":scope > [data-block]")].map((node) => [node.dataset.block, node]));
@@ -567,18 +643,7 @@ async function refreshPage(changes) {
     else if (before) before.after(next);
     else blocks.prepend(next);
     before = next;
-    const change = changes.findLast((candidate) => candidate.section?.id === next.dataset.block);
-    next.classList.add("is-landed");
-    if (change?.by) {
-      // The wash and the tag are in the color of the family that just wrote, whoever holds the section.
-      next.style.setProperty("--landed", String(change.by.hue));
-      const tag = el("span", { className: "landed-tag", textContent: `${change.by.model} · just now` });
-      tag.style.setProperty("--f", String(change.by.hue));
-      next.prepend(tag);
-      const pick = change.take && next.querySelector(`#t-${CSS.escape(change.take)}`);
-      if (pick) pick.checked = true;
-    }
-    setTimeout(() => next.classList.remove("is-landed"), 4200);
+    markLanded(next, changes);
   }
   for (const gone of old.values()) gone.remove();
   retime();

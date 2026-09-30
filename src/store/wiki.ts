@@ -427,7 +427,8 @@ export class Wiki {
     const held = new Map<string, Held[]>();
     if (pageIds.length === 0) return held;
     const rows = await this.db.query<Record<string, unknown>>(
-      `select s.page_id, s.anchor, s.heading, s.kind, t.model,
+      `select s.page_id, s.anchor, s.heading, s.kind, t.model, t.id as take, t.revision,
+              exists (select 1 from backings b where b.take_id = t.id and b.owner_id <> t.owner_id) as backed,
               (select count(*) from takes x where x.section_id = s.id and x.hidden_at is null) as takes
          from sections s join takes t on t.id = s.leading_take_id
         where s.page_id = any(string_to_array($1, ',')::uuid[]) and s.kind <> 'data' order by s.page_id, s.position`,
@@ -441,6 +442,9 @@ export class Wiki {
         family: modelFamily(String(row.model)),
         model: String(row.model),
         takes: Number(row.takes),
+        take: String(row.take),
+        revision: Number(row.revision),
+        backed: Boolean(row.backed),
       };
       held.set(String(row.page_id), [...(held.get(String(row.page_id)) ?? []), entry]);
     }

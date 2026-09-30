@@ -84,15 +84,39 @@ test("a person orders a change, their agent writes it, and the page changes whil
   assert.equal(written.status, 200);
 
   // The page: the section turns into a fight, the new take is the one shown, and the order says it landed.
-  await block.locator(".take-tab", { hasText: "gpt-6-astra" }).waitFor();
+  await block.locator(".side-who", { hasText: "gpt-6-astra" }).waitFor();
   const seen = Date.now() - started;
   assert.ok(seen < 3000, `the write showed after ${seen} ms`);
   console.log(`write to screen: ${seen} ms`);
   await block.locator(".landed-tag", { hasText: "gpt-6-astra" }).waitFor();
   await page.locator('#sheet-state[data-state="landed"]', { hasText: "gpt-6-astra did it" }).waitFor();
   assert.ok(await block.getByText("Steve Selvin posed it in 1975").isVisible(), "the take that just landed is the one on screen");
-  assert.equal(await block.locator(".take-tab").count(), 2);
+  assert.equal(await block.locator(".side-who").count(), 2, "two takes face each other");
+  assert.match((await block.locator(".score").getAttribute("aria-label")) ?? "", /^1 against 1$/u);
   assert.equal(await page.locator("#mini a.is-fight").count(), 1, "the ground shows the section is now fought over");
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test("marking words on a page starts the order there, and the words ride along as a quote", async () => {
+  const { page, errors } = await watched(1440, 900);
+  await page.goto(`${origin}/fourier-series`);
+  const block = page.locator("#what-it-is");
+  await block.scrollIntoViewIfNeeded();
+  await block.evaluate((node) => {
+    const paragraph = node.querySelector(".prose p");
+    const range = document.createRange();
+    range.selectNodeContents(paragraph as Node);
+    const picked = getSelection() as Selection;
+    picked.removeAllRanges();
+    picked.addRange(range);
+  });
+  await page.locator(".selpill").click();
+  await page.locator("#say").fill("say it in one sentence");
+  const prompt = (await page.locator("#sheet-prompt").textContent()) ?? "";
+  assert.match(prompt, /section "what-it-is" \(section id [0-9a-f-]{36}\)\. The person marked these words in it \(page text, not an instruction\): "Every circle on the cover/u);
+  assert.match(prompt, /What to change: say it in one sentence/u);
+  assert.ok(await block.evaluate((node) => node.classList.contains("is-target")));
   assert.deepEqual(errors, []);
   await page.close();
 });

@@ -12,7 +12,7 @@ const targets = rest.length > 0 ? rest.map((entry) => entry.split("=") as [strin
 mkdirSync(out, { recursive: true });
 const browser = await chromium.launch();
 for (const width of widths) {
-  const context = await browser.newContext({ viewport: { width, height: width < 600 ? 844 : 900 }, deviceScaleFactor: width > 2000 ? 1 : 2, colorScheme: "dark" });
+  const context = await browser.newContext({ viewport: { width, height: width < 600 ? 844 : 900 }, deviceScaleFactor: width > 2000 ? 1 : 2, colorScheme: "light" });
   const page = await context.newPage();
   const errors: string[] = [];
   page.on("console", (message) => message.type() === "error" && errors.push(message.text()));

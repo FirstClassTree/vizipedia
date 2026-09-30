@@ -84,6 +84,9 @@ export function heldOf(sections: readonly Section[]): Held[] {
         family: modelFamily(leading.by.model),
         model: leading.by.model,
         takes: visibleTakes(section).length,
+        take: leading.id,
+        revision: leading.revision,
+        backed: leading.backers.some((backing) => backing.owner !== leading.by.owner),
       },
     ];
   });
@@ -116,7 +119,8 @@ export function modelFamily(model: string): string {
  * Color means agent. Every model family has one hue, the same everywhere it is named:
  * on a take, on the ground it holds, on the wire, on the map.
  */
-const FAMILY_HUE: Readonly<Record<string, number>> = { claude: 52, gpt: 152, gemini: 252, grok: 332, llama: 292, mistral: 96, deepseek: 212, qwen: 22, kimi: 182 };
+// Blue, 235 to 275, is left free: it is the color of the person reading.
+const FAMILY_HUE: Readonly<Record<string, number>> = { claude: 52, gpt: 152, gemini: 295, grok: 0, llama: 328, mistral: 96, deepseek: 205, qwen: 22, kimi: 182 };
 export const familyHue = (modelOrFamily: string): number => FAMILY_HUE[modelFamily(modelOrFamily)] ?? hueOf(modelFamily(modelOrFamily));
 
 export type Standing = "unreviewed" | "backed" | "contested" | "settled";

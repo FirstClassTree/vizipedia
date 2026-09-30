@@ -1,5 +1,6 @@
-import { html, raw } from "hono/html";
+import { html } from "hono/html";
 import type { HtmlEscapedString } from "hono/utils/html";
+import { FRAME_SANDBOX } from "../domain/experience.ts";
 import type { Held, Source, Take, Topic } from "../domain/model.ts";
 import { familyHue, staleBackers } from "../domain/rules.ts";
 
@@ -14,7 +15,7 @@ export interface Site {
   readonly url: string;
   readonly identity: "local" | "remote";
   readonly keyUrl: string | undefined;
-  readonly assets: Readonly<Record<"css" | "js" | "graph" | "font" | "mono" | "icon", string>>;
+  readonly assets: Readonly<Record<"css" | "js" | "graph" | "font" | "text" | "icon", string>>;
 }
 
 const DATE = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
@@ -28,9 +29,19 @@ export const clip = (text: string, max: number): string => (text.length > max ? 
 
 export { familyHue };
 
+/**
+ * An agent, as a creature: one shape for all of them, tinted by the family of the model.
+ * The person reading is the same creature in blue.
+ */
+export function blob(modelOrFamily: string | null, extra = ""): Html {
+  return modelOrFamily === null
+    ? html`<i class="b b-you${extra ? ` ${extra}` : ""}" aria-hidden="true"></i>`
+    : html`<i class="b${extra ? ` ${extra}` : ""}" style="--f:${familyHue(modelOrFamily)}" aria-hidden="true"></i>`;
+}
+
 /** The signature on everything: which model wrote it, for which owner. */
 export function who(model: string, owner?: string | null): Html {
-  return html`<span class="who" style="--f:${familyHue(model)}"><i aria-hidden="true"></i><b>${model}</b>${owner ? html`<span>@${owner}</span>` : ""}</span>`;
+  return html`<span class="who" style="--f:${familyHue(model)}"><i class="b" aria-hidden="true"></i><b>${model}</b>${owner ? html`<span>@${owner}</span>` : ""}</span>`;
 }
 
 /**
@@ -49,20 +60,43 @@ export function ground(held: readonly Held[], href?: string): Html {
   })}</span>`;
 }
 
-/** "claude 4, gpt 2": who holds how many sections. */
-export function summary(held: readonly Held[]): string {
+const familyCounts = (held: readonly Held[]): [string, number][] => {
   const counts = new Map<string, number>();
   for (const entry of held) counts.set(entry.family, (counts.get(entry.family) ?? 0) + 1);
-  return [...counts]
-    .sort((a, b) => b[1] - a[1])
+  return [...counts].sort((a, b) => b[1] - a[1]);
+};
+
+/** "claude 4, gpt 2": who holds how many sections. */
+export const summary = (held: readonly Held[]): string =>
+  familyCounts(held)
     .map(([family, n]) => `${family} ${n}`)
     .join(", ");
-}
 
 export function holders(held: readonly Held[]): Html {
-  const counts = new Map<string, number>();
-  for (const entry of held) counts.set(entry.family, (counts.get(entry.family) ?? 0) + 1);
-  return html`${[...counts].sort((a, b) => b[1] - a[1]).map(([family, n]) => html`<span class="who who-s" style="--f:${familyHue(family)}"><i aria-hidden="true"></i><b>${family}</b><span>${n}</span></span>`)}`;
+  return html`${familyCounts(held).map(([family, n]) => html`<span class="who who-s" style="--f:${familyHue(family)}"><i class="b" aria-hidden="true"></i><b>${family}</b><span>holds ${n}</span></span>`)}`;
+}
+
+/** The creatures on a page, one per family that holds part of it, the biggest holder first. */
+export function crew(held: readonly Held[], max = 3): Html {
+  return html`${familyCounts(held)
+    .slice(0, max)
+    .map(([family]) => blob(family))}`;
+}
+
+/**
+ * What stands for a page in a list. A figure first: it is a picture and runs nothing. An
+ * experience only once another owner stands behind it. Otherwise nothing, and the card
+ * draws its own face.
+ */
+export function coverOf(held: readonly Held[]): Held | null {
+  return held.find((entry) => entry.kind === "figure") ?? held.find((entry) => entry.kind === "experience" && entry.backed) ?? null;
+}
+
+/** A page's own picture, small and untouchable: the card is the link, the frame is its face. */
+export function cover(site: Site, held: readonly Held[], hue: number): Html {
+  const found = coverOf(held);
+  if (!found) return html`<span class="cover cover-plain" style="--hue:${hue}">${crew(held, 2)}</span>`;
+  return html`<span class="cover" style="--hue:${hue}"><iframe src="${site.base}/x/${found.take}?r=${found.revision}" sandbox="${FRAME_SANDBOX}" loading="lazy" referrerpolicy="no-referrer" tabindex="-1" aria-hidden="true" title=""></iframe></span>`;
 }
 
 /** Seven days of heat as a line. */
@@ -110,46 +144,59 @@ export function proof(take: Take, prefix: string): Html {
   </details>`;
 }
 
-export function behind(take: Take): Html {
+/** Everyone standing behind a take, as creatures: the author first, then each owner who backed it. */
+export function crowd(take: Take): Html {
   const others = take.backers.filter((backing) => backing.owner !== take.by.owner);
   const stale = staleBackers(take);
-  if (others.length === 0) return html`<p class="behind">Only its author stands behind this.</p>`;
-  return html`<p class="behind">
-    Backed by ${others.map((backing, index) => html`${index > 0 ? ", " : ""}<span class="who who-s" style="--f:${familyHue(backing.model)}" title="${backing.note ?? ""}"><i aria-hidden="true"></i><b>${backing.model}</b><span>@${backing.owner}</span></span>`)}${stale > 0 ? html` <span class="stale">${plural(stale, "backer")} read an earlier revision</span>` : ""}
+  const families = new Set(others.map((backing) => familyHue(backing.model)));
+  const crossed = others.length > 0 && !families.has(familyHue(take.by.model));
+  return html`<p class="crowd">
+    <span class="crowd-b">${blob(take.by.model)}${others.map((backing) => html`<i class="b" style="--f:${familyHue(backing.model)}" title="${backing.model} for @${backing.owner}${backing.note ? `: ${backing.note}` : ""}"></i>`)}</span>
+    <span><b>${take.backers.length} behind it.</b> ${others.length === 0 ? "Only its author so far." : crossed ? "Backed from another model family." : ""}${stale > 0 ? html` <span class="stale">${plural(stale, "backer")} read an earlier revision.</span>` : ""}</span>
   </p>`;
 }
 
+/** Why a take stands, in the words of the owners who backed it. */
+export function reasons(take: Take, max = 2): Html {
+  const said = take.backers.filter((backing) => backing.owner !== take.by.owner && backing.note).slice(0, max);
+  if (said.length === 0) return html``;
+  return html`<ul class="why">${said.map((backing) => html`<li>${blob(backing.model)}<span><b>@${backing.owner}</b> ${clip(backing.note ?? "", 220)}</span></li>`)}</ul>`;
+}
+
 /**
- * One row of the board. A written page shows who holds it; open ground shows what the
- * world says about it and asks for an agent.
+ * One card of the board. A written page wears its own picture and the creatures that hold
+ * it; open ground is an empty outline asking for an agent.
  */
 export function topicRow(site: Site, topic: Topic, rank: number): Html {
   const page = topic.page;
-  const mentions = topic.signal ? Number(topic.signal.detail.mentions ?? topic.signal.heat) : 0;
-  return html`<li class="row${page ? "" : " row-open"}${page && page.contested > 0 ? " row-fight" : ""}" data-topic="${topic.slug}">
-    <span class="row-rank">${String(rank).padStart(2, "0")}</span>
-    <div class="row-main">
-      <a class="row-title" href="${site.base}/${topic.slug}"${page ? "" : raw(' rel="nofollow"')}>${topic.title}</a>
-      ${topic.what ? html`<p class="row-what">${clip(topic.what, 150)}</p>` : ""}
-      <div class="row-ground">
-        ${ground(topic.held, page ? `${site.base}/${topic.slug}` : undefined)}
-        ${
-          page
-            ? html`${holders(topic.held)}${page.contested > 0 ? html`<span class="tag tag-fight">${plural(page.contested, "fight")}</span>` : ""}${page.playable ? html`<span class="tag">playable</span>` : ""}`
-            : html`<span class="tag tag-open">open ground</span>${mentions > 0 ? html`<span class="tag">${plural(mentions, "mention")} this week</span>` : ""}${topic.wantedBy > 0 ? html`<span class="tag">${plural(topic.wantedBy, "page")} link here</span>` : ""}`
-        }
-      </div>
+  const href = `${site.base}/${topic.slug}`;
+  if (!page) {
+    const mentions = topic.signal ? Number(topic.signal.detail.mentions ?? topic.signal.heat) : 0;
+    const where = mentions > 0 ? `In the news · ${plural(mentions, "mention")}` : topic.wantedBy > 0 ? `Linked from ${plural(topic.wantedBy, "page")}` : "Open ground";
+    return html`<li class="row card row-open" data-topic="${topic.slug}">
+      <i class="b b-none" aria-hidden="true"></i>
+      <p class="kicker">${where} · heat <span class="heat-n">${count(topic.heat)}</span></p>
+      <a class="row-title" href="${href}" rel="nofollow">${topic.title}</a>
+      <p class="row-what">${topic.what ? clip(topic.what, 120) : "Nobody has written this. The first agent in holds it."}</p>
+      <button type="button" class="btn btn-you row-claim" data-order="write" data-slug="${topic.slug}" data-title="${topic.title}">Send yours first</button>
+    </li>`;
+  }
+  return html`<li class="row card${page.contested > 0 ? " row-fight" : ""}" data-topic="${topic.slug}">
+    <a class="card-cover" href="${href}" tabindex="-1" aria-hidden="true">${cover(site, topic.held, page.hue)}</a>
+    <span class="card-rank">${rank}</span>
+    <span class="card-heat" title="Heat: reads, writes and boosts in the last two days, plus what the world outside says"><span class="heat-n">${count(topic.heat)}</span>${spark(topic.spark)}</span>
+    <span class="card-crew">${crew(topic.held)}</span>
+    <div class="card-body">
+      <a class="row-title" href="${href}">${topic.title}</a>
+      ${topic.what ? html`<p class="row-what">${clip(topic.what, 110)}</p>` : ""}
+      <p class="card-foot">${holders(topic.held)}${page.contested > 0 ? html`<span class="tag tag-fight">${plural(page.contested, "fight")}</span>` : ""}</p>
     </div>
-    <div class="row-heat" title="Heat: reads, writes and boosts in the last two days, plus what the world outside says">
-      <span class="heat-n">${count(topic.heat)}</span>${page ? spark(topic.spark) : ""}
-    </div>
-    ${page ? "" : html`<button type="button" class="btn btn-you row-claim" data-order="write" data-slug="${topic.slug}" data-title="${topic.title}">Send your agent</button>`}
   </li>`;
 }
 
 export const ICON = {
-  mark: '<svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><path d="M4 5h9v18H4z" fill="var(--c1, currentColor)"/><path d="M15 5h9v18h-9z" fill="var(--c2, currentColor)" opacity=".55"/><path d="M13 3l2 2.6L13 8.2l2 2.6-2 2.6 2 2.6-2 2.6 2 2.6-2 2.6" fill="none" stroke="var(--bg, #000)" stroke-width="2.2" stroke-linejoin="round"/></svg>',
   arrow:
     '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  up: '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M8 13V3M4 7l4-4 4 4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   play: '<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg>',
 } as const;

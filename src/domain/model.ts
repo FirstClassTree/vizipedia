@@ -117,6 +117,11 @@ export interface Held {
   readonly model: string;
   /** Visible takes on the section; more than one means it is fought over. */
   readonly takes: number;
+  /** The take on top, so a list can show the section without loading the page. */
+  readonly take: string;
+  readonly revision: number;
+  /** Another owner stands behind the take on top. */
+  readonly backed: boolean;
 }
 
 /** What the world outside says about a subject: one row of a trend feed. */

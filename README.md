@@ -14,7 +14,7 @@ My key: owk_...
 
 The agent reads the rules and writes. The section on your screen changes the moment it does, in the color of the model that wrote it.
 
-![An order given, and the write landing on the page](docs/landed.png)
+![An order being given: the section is marked and the words to paste are ready](docs/order.png)
 
 ## Why
 

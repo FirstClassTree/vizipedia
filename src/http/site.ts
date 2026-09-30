@@ -8,7 +8,7 @@ import { EXPERIENCE_HEADERS, experienceDocument, FIGURE_HEADERS } from "../domai
 import { SLUG } from "../domain/slug.ts";
 import type { BoardView } from "../store/wiki.ts";
 import { agentsView, keyView, mapView, rulesView, searchView, wireView } from "../ui/lists.ts";
-import { hottestFight, nowView, rows, tick } from "../ui/now.ts";
+import { nowView, rows, tick, topFights } from "../ui/now.ts";
 import { liveFragment, openView, pageView } from "../ui/page.ts";
 import type { Html, Site } from "../ui/parts.ts";
 import { skillMarkdown } from "../ui/skill.ts";
@@ -49,9 +49,9 @@ interface Asset {
   readonly type: string;
 }
 
-// Two takes and the line between them.
+// The creature every agent is drawn as: a soft shape with two eyes.
 const ICON_SVG =
-  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28"><rect width="28" height="28" rx="7" fill="#14151a"/><path d="M5 6h8.5v16H5z" fill="#f5a35c"/><path d="M14.5 6H23v16h-8.5z" fill="#4fd39a"/><path d="M13 4l2 2.9-2 2.9 2 2.9-2 2.9 2 2.9-2 2.9 2 2.6" fill="none" stroke="#14151a" stroke-width="2.4" stroke-linejoin="round"/></svg>';
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#64a0f8"/><stop offset=".55" stop-color="#8fc0fa"/><stop offset="1" stop-color="#feb389"/></linearGradient></defs><path d="M16 2c8.2 0 13.4 5.6 13.4 13.6 0 8.6-5.7 14.4-13.7 14.4C7.800 30 2.6 24.6 2.6 16.2 2.6 7.7 8 2 16 2z" fill="url(#g)"/><rect x="11" y="12" width="3" height="7.5" rx="1.5" fill="#fff"/><rect x="18" y="12" width="3" height="7.5" rx="1.5" fill="#fff"/></svg>';
 
 const VIEWS: readonly BoardView[] = ["hot", "fights", "open", "new"];
 const TAG = /^[a-z0-9][a-z0-9-]{1,29}$/u;
@@ -64,16 +64,22 @@ function loadAssets(base: string): { files: Map<string, Asset>; urls: Site["asse
     return `${base}/assets/${name}?v=${createHash("sha256").update(body).digest("hex").slice(0, 10)}`;
   };
   const require = createRequire(import.meta.url);
-  // Weight and width in one file: the titles are set narrow, the text is not.
-  const font = add("display.woff2", readFileSync(require.resolve("@fontsource-variable/bricolage-grotesque/files/bricolage-grotesque-latin-wdth-normal.woff2")), "font/woff2");
-  const mono = add("mono.woff2", readFileSync(require.resolve("@fontsource-variable/geist-mono/files/geist-mono-latin-wght-normal.woff2")), "font/woff2");
+  const binary = (name: string): Uint8Array => readFileSync(new URL(`../ui/assets/fonts/${name}`, import.meta.url));
+  // D-DIN (SIL OFL, license beside the files): one wide bold for titles, a regular and a bold for text.
+  const fonts: Readonly<Record<string, string>> = {
+    "display.woff2": add("display.woff2", binary("display.woff2"), "font/woff2"),
+    "text.woff2": add("text.woff2", binary("text.woff2"), "font/woff2"),
+    "text-bold.woff2": add("text-bold.woff2", binary("text-bold.woff2"), "font/woff2"),
+    "mono.woff2": add("mono.woff2", readFileSync(require.resolve("@fontsource/fragment-mono/files/fragment-mono-latin-400-normal.woff2")), "font/woff2"),
+  };
+  // The stylesheet names the fonts by the same versioned addresses the page preloads.
+  const css = Object.entries(fonts).reduce((sheet, [name, url]) => sheet.replace(`url("${name}")`, `url("${url}")`), here("app.css"));
   return {
     files,
     urls: {
-      font,
-      mono,
-      // The stylesheet names the fonts by the same versioned addresses the page preloads.
-      css: add("app.css", here("app.css").replace('url("display.woff2")', `url("${font}")`).replace('url("mono.woff2")', `url("${mono}")`), "text/css; charset=utf-8"),
+      font: fonts["display.woff2"] as string,
+      text: fonts["text.woff2"] as string,
+      css: add("app.css", css, "text/css; charset=utf-8"),
       js: add("app.js", here("app.js"), "text/javascript; charset=utf-8"),
       graph: add("graph.js", here("graph.js"), "text/javascript; charset=utf-8"),
       icon: add("icon.svg", ICON_SVG, "image/svg+xml"),
@@ -103,7 +109,7 @@ export function siteRoutes(deps: Deps): Hono<Env> {
   const now = async (c: Ctx, tag?: string) => {
     const view = viewOf(c);
     const [stats, topics, wars, wire, tags] = await Promise.all([wiki.stats(), wiki.board({ view, tag, limit: 40 }), wiki.wars(30), wiki.changes(14), wiki.tags()]);
-    return page(c, nowView(site, { stats, view, tag, topics, front: hottestFight(wars), wire, tags }));
+    return page(c, nowView(site, { stats, view, tag, topics, fights: topFights(wars, 3), wire, tags }));
   };
   app.get("/", (c) => now(c));
   app.get("/tag/:tag", (c) => (TAG.test(c.req.param("tag")) ? now(c, c.req.param("tag")) : c.notFound()));
@@ -111,7 +117,7 @@ export function siteRoutes(deps: Deps): Hono<Env> {
   // What a watching browser asks for after a write: the same markup, only the part that moved.
   app.get("/_/board", async (c) => {
     const tag = c.req.query("tag");
-    return fragment(c, rows(site, await wiki.board({ view: viewOf(c), tag: tag && TAG.test(tag) ? tag : undefined, limit: 40 })));
+    return fragment(c, rows(site, await wiki.board({ view: viewOf(c), tag: tag && TAG.test(tag) ? tag : undefined, limit: 40 }), viewOf(c)));
   });
   app.get("/_/wire", async (c) => {
     const changes = await wiki.changes(40, undefined, Number(c.req.query("after")) || 0);
@@ -195,7 +201,7 @@ export function siteRoutes(deps: Deps): Hono<Env> {
     const document = experienceDocument({
       fragment: found.take.body,
       hue: found.page.hue,
-      // The site is one dark canvas; "sheet" stays for anyone who wants a light frame.
+      // A frame is a dark screen set on a light page; "sheet" stays for anyone who wants a light one.
       surface: c.req.query("s") === "sheet" ? "sheet" : "stage",
       page: { slug: found.page.slug, title: found.page.title },
       data,

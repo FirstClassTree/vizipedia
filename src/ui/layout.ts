@@ -1,6 +1,6 @@
 import { html, raw } from "hono/html";
 import { scriptJson } from "../domain/experience.ts";
-import { type Html, ICON, type Site } from "./parts.ts";
+import { blob, type Html, ICON, type Site } from "./parts.ts";
 
 export interface Frame {
   readonly title: string;
@@ -19,7 +19,7 @@ export interface Frame {
 }
 
 const NAV: readonly (readonly [string, string])[] = [
-  ["/", "Now"],
+  ["/", "Trending"],
   ["/map", "Map"],
   ["/agents", "Agents"],
 ];
@@ -28,7 +28,7 @@ const NAV: readonly (readonly [string, string])[] = [
  * Every view is the same three things: a thin strip to move around, the content, and the
  * line. The line is how a person does anything here: it finds a page, or it turns what
  * they type into an order for their agent. There is no edit button because there is no
- * editing by hand.
+ * editing by hand. The blue creature in the line is the reader's own agent.
  */
 export function layout(site: Site, frame: Frame): Html {
   const canonical = `${site.url}${frame.path === "/" ? "" : frame.path}`;
@@ -37,7 +37,8 @@ export function layout(site: Site, frame: Frame): Html {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="color-scheme" content="dark">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#f8f8f4">
 <title>${frame.title}</title>
 <meta name="description" content="${frame.description}">
 <link rel="canonical" href="${canonical}">
@@ -50,6 +51,7 @@ ${frame.robots ? html`<meta name="robots" content="${frame.robots}">` : ""}
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="${site.assets.icon}" type="image/svg+xml">
 <link rel="preload" href="${site.assets.font}" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="${site.assets.text}" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="${site.assets.css}">
 <link rel="alternate" type="text/markdown" href="${frame.page ? `${site.url}/${frame.page.slug}.md` : `${site.url}/llms.txt`}">
 <link rel="help" type="text/markdown" href="${site.url}/skill.md" title="Instructions for agents">
@@ -57,8 +59,9 @@ ${frame.jsonLd ? html`<script type="application/ld+json">${raw(scriptJson(frame.
 </head>
 <body class="${frame.bodyClass ?? ""}" data-base="${site.base}" data-url="${site.url}" data-keys="${site.identity}"${site.keyUrl ? raw(` data-key-url="${encodeURI(site.keyUrl)}"`) : ""}${frame.page ? raw(` data-slug="${frame.page.slug}" data-last="${frame.page.lastEvent}"`) : ""}>
 <a class="skip" href="#content">Skip to content</a>
+<div class="atmo" aria-hidden="true"><i></i><i></i><i></i></div>
 <header class="top">
-  <a class="brand" href="${site.base}/">${raw(ICON.mark)}<span>${site.name}</span></a>
+  <a class="brand" href="${site.base}/">${blob(null)}<span>${site.name}</span></a>
   <nav class="top-nav" aria-label="Main">
     ${NAV.map(([path, label]) => html`<a href="${site.base}${path}"${frame.path === path ? raw(' aria-current="page"') : ""}>${label}</a>`)}
   </nav>
@@ -86,11 +89,11 @@ ${frame.jsonLd ? html`<script type="application/ld+json">${raw(scriptJson(frame.
   </section>
   <div class="hits" id="hits" hidden></div>
   <form class="line" id="line" action="${site.base}/search" role="search">
-    <span class="line-mark" aria-hidden="true"></span>
+    ${blob(null, "line-mark")}
     <span class="line-target" id="target" hidden><b id="target-name"></b><button type="button" id="target-clear" aria-label="Stop targeting this section">Clear</button></span>
     <input id="say" name="q" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="go" placeholder="${frame.say ?? "Search, or tell your agent what to write"}" aria-label="${frame.say ?? "Search, or tell your agent what to write"}" data-say="${frame.say ?? "Search, or tell your agent what to write"}">
     <kbd class="line-key" aria-hidden="true">/</kbd>
-    <button class="line-go" aria-label="Go">${raw(ICON.arrow)}</button>
+    <button class="line-go" aria-label="Go">${raw(ICON.up)}</button>
   </form>
 </div>
 <script type="module" src="${site.assets.js}"></script>
