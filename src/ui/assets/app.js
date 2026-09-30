@@ -245,10 +245,18 @@ async function copyOrder() {
   if (!order) return;
   const button = $("sheet-copy");
   const status = $("sheet-state");
-  const ok = await copyLater(async () => promptFor(order, (keys.get() ?? (await mintKey())).key)).catch(() => false);
+  let trouble = null;
+  const ok = await copyLater(async () => {
+    try {
+      return promptFor(order, (keys.get() ?? (await mintKey())).key);
+    } catch (error) {
+      trouble = error.message;
+      throw error;
+    }
+  }).catch(() => false);
   paintOrder();
   if (!keys.get()) {
-    status.textContent = "No key could be made. Try again.";
+    status.textContent = trouble ?? "No key could be made. Try again.";
     return;
   }
   if (!ok) {
