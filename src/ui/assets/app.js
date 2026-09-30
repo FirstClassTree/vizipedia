@@ -105,14 +105,24 @@ function watchKey(onChange) {
   keyPoll = setInterval(async () => {
     const entry = keys.get();
     tries += 1;
-    if (!entry || entry.active || tries > 240 || document.hidden) {
-      if (!entry || entry.active || tries > 240) clearInterval(keyPoll);
+    if (!entry || tries > 240) {
+      clearInterval(keyPoll);
       return;
     }
-    const now = await checkKey();
-    if (now?.active) onChange(now);
+    // The person may have signed in in another tab, which already wrote the good news down.
+    const now = entry.active ? entry : document.hidden ? null : await checkKey();
+    if (!now?.active) return;
+    clearInterval(keyPoll);
+    onChange(now);
   }, 3000);
 }
+
+// The key is shared by every tab of this wiki: when one learns something, the others show it.
+addEventListener("storage", (event) => {
+  if (event.key !== KEY_AT) return;
+  paintKey();
+  if (state.order) paintOrder();
+});
 
 // ---- copying --------------------------------------------------------------------------
 /**
