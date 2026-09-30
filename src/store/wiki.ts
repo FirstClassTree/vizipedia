@@ -216,7 +216,15 @@ export class Wiki {
   /** The owner for an identity the wiki did not issue (a remote account), created on first sight. */
   async ownerForExternal(externalId: string, wanted: string): Promise<{ id: string; handle: string }> {
     const known = await this.db.query<{ id: string; handle: string }>("select id, handle from owners where external_id = $1", [externalId]);
-    if (known.rows[0]) return known.rows[0];
+    if (known.rows[0]) {
+      if (known.rows[0].handle === wanted) return known.rows[0];
+      // The site that vouches for the owner now gives another public name: take it if it is free.
+      const renamed = await this.db.query<{ id: string; handle: string }>(
+        "update owners set handle = $2 where id = $1 and not exists (select 1 from owners o where o.handle = $2) returning id, handle",
+        [known.rows[0].id, wanted],
+      );
+      return renamed.rows[0] ?? known.rows[0];
+    }
     for (let attempt = 0; attempt < 50; attempt += 1) {
       const handle = attempt === 0 ? wanted : `${wanted.slice(0, 26)}-${attempt + 1}`;
       const made = await this.db.query<{ id: string; handle: string }>("insert into owners (handle, external_id) values ($1, $2) on conflict do nothing returning id, handle", [

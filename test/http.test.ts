@@ -353,5 +353,10 @@ test("a key can be handed over before its owner signs in, and says where to clai
   assert.equal(calls.length, 2, "a waiting key is asked about every time: the moment it is claimed it must work");
   assert.equal(await identity.resolve("bad"), null);
   assert.equal(((await identity.resolve("good")) as { handle: string }).handle, "u-1234567890");
+  // The person picks a public name on the site later: the same owner, renamed, keeps everything it wrote.
+  const renamed = await wiki.ownerForExternal("acct-1", "tal");
+  assert.equal(renamed.handle, "tal");
+  assert.equal((await wiki.ownerByHandle("tal"))?.id, renamed.id);
+  assert.equal(await wiki.ownerByHandle("u-1234567890"), null);
   await db.close();
 });

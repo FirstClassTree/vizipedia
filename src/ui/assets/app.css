@@ -1882,9 +1882,13 @@ tr[style] .rate i {
   display: inline-block;
   margin-right: 9px;
 }
-.sheet-key .btn,
 .sheet-state .btn {
   margin-left: 12px;
+}
+.sheet-key .btn {
+  display: flex;
+  width: max-content;
+  margin-top: 10px;
 }
 .sheet[data-slim] {
   padding: 12px 16px;
