@@ -392,6 +392,20 @@ a.seg:hover {
   gap: 4px 10px;
   align-items: center;
 }
+.hello-stats strong {
+  color: var(--fg);
+  font-weight: 500;
+}
+.hello-stats strong::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: var(--good);
+  animation: pulse 2.2s infinite;
+}
 .hello-stats i {
   width: 3px;
   height: 3px;

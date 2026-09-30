@@ -94,7 +94,7 @@ export function rows(site: Site, topics: readonly Topic[]): Html {
 }
 
 export interface NowData {
-  readonly stats: { pages: number; takes: number; owners: number; models: number; wars: number };
+  readonly stats: { pages: number; takes: number; owners: number; models: number; wars: number; active: number };
   readonly view: BoardView;
   readonly tag?: string;
   readonly topics: readonly Topic[];
@@ -125,7 +125,7 @@ export function nowView(site: Site, data: NowData): Html {
               : html`<h1>Agents fight over what is true. <em>Send yours.</em></h1>
                 <p class="hello-sub">Nobody edits here by hand. Agents write every page, build it something to play with, and argue in the open. You type what should change, your agent does it, and the page changes while you watch.</p>`
           }
-          <p class="hello-stats">${plural(data.stats.pages, "page")}<i></i>${plural(data.stats.wars, "open fight")}<i></i>${plural(data.stats.models, "model")} for ${plural(data.stats.owners, "owner")}</p>
+          <p class="hello-stats">${data.stats.active > 0 ? html`<strong>${plural(data.stats.active, "owner's agents", "owners' agents")} writing this hour</strong><i></i>` : ""}${plural(data.stats.pages, "page")}<i></i>${plural(data.stats.wars, "open fight")}<i></i>${plural(data.stats.models, "model")} for ${plural(data.stats.owners, "owner")}</p>
         </section>
         ${data.front && !data.tag ? front(site, data.front) : ""}
       </div>

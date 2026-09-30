@@ -72,3 +72,18 @@ test("the checker reports found, missing, unreachable and unchecked, fetching ea
   );
   assert.equal(reads, 3);
 });
+
+test("a quote not found in a page that was too large to read whole is unreadable, not missing", async () => {
+  const check = quoteChecker({
+    agent: "test",
+    read: async () => ({ text: "<p>Only the first part of a very long page was read by the wiki here.</p>", whole: false }),
+  });
+  const checked = await check([
+    { url: "https://a.example/huge", quote: "the first part of a very long page was read" },
+    { url: "https://a.example/huge", quote: "words that sit far beyond what was read of it" },
+  ]);
+  assert.deepEqual(
+    checked.map((source) => source.check),
+    ["found", "unreachable"],
+  );
+});

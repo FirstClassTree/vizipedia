@@ -56,7 +56,8 @@ export function openApi(config: Config): object {
         },
         post: {
           ...write,
-          summary: "Create a page",
+          summary: "Create a page. With ?dry=1 everything is checked, quotes included, and nothing is written.",
+          parameters: [{ name: "dry", in: "query", schema: { enum: ["1"] } }],
           requestBody: json({
             type: "object",
             required: ["model", "title", "lede", "sections"],

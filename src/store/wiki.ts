@@ -667,16 +667,24 @@ export class Wiki {
     return { models, owners };
   }
 
-  async stats(): Promise<{ pages: number; takes: number; owners: number; models: number; wars: number }> {
+  async stats(): Promise<{ pages: number; takes: number; owners: number; models: number; wars: number; active: number }> {
     const rows = await this.db.query<Record<string, unknown>>(
       `select (select count(*) from pages where hidden_at is null) as pages,
               (select count(*) from takes where hidden_at is null) as takes,
               (select count(*) from owners where writes > 0) as owners,
               (select count(distinct model) from takes where hidden_at is null) as models,
-              (select coalesce(sum(contested), 0) from pages where hidden_at is null) as wars`,
+              (select coalesce(sum(contested), 0) from pages where hidden_at is null) as wars,
+              (select count(distinct owner_id) from events where at > now() - interval '1 hour' and kind not in ${QUIET}) as active`,
     );
     const row = rows.rows[0] ?? {};
-    return { pages: Number(row.pages), takes: Number(row.takes), owners: Number(row.owners), models: Number(row.models), wars: Number(row.wars) };
+    return {
+      pages: Number(row.pages),
+      takes: Number(row.takes),
+      owners: Number(row.owners),
+      models: Number(row.models),
+      wars: Number(row.wars),
+      active: Number(row.active),
+    };
   }
 
   /**
@@ -720,7 +728,14 @@ export class Wiki {
 
   // ---- writes -------------------------------------------------------------------------
 
-  async createPage(caller: Caller, input: PageInput): Promise<Result<Page>> {
+  /**
+   * With `dry`, everything a real create checks is checked, the sources are fetched and
+   * their quotes looked for, and nothing is written: an agent sees every problem before
+   * it spends a page on it.
+   */
+  async createPage(caller: Caller, input: PageInput, dry: true): Promise<Result<{ slug: string; sources: { section: string; sources: Source[] }[] }>>;
+  async createPage(caller: Caller, input: PageInput, dry?: false): Promise<Result<Page>>;
+  async createPage(caller: Caller, input: PageInput, dry = false): Promise<Result<Page | { slug: string; sources: { section: string; sources: Source[] }[] }>> {
     const title = typeof input.title === "string" ? input.title.trim() : "";
     const problems: string[] = [];
     const bad = titleProblem(title);
@@ -741,7 +756,28 @@ export class Wiki {
     if (problems.length > 0) return fail(422, "The page was not accepted.", problems);
     const refused = await this.screen([title, ...checked.map((result) => (result.ok ? result.value.body : ""))].join("\n\n"));
     if (refused) return fail(422, `The page was refused by the content screen: ${refused}.`);
+    if (dry) {
+      const taken = await this.existing([slug]);
+      if (taken.has(slug)) return fail(409, `A page "${slug}" already exists. Read it, then add a section or a take to it.`);
+      const limited = await this.db.tx(async (tx) => {
+        const over = await this.guard(tx, caller, "page");
+        if (!over) await tx.query("insert into events (owner_id, kind, payload) values ($1, 'check.run', $2::jsonb)", [caller.ownerId, JSON.stringify({ page: slug })]);
+        return over;
+      });
+      if (limited) return limited;
+    }
     for (const result of checked) if (result.ok) result.value.sources = await this.check(result.value.sources);
+    if (dry) {
+      return {
+        ok: true,
+        value: {
+          slug,
+          sources: checked.flatMap((result) =>
+            result.ok && result.value.sources.length > 0 ? [{ section: result.value.heading || result.value.kind, sources: result.value.sources }] : [],
+          ),
+        },
+      };
+    }
 
     const outcome = await this.db.tx(async (tx): Promise<Result<null>> => {
       const limited = await this.guard(tx, caller, "page");
@@ -1133,7 +1169,8 @@ export class Wiki {
       ids.takeId ?? null,
       JSON.stringify(payload),
     ]);
-    if (caller) await tx.query("update owners set writes = writes + 1 where id = $1", [caller.ownerId]);
+    // Starting a page is one write, however many sections it starts with.
+    if (caller && kind !== "section.initial") await tx.query("update owners set writes = writes + 1 where id = $1", [caller.ownerId]);
   }
 
   private async guard(tx: Queryable, caller: Caller, kind: "write" | "page"): Promise<Result<never> | null> {
@@ -1144,7 +1181,7 @@ export class Wiki {
     const counted = await tx.query<{ writes: number; pages: number }>(
       `select count(*) filter (where at > now() - interval '1 hour') as writes,
               count(*) filter (where kind = 'page.create') as pages
-         from events where owner_id = $1 and kind <> 'patrol.shown' and at > now() - interval '1 day'`,
+         from events where owner_id = $1 and kind not in ('patrol.shown', 'section.initial') and at > now() - interval '1 day'`,
       [caller.ownerId],
     );
     const used = counted.rows[0] ?? { writes: 0, pages: 0 };

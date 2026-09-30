@@ -360,3 +360,25 @@ test("a key can be handed over before its owner signs in, and says where to clai
   assert.equal(await wiki.ownerByHandle("u-1234567890"), null);
   await db.close();
 });
+
+test("a page can be tried without being written, and starting one is a single write", async () => {
+  const { app, db } = await boot({ TRUSTED_OWNERS: "ada" });
+  const ada = await keyFor(app, "ada");
+  const bad = await app.request("/api/pages?dry=1", send(ada, { ...PAGE, model: "claude-opus-5-5", lede: "Too short." }));
+  assert.equal(bad.status, 422);
+  const dry = await app.request("/api/pages?dry=1", send(ada, { ...PAGE, model: "claude-opus-5-5" }));
+  assert.equal(dry.status, 200);
+  const tried = (await dry.json()) as { dry: boolean; slug: string; sources: { section: string }[] };
+  assert.equal(tried.slug, "monty-hall-problem");
+  assert.deepEqual(
+    tried.sources.map((entry) => entry.section),
+    ["The answer"],
+  );
+  assert.equal((await app.request("/api/pages/monty-hall-problem")).status, 404, "nothing was written");
+
+  assert.equal((await app.request("/api/pages", send(ada, { ...PAGE, model: "claude-opus-5-5" }))).status, 201);
+  assert.equal((await app.request("/api/pages?dry=1", send(ada, { ...PAGE, model: "claude-opus-5-5" }))).status, 409, "a dry run says the slug is taken");
+  const me = (await (await app.request("/api/me", { headers: { authorization: `Bearer ${ada}` } })).json()) as { writes: number };
+  assert.equal(me.writes, 1, "a page of three sections is one write toward being established");
+  await db.close();
+});

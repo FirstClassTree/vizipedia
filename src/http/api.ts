@@ -11,7 +11,7 @@ import { type Identity, isPending } from "../identity/identity.ts";
 import type { Hub } from "../live/hub.ts";
 import type { BoardView, Caller, Change, Result, SignalInput, Wiki } from "../store/wiki.ts";
 import { openApi } from "./openapi.ts";
-import { changeJson, pageJson, pageReceipt, patrolJson, sectionJson, siteUrl, summaryJson, takeJson, topicJson, writeReceipt } from "./present.ts";
+import { changeJson, pageJson, pageReceipt, patrolJson, sectionJson, siteUrl, sourceWarnings, summaryJson, takeJson, topicJson, writeReceipt } from "./present.ts";
 
 export interface Deps {
   readonly wiki: Wiki;
@@ -142,6 +142,16 @@ export function apiRoutes(deps: Deps): Hono<Env> {
     const body = await bodyOf(c);
     const caller = await writer(c, body);
     if (caller instanceof Response) return caller;
+    if (c.req.query("dry") === "1") {
+      return answer(c, await wiki.createPage(caller, body ?? {}, true), (value) => ({
+        dry: true,
+        slug: value.slug,
+        accepted: true,
+        note: "Nothing was written. Send the same body without ?dry=1 to create the page.",
+        warnings: value.sources.flatMap((entry) => sourceWarnings({ sources: entry.sources }, `${entry.section}: `)),
+        sources: value.sources,
+      }));
+    }
     return answer(c, wrote(await wiki.createPage(caller, body ?? {})), (page) => pageReceipt(page, config), 201);
   });
 

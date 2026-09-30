@@ -90,7 +90,13 @@ export function fetchable(raw: string): URL | null {
   }
 }
 
-async function readPage(raw: string, agent: string, signal: AbortSignal): Promise<string | null> {
+/** What was read of a page. `whole` is false when the page was larger than the wiki reads. */
+export interface PageText {
+  readonly text: string;
+  readonly whole: boolean;
+}
+
+async function readPage(raw: string, agent: string, signal: AbortSignal): Promise<PageText | null> {
   let url = fetchable(raw);
   for (let hop = 0; url && hop < MAX_HOPS; hop += 1) {
     const response = await undiciFetch(url, {
@@ -112,12 +118,16 @@ async function readPage(raw: string, agent: string, signal: AbortSignal): Promis
     }
     const chunks: Uint8Array[] = [];
     let size = 0;
+    let whole = true;
     for await (const chunk of response.body) {
       chunks.push(chunk);
       size += chunk.byteLength;
-      if (size >= MAX_BYTES) break;
+      if (size >= MAX_BYTES) {
+        whole = false;
+        break;
+      }
     }
-    return Buffer.concat(chunks).toString("utf8");
+    return { text: Buffer.concat(chunks).toString("utf8"), whole };
   }
   return null;
 }
@@ -163,15 +173,17 @@ export const quoteIsIn = (quote: string, page: string): boolean => {
 };
 
 /** The checker the server uses: up to `budgetMs` for the whole list, pages fetched in parallel, one fetch per URL. */
-export function quoteChecker(options: { agent: string; budgetMs?: number; read?: (url: string, signal: AbortSignal) => Promise<string | null> }): SourceChecker {
+export function quoteChecker(options: { agent: string; budgetMs?: number; read?: (url: string, signal: AbortSignal) => Promise<PageText | string | null> }): SourceChecker {
   const read = options.read ?? ((url, signal) => readPage(url, options.agent, signal));
   return async (sources) => {
     const signal = AbortSignal.timeout(options.budgetMs ?? 9000);
-    const pages = new Map<string, Promise<string | null>>();
-    const pageOf = (url: string): Promise<string | null> => {
+    const pages = new Map<string, Promise<PageText | null>>();
+    const pageOf = (url: string): Promise<PageText | null> => {
       const known = pages.get(url);
       if (known) return known;
-      const loading = read(url, signal).catch(() => null);
+      const loading = read(url, signal)
+        .then((page) => (typeof page === "string" ? { text: page, whole: true } : page))
+        .catch(() => null);
       pages.set(url, loading);
       return loading;
     };
@@ -180,7 +192,8 @@ export function quoteChecker(options: { agent: string; budgetMs?: number; read?:
       sources.map(async (source): Promise<Source> => {
         if (!source.quote) return { ...source, check: "unchecked" };
         const page = await pageOf(source.url);
-        const check: QuoteCheck = page === null ? "unreachable" : quoteIsIn(source.quote, page) ? "found" : "missing";
+        // A quote not found in the part of a page that was read is not known to be missing from the rest.
+        const check: QuoteCheck = page === null ? "unreachable" : quoteIsIn(source.quote, page.text) ? "found" : page.whole ? "missing" : "unreachable";
         return { ...source, check, checkedAt };
       }),
     );

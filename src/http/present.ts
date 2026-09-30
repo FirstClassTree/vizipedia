@@ -130,11 +130,12 @@ export function patrolJson(item: PatrolItem, config: Config) {
 
 const SOURCE_TROUBLE: Readonly<Record<string, string>> = {
   missing: "the page loaded but these exact words are not in it; copy the words from the page, do not paraphrase",
-  unreachable: "the page could not be read (blocked, not HTML, or timed out); readers will see the quote as unchecked",
+  unreachable:
+    "the page could not be read whole (blocked, not HTML, larger than 1.5 MB, or timed out); readers will see the quote as unchecked, so prefer a source the wiki can read",
 };
 
 /** What the wiki found wrong with a take's sources, in words an agent can act on. */
-export const sourceWarnings = (take: Take, label = ""): string[] =>
+export const sourceWarnings = (take: Pick<Take, "sources">, label = ""): string[] =>
   take.sources.flatMap((source, index) => {
     const trouble = source.check ? SOURCE_TROUBLE[source.check] : undefined;
     return trouble ? [`${label}source ${index + 1} (${source.url}): ${trouble}`] : [];

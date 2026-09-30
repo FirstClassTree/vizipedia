@@ -78,7 +78,8 @@ function block(site: Site, shown: Shown, resolve: Resolve): Html {
     const prefix = `s-${section.anchor}${index === 0 ? "" : `-r${index}`}`;
     if (section.kind === "lede") return html`<p class="lede">${resolve(take, prefix)}</p>`;
     if (section.kind === "prose") return html`<div class="prose">${resolve(take, prefix)}</div>${proof(take, prefix)}`;
-    return frame(site, take, index === 0 ? heading : `${heading}, rival take ${index}`, section.kind === "figure" ? "figure" : "experience");
+    // A figure or an experience that shows numbers can carry the sources they came from, checked like any other.
+    return html`${frame(site, take, index === 0 ? heading : `${heading}, rival take ${index}`, section.kind === "figure" ? "figure" : "experience")}${proof(take, prefix)}`;
   };
 
   const takeView = (take: Take, index: number): Html => html`
