@@ -261,9 +261,7 @@ export function apiRoutes(deps: Deps): Hono<Env> {
     if (slug && !SLUG.test(slug)) return refuse(c, 404, "No such page.");
     if (live.full) return refuse(c, 503, "Too many live streams. Poll /api/changes?after=<id> instead.");
     const since = Number(c.req.header("last-event-id") ?? c.req.query("since") ?? Number.NaN);
-    c.header("Cache-Control", "no-cache, no-transform");
-    c.header("X-Accel-Buffering", "no");
-    return streamSSE(c, async (stream) => {
+    const response = streamSSE(c, async (stream) => {
       const queue: Change[] = [];
       let wake: (() => void) | null = null;
       const stop = live.subscribe(slug, (change) => {
@@ -297,6 +295,11 @@ export function apiRoutes(deps: Deps): Hono<Env> {
         stop();
       }
     });
+    // A proxy in front (the site this wiki is mounted in, a CDN) will compress a response and
+    // hold it until it has enough to compress, which turns a stream into silence. This says no.
+    response.headers.set("Cache-Control", "no-cache, no-transform");
+    response.headers.set("X-Accel-Buffering", "no");
+    return response;
   });
 
   api.get("/wars", async (c) => {

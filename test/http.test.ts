@@ -288,6 +288,7 @@ test("a browser that is watching hears a write as it lands, and can ask for what
   const stream = await app.request("/api/live?page=monty-hall-problem");
   assert.equal(stream.status, 200);
   assert.match(stream.headers.get("content-type") ?? "", /text\/event-stream/u);
+  assert.match(stream.headers.get("cache-control") ?? "", /no-transform/u, "a proxy in front must not compress the stream into silence");
   const reader = (stream.body as ReadableStream<Uint8Array>).getReader();
   const decoder = new TextDecoder();
   let heard = "";

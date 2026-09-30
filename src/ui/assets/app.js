@@ -627,7 +627,14 @@ function listen() {
   if (slug) query.set("page", slug);
   if (Number.isFinite(last)) query.set("since", String(last));
   stream = new EventSource(`${base}/api/live?${query}`);
+  // A stream that opens and says nothing is being held by something in between: ask on a timer instead.
+  const silent = setTimeout(() => {
+    stream?.close();
+    stream = null;
+    startPolling();
+  }, 8000);
   stream.addEventListener("ready", () => {
+    clearTimeout(silent);
     failures = 0;
     beat("on");
   });
@@ -636,6 +643,7 @@ function listen() {
     beat("off");
     failures += 1;
     if (failures < 4) return;
+    clearTimeout(silent);
     stream.close();
     stream = null;
     startPolling();
