@@ -74,6 +74,7 @@ test("a person orders a change, their agent writes it, and the page changes whil
   const copied = await page.evaluate(() => navigator.clipboard.readText());
   const key = /My key: (owk_\S+)/u.exec(copied)?.[1];
   assert.ok(key, "the copied order carries a key made on the spot");
+  assert.doesNotMatch((await prompt.textContent()) ?? "", new RegExp(key.slice(12), "u"), "the screen shows only the start of the key");
   assert.ok(await block.evaluate((node) => node.classList.contains("is-waiting")));
   assert.match((await page.locator("#keychip").textContent()) ?? "", /^@agent-/u);
 

@@ -121,7 +121,7 @@ function watchKey(onChange) {
 addEventListener("storage", (event) => {
   if (event.key !== KEY_AT) return;
   paintKey();
-  if (state.order) paintOrder();
+  settleOrder();
 });
 
 // ---- copying --------------------------------------------------------------------------
@@ -188,6 +188,9 @@ function promptFor(order, key) {
   return `Read ${site}/skill.md and follow it.\n${task}\nMy key: ${key ?? "(made when you press Copy)"}`;
 }
 
+/** A key as it is shown: enough to recognise, not enough to use. The copy carries the whole key. */
+const masked = (key) => (key ? `${key.slice(0, 8)}${"•".repeat(10)}` : key);
+
 const ORDER_NAME = { change: "Change", side: "Pick a side", add: "New section", page: "This page", write: "Write", free: "Order" };
 const ORDER_ASK = {
   change: "What should change?",
@@ -215,7 +218,7 @@ function paintOrder() {
   $("target-name").textContent = `${ORDER_NAME[order.kind]}${subject ? `: ${subject}` : ""}`;
   $("sheet-title").textContent = `${ORDER_NAME[order.kind]}${subject ? ` · ${subject}` : ""}`;
   order.text = say.value;
-  $("sheet-prompt").textContent = promptFor(order, keys.get()?.key);
+  $("sheet-prompt").textContent = promptFor(order, masked(keys.get()?.key));
   keyLine(keys.get(), $("sheet-key"));
 }
 
@@ -264,8 +267,15 @@ async function copyOrder() {
   }
   if (order.section) document.querySelector(`[data-block="${order.section}"]`)?.classList.add("is-waiting");
   const entry = keys.get();
-  if (entry && !entry.active) watchKey(() => paintOrder());
+  if (entry && !entry.active) watchKey(settleOrder);
   listen();
+}
+
+/** The key on the order became the person's: say so, and get out of the way of the section. */
+function settleOrder() {
+  if (!state.order) return;
+  paintOrder();
+  if (state.copiedAt && keys.get()?.active) sheet.dataset.slim = "";
 }
 
 /** Did this change answer the order on screen? */
@@ -681,8 +691,7 @@ const keyform = $("keyform");
 if (keyform) {
   const out = $("keyout");
   const show = (entry) => {
-    const prompt = promptFor({ kind: "free" }, entry.key);
-    $("key-prompt").textContent = prompt;
+    $("key-prompt").textContent = promptFor({ kind: "free" }, masked(entry.key));
     keyLine(entry, $("key-state"));
     keyform.hidden = true;
     out.hidden = false;
@@ -704,7 +713,8 @@ if (keyform) {
     }
   });
   $("key-copy").addEventListener("click", async (event) => {
-    flashLabel(event.currentTarget, (await copyLater(async () => $("key-prompt").textContent)) ? "Copied" : "Copy failed");
+    const entry = keys.get();
+    flashLabel(event.currentTarget, entry && (await copyLater(async () => promptFor({ kind: "free" }, entry.key))) ? "Copied" : "Copy failed");
   });
   $("key-forget").addEventListener("click", () => {
     keys.set(null);
