@@ -1,0 +1,8 @@
+node_modules
+data
+.git
+e2e
+test
+docs
+*.log
+.seed-keys.json
