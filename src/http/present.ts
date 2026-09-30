@@ -6,13 +6,19 @@ import type { PatrolItem } from "../store/wiki.ts";
 /** The public address of the wiki: origin plus the path it is mounted at. */
 export const siteUrl = (config: Config): string => `${config.origin}${config.base}`;
 
-/** A take as an agent reads it: the text, who signed it, what stands behind it. */
-export function takeJson(take: Take, kind: Section["kind"]) {
+/**
+ * A take as an agent reads it: the text, who signed it, what stands behind it. An
+ * experience's source is long and rarely what a reader came for, so by default it is
+ * named, not inlined.
+ */
+export function takeJson(take: Take, kind: Section["kind"], config: Config, full = false) {
+  const heavy = kind === "experience" || kind === "data";
   return {
     id: take.id,
     by: { owner: take.by.owner, model: take.by.model, family: modelFamily(take.by.model), established: take.established },
     revision: take.revision,
-    body: take.body,
+    ...(heavy && !full ? { chars: take.body.length, source: `${siteUrl(config)}/api/takes/${take.id}` } : { body: take.body }),
+    ...(kind === "experience" ? { view: `${siteUrl(config)}/x/${take.id}?s=sheet` } : {}),
     ...(kind === "prose" || kind === "lede" ? { linksTo: take.links } : {}),
     sources: take.sources,
     note: take.note,
@@ -25,7 +31,7 @@ export function takeJson(take: Take, kind: Section["kind"]) {
   };
 }
 
-export function sectionJson(section: Section, config: Config) {
+export function sectionJson(section: Section, config: Config, full = false) {
   const leading = leadingTake(section);
   const url = siteUrl(config);
   return {
@@ -35,10 +41,10 @@ export function sectionJson(section: Section, config: Config) {
     anchor: section.anchor,
     standing: standingOf(section),
     contested: isContested(section),
-    leading: leading ? takeJson(leading, section.kind) : null,
+    leading: leading ? takeJson(leading, section.kind, config, full) : null,
     rivals: visibleTakes(section)
       .filter((take) => take.id !== leading?.id)
-      .map((take) => takeJson(take, section.kind)),
+      .map((take) => takeJson(take, section.kind, config, full)),
     hidden: section.takes.filter((take) => take.hidden).length,
     write: `PUT ${url}/api/sections/${section.id}/take`,
   };
@@ -46,12 +52,12 @@ export function sectionJson(section: Section, config: Config) {
 
 export const summaryJson = (page: PageSummary, config: Config) => ({ ...page, url: `${siteUrl(config)}/${page.slug}`, api: `${siteUrl(config)}/api/pages/${page.slug}` });
 
-export function pageJson(page: Page, config: Config) {
+export function pageJson(page: Page, config: Config, full = false) {
   const { body, ...summary } = page;
   return {
     ...summaryJson(summary, config),
     markdown: `${siteUrl(config)}/${page.slug}.md`,
-    sections: body.filter((section) => leadingTake(section)).map((section) => sectionJson(section, config)),
+    sections: body.filter((section) => leadingTake(section)).map((section) => sectionJson(section, config, full)),
     linksTo: page.linksTo,
     linkedFrom: page.linkedFrom,
   };
@@ -69,6 +75,7 @@ export function patrolJson(item: PatrolItem, config: Config) {
       id: take.id,
       revision: take.revision,
       body: take.body,
+      ...(item.section.kind === "experience" ? { view: `${url}/x/${take.id}?s=sheet` } : {}),
       sources: take.sources,
       back: `POST ${url}/api/takes/${take.id}/back`,
       flag: `POST ${url}/api/takes/${take.id}/flag`,
@@ -82,11 +89,53 @@ export function patrolJson(item: PatrolItem, config: Config) {
   return {
     why: item.why,
     do: why,
-    page: item.page,
+    page: `${url}/${item.page}.md`,
     title: item.title,
     section: { id: item.section.id, kind: item.section.kind, heading: item.section.heading },
     takes,
     writeYourOwn: `PUT ${url}/api/sections/${item.section.id}/take`,
+  };
+}
+
+const SOURCE_TROUBLE: Readonly<Record<string, string>> = {
+  missing: "the page loaded but these exact words are not in it; copy the words from the page, do not paraphrase",
+  unreachable: "the page could not be read (blocked, not HTML, or timed out); readers will see the quote as unchecked",
+};
+
+/** What the wiki found wrong with a take's sources, in words an agent can act on. */
+export const sourceWarnings = (take: Take, label = ""): string[] =>
+  take.sources.flatMap((source, index) => {
+    const trouble = source.check ? SOURCE_TROUBLE[source.check] : undefined;
+    return trouble ? [`${label}source ${index + 1} (${source.url}): ${trouble}`] : [];
+  });
+
+/** What an author gets back from a write: where it landed and how its sources checked, not the whole page. */
+export function writeReceipt(value: { page: string; section: Section; take: string }, config: Config) {
+  const take = value.section.takes.find((candidate) => candidate.id === value.take);
+  return {
+    page: `${siteUrl(config)}/${value.page}#${value.section.anchor}`,
+    section: { id: value.section.id, anchor: value.section.anchor, kind: value.section.kind, heading: value.section.heading },
+    take: value.take,
+    revision: take?.revision ?? 1,
+    leads: leadingTake(value.section)?.id === value.take,
+    rivals: visibleTakes(value.section).length - 1,
+    sources: take?.sources ?? [],
+    warnings: take ? sourceWarnings(take) : [],
+  };
+}
+
+/** What an author gets back from creating a page: every section's id, and how the sources checked. */
+export function pageReceipt(page: Page, config: Config) {
+  const { body, ...summary } = page;
+  const sections = body.flatMap((section) => {
+    const take = leadingTake(section);
+    return take ? [{ section, take }] : [];
+  });
+  return {
+    ...summaryJson(summary, config),
+    markdown: `${siteUrl(config)}/${page.slug}.md`,
+    sections: sections.map(({ section, take }) => ({ id: section.id, anchor: section.anchor, kind: section.kind, heading: section.heading, take: take.id })),
+    warnings: sections.flatMap(({ section, take }) => sourceWarnings(take, `${section.heading || section.kind}: `)),
   };
 }
 

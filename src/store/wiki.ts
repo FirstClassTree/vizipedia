@@ -186,6 +186,11 @@ export class Wiki {
     return found.rows[0]?.value ?? make();
   }
 
+  /** The quote check alone, so an agent can find a bad quote before it spends a write on it. */
+  checkSources(sources: readonly Source[]): Promise<Source[]> {
+    return this.check(sources);
+  }
+
   // ---- reads --------------------------------------------------------------------------
 
   async listPages(options: { sort?: "trending" | "new" | "contested" | "title"; q?: string; limit?: number; offset?: number } = {}): Promise<PageSummary[]> {
@@ -463,14 +468,14 @@ export class Wiki {
     return page ? { ok: true, value: page } : fail(500, "The page was written but could not be read back.");
   }
 
-  async addSection(caller: Caller, slug: string, input: SectionInput): Promise<Result<Page>> {
+  async addSection(caller: Caller, slug: string, input: SectionInput): Promise<Result<{ page: string; section: Section; take: string }>> {
     const checked = this.checkSection(input, "section");
     if (!checked.ok) return checked;
     if (checked.value.kind === "lede") return fail(422, "A page has one lede. To change it, put your take on the lede section.");
     const refused = await this.screen(`${checked.value.heading}\n\n${checked.value.body}`);
     if (refused) return fail(422, `The section was refused by the content screen: ${refused}.`);
     checked.value.sources = await this.check(checked.value.sources);
-    const outcome = await this.db.tx(async (tx): Promise<Result<null>> => {
+    const outcome = await this.db.tx(async (tx): Promise<Result<{ pageId: string; sectionId: string; takeId: string }>> => {
       const limited = await this.guard(tx, caller, "write");
       if (limited) return limited;
       const page = await tx.query<{ id: string }>("select id from pages where slug = $1 and hidden_at is null", [slug]);
@@ -489,13 +494,12 @@ export class Wiki {
       if (typeof input.after === "string" && !after) return fail(422, `No section "${input.after}" to place this after.`);
       const position = after ? after.position + 1 : (existing.rows.at(-1)?.position ?? -1) + 1;
       await tx.query("update sections set position = position + 1 where page_id = $1 and position >= $2", [pageId, position]);
-      await this.insertSection(tx, caller, pageId, { ...checked.value, anchor }, position);
+      const made = await this.insertSection(tx, caller, pageId, { ...checked.value, anchor }, position);
       await this.refresh(tx, pageId);
-      return { ok: true, value: null };
+      return { ok: true, value: { pageId, ...made } };
     });
     if (!outcome.ok) return outcome;
-    const page = await this.getPage(slug);
-    return page ? { ok: true, value: page } : fail(500, "The section was written but the page could not be read back.");
+    return this.sectionResult(outcome.value.pageId, outcome.value.sectionId, outcome.value.takeId);
   }
 
   /** The caller's own take on a section: written the first time, revised after that. */
@@ -684,7 +688,14 @@ export class Wiki {
     return { ok: true, value: { kind, heading, anchor, body: checked.body, html: checked.rendered.html, links: checked.rendered.links, sources, note } };
   }
 
-  private async insertSection(tx: Queryable, caller: Caller, pageId: string, section: CheckedSection, position: number, initial = false): Promise<void> {
+  private async insertSection(
+    tx: Queryable,
+    caller: Caller,
+    pageId: string,
+    section: CheckedSection,
+    position: number,
+    initial = false,
+  ): Promise<{ sectionId: string; takeId: string }> {
     const made = await tx.query<{ id: string }>("insert into sections (page_id, kind, heading, anchor, position) values ($1, $2, $3, $4, $5) returning id", [
       pageId,
       section.kind,
@@ -697,6 +708,7 @@ export class Wiki {
     const takeId = await this.insertTake(tx, caller, sectionId, section.body, section.html, section.links, section.sources, section.note);
     // A page's first sections are part of "started the page"; they stay on the log, off the feed.
     await this.log(tx, caller, initial ? "section.initial" : "section.create", { pageId, sectionId, takeId }, { note: section.note, kind: section.kind });
+    return { sectionId, takeId };
   }
 
   private async insertTake(

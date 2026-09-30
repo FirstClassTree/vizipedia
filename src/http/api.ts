@@ -3,11 +3,11 @@ import type { HttpBindings } from "@hono/node-server";
 import { type Context, Hono } from "hono";
 import type { Config } from "../config.ts";
 import { LIMITS } from "../domain/model.ts";
-import { isEstablished } from "../domain/rules.ts";
+import { isEstablished, parseSources } from "../domain/rules.ts";
 import type { Identity } from "../identity/identity.ts";
 import type { Caller, Result, Wiki } from "../store/wiki.ts";
 import { openApi } from "./openapi.ts";
-import { pageJson, patrolJson, sectionJson, siteUrl, summaryJson } from "./present.ts";
+import { pageJson, pageReceipt, patrolJson, sectionJson, siteUrl, summaryJson, takeJson, writeReceipt } from "./present.ts";
 
 export interface Deps {
   readonly wiki: Wiki;
@@ -105,12 +105,12 @@ export function apiRoutes(deps: Deps): Hono<Env> {
     const body = await bodyOf(c);
     const caller = await writer(c, body);
     if (caller instanceof Response) return caller;
-    return answer(c, await wiki.createPage(caller, body ?? {}), (page) => pageJson(page, config), 201);
+    return answer(c, await wiki.createPage(caller, body ?? {}), (page) => pageReceipt(page, config), 201);
   });
 
   api.get("/pages/:slug", async (c) => {
     const page = await wiki.getPage(c.req.param("slug"));
-    return page ? c.json(pageJson(page, config)) : refuse(c, 404, `No page "${c.req.param("slug")}". Create it with POST ${url}/api/pages.`);
+    return page ? c.json(pageJson(page, config, c.req.query("full") === "1")) : refuse(c, 404, `No page "${c.req.param("slug")}". Create it with POST ${url}/api/pages.`);
   });
 
   api.get("/pages/:slug/history", async (c) => c.json({ changes: await wiki.history(c.req.param("slug")) }));
@@ -119,7 +119,7 @@ export function apiRoutes(deps: Deps): Hono<Env> {
     const body = await bodyOf(c);
     const caller = await writer(c, body);
     if (caller instanceof Response) return caller;
-    return answer(c, await wiki.addSection(caller, c.req.param("slug"), body ?? {}), (page) => pageJson(page, config), 201);
+    return answer(c, await wiki.addSection(caller, c.req.param("slug"), body ?? {}), (value) => writeReceipt(value, config), 201);
   });
 
   api.put("/sections/:id/take", async (c) => {
@@ -127,11 +127,23 @@ export function apiRoutes(deps: Deps): Hono<Env> {
     const caller = await writer(c, body);
     if (caller instanceof Response) return caller;
     if (!UUID.test(c.req.param("id"))) return refuse(c, 404, "No such section.");
-    return answer(c, await wiki.putTake(caller, c.req.param("id"), body ?? {}), (value) => ({
-      page: `${url}/${value.page}`,
-      take: value.take,
-      section: sectionJson(value.section, config),
-    }));
+    return answer(c, await wiki.putTake(caller, c.req.param("id"), body ?? {}), (value) => writeReceipt(value, config));
+  });
+
+  api.get("/takes/:id", async (c) => {
+    const found = UUID.test(c.req.param("id")) ? await wiki.getTake(c.req.param("id")) : null;
+    if (!found) return refuse(c, 404, "No such take.");
+    return c.json({ page: `${url}/${found.page.slug}`, kind: found.kind, ...takeJson(found.take, found.kind, config, true) });
+  });
+
+  // The quote check alone: send the sources you mean to cite, see what the wiki finds, then write.
+  api.post("/check", async (c) => {
+    const owner = await who(c);
+    if (owner instanceof Response) return owner;
+    const sources = parseSources((await bodyOf(c))?.sources);
+    if (typeof sources === "string") return refuse(c, 422, sources);
+    if (sources.length === 0) return refuse(c, 422, 'Send { "sources": [{ "url", "quote" }] }.');
+    return c.json({ sources: await wiki.checkSources(sources) });
   });
 
   api.post("/takes/:id/back", async (c) => {
@@ -140,11 +152,8 @@ export function apiRoutes(deps: Deps): Hono<Env> {
     if (caller instanceof Response) return caller;
     if (!UUID.test(c.req.param("id"))) return refuse(c, 404, "No such take.");
     const note = typeof body.note === "string" ? body.note.slice(0, LIMITS.note) : null;
-    return answer(c, await wiki.back(caller, c.req.param("id"), note), (value) => ({
-      page: `${url}/${value.page}`,
-      backed: value.take,
-      section: sectionJson(value.section, config),
-    }));
+    // The answer says what was backed and nothing about the tally: patrol stays blind.
+    return answer(c, await wiki.back(caller, c.req.param("id"), note), (value) => ({ backed: value.take, page: `${url}/${value.page}#${value.section.anchor}` }));
   });
 
   api.post("/takes/:id/flag", async (c) => {

@@ -29,18 +29,38 @@ test("an agent's whole path: key, create, read as JSON and markdown, rival take,
 
   const created = await app.request("/api/pages", send(ada, { ...PAGE, model: "claude-opus-5-5" }));
   assert.equal(created.status, 201);
-  const page = (await created.json()) as { url: string; sections: { id: string; kind: string; leading: { id: string; by: { owner: string; model: string } } }[] };
+  const page = (await created.json()) as { url: string; sections: { id: string; kind: string; take: string }[]; warnings: string[] };
   assert.equal(page.url, "https://wiki.test/monty-hall-problem");
+  assert.deepEqual(page.warnings, []);
   const answer = page.sections.find((section) => section.kind === "prose");
-  assert.deepEqual(answer?.leading.by.owner, "ada");
+  const read = (await (await app.request("/api/pages/monty-hall-problem")).json()) as {
+    sections: { kind: string; leading: { by: { owner: string }; body?: string; chars?: number; source?: string } }[];
+  };
+  assert.equal(read.sections.find((section) => section.kind === "prose")?.leading.by.owner, "ada");
+  const experienceTake = read.sections.find((section) => section.kind === "experience")?.leading;
+  assert.equal(experienceTake?.body, undefined, "a page read names experience code, it does not inline it");
+  assert.match(experienceTake?.source ?? "", /\/api\/takes\//u);
 
   const rival = await app.request(`/api/sections/${answer?.id}/take`, send(lin, { model: "gpt-6", body: "Only if the host knows [1].", sources: [SOURCE] }, "PUT"));
   assert.equal(rival.status, 200);
-  const after = (await rival.json()) as { section: { contested: boolean; standing: string; rivals: unknown[] } };
-  assert.equal(after.section.contested, true);
-  assert.equal(after.section.rivals.length, 1);
+  const receipt = (await rival.json()) as { take: string; leads: boolean; rivals: number; page: string; sources: { check: string }[] };
+  assert.equal(receipt.rivals, 1);
+  assert.equal(receipt.leads, true);
+  assert.equal(receipt.page, "https://wiki.test/monty-hall-problem#the-answer");
 
-  const patrol = await app.request("/api/patrol", { headers: { authorization: `Bearer ${await keyFor(app, "sol")}` } });
+  const sol = await keyFor(app, "sol");
+  const backed = (await (await app.request(`/api/takes/${receipt.take}/back`, send(sol, { model: "gemini-3" }))).json()) as Record<string, unknown>;
+  assert.deepEqual(Object.keys(backed).sort(), ["backed", "page"], "backing answers with no tally and no names");
+  const added = await app.request(
+    "/api/pages/monty-hall-problem/sections",
+    send(lin, { model: "gpt-6", heading: "History", body: "First posed in 1975 [1].", sources: [SOURCE], after: "the-answer" }),
+  );
+  assert.equal(added.status, 201);
+  assert.equal(((await added.json()) as { section: { anchor: string } }).section.anchor, "history");
+  const checked = (await (await app.request("/api/check", send(lin, { sources: [SOURCE] }))).json()) as { sources: { check: string }[] };
+  assert.equal(checked.sources[0]?.check, "unchecked");
+
+  const patrol = await app.request("/api/patrol?limit=20", { headers: { authorization: `Bearer ${await keyFor(app, "kim")}` } });
   const items = ((await patrol.json()) as { patrol: { why: string; takes: Record<string, unknown>[] }[] }).patrol;
   const contested = items.find((item) => item.why === "contested");
   assert.equal(contested?.takes.length, 2);
@@ -75,11 +95,11 @@ test("an experience is served as a locked box, and only as one", async () => {
   const { app, db } = await boot({ TRUSTED_OWNERS: "ada" });
   const ada = await keyFor(app, "ada");
   const created = await app.request("/api/pages", send(ada, { ...PAGE, model: "claude-opus-5-5", data: { n: 3 } }));
-  const page = (await created.json()) as { sections: { kind: string; leading: { id: string } }[] };
+  const page = (await created.json()) as { sections: { kind: string; take: string }[] };
   const experience = page.sections.find((section) => section.kind === "experience");
   const prose = page.sections.find((section) => section.kind === "prose");
 
-  const framed = await app.request(`/x/${experience?.leading.id}?s=sheet`);
+  const framed = await app.request(`/x/${experience?.take}?s=sheet`);
   assert.equal(framed.status, 200);
   assert.equal(framed.headers.get("content-security-policy"), EXPERIENCE_CSP);
   assert.match(EXPERIENCE_CSP, /^sandbox allow-scripts; default-src 'none';/u);
@@ -91,7 +111,7 @@ test("an experience is served as a locked box, and only as one", async () => {
   assert.match(document, /<button>Pick a door<\/button>/u);
   assert.match(document, /window\.OW = Object\.freeze\(\{"data":\{"n":3\}/u);
 
-  assert.equal((await app.request(`/x/${prose?.leading.id}`)).status, 404, "prose is never served as a document");
+  assert.equal((await app.request(`/x/${prose?.take}`)).status, 404, "prose is never served as a document");
   assert.equal((await app.request("/x/not-a-take")).status, 404);
 
   const html = await app.request("/monty-hall-problem");
