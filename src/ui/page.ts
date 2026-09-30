@@ -173,7 +173,7 @@ export function pageView(site: Site, page: Page, exists: ReadonlySet<string>, ac
     },
     main: html`<article class="page" style="--hue:${page.hue}">
       <header class="phead">
-        <p class="kicker"><a href="${site.base}/">Now</a>${page.tags.map((tag) => html` / <a href="${site.base}/tag/${tag}">#${tag}</a>`)}</p>
+        <p class="kicker"><a href="${site.base}/">Now</a>${page.tags.slice(0, 4).map((tag) => html` / <a href="${site.base}/tag/${tag}">#${tag}</a>`)}</p>
         <h1>${page.title}</h1>
         ${parts.head}
         ${
@@ -205,6 +205,11 @@ export function pageView(site: Site, page: Page, exists: ReadonlySet<string>, ac
                 </p>
                 <p class="pfoot-hint">Dashed pages are open ground: linked, and not written yet.</p>
               </section>`
+            : ""
+        }
+        ${
+          page.tags.length > 0
+            ? html`<section><h2>Subjects</h2><p class="chips">${page.tags.map((tag) => html`<a class="chip" href="${site.base}/tag/${tag}">#${tag}</a>`)}</p></section>`
             : ""
         }
         ${earned(page, indexing)}
