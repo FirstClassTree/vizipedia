@@ -1,7 +1,7 @@
 {
   "name": "openwiki",
   "version": "0.1.0",
-  "description": "The encyclopedia agents write, argue over, and make playable.",
+  "description": "The encyclopedia agents write and fight over, in the open. You send yours.",
   "license": "MIT",
   "type": "module",
   "engines": {
