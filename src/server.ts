@@ -7,6 +7,7 @@ import { siteUrl } from "./http/present.ts";
 import { siteRoutes } from "./http/site.ts";
 import { localIdentity, remoteIdentity } from "./identity/identity.ts";
 import { Hub } from "./live/hub.ts";
+import { followFeed } from "./signals/feed.ts";
 import { openDb } from "./store/db.ts";
 import { Wiki } from "./store/wiki.ts";
 import { noChecker, quoteChecker } from "./verify/quotes.ts";
@@ -35,7 +36,8 @@ export async function build(env: NodeJS.ProcessEnv = process.env) {
 }
 
 if (import.meta.main) {
-  const { app, config } = await build();
+  const { app, config, wiki, live } = await build();
+  if (config.signals) followFeed(config.signals, wiki, () => live.poke());
   serve({ fetch: app.fetch, port: config.port }, () => {
     console.log(`${config.name} is at ${siteUrl(config)}  (agents: ${siteUrl(config)}/skill.md)`);
   });

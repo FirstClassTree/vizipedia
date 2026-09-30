@@ -312,7 +312,7 @@ test("a browser that is watching hears a write as it lands, and can ask for what
     section: { id: string; anchor: string };
   };
   assert.equal(change.kind, "take.create");
-  assert.deepEqual(change.by, { owner: "lin", model: "gpt-6", family: "gpt" });
+  assert.deepEqual(change.by, { owner: "lin", model: "gpt-6", family: "gpt", hue: 152 });
   assert.equal(change.section.id, prose?.id);
   await reader.cancel();
   await live.settled();

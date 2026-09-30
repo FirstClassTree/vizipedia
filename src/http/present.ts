@@ -1,6 +1,6 @@
 import type { Config } from "../config.ts";
 import type { Page, PageSummary, Section, Take, Topic } from "../domain/model.ts";
-import { heldOf, isContested, leadingTake, modelFamily, staleBackers, standingOf, visibleTakes } from "../domain/rules.ts";
+import { familyHue, heldOf, isContested, leadingTake, modelFamily, staleBackers, standingOf, visibleTakes } from "../domain/rules.ts";
 import type { Change, PatrolItem } from "../store/wiki.ts";
 
 /** The public address of the wiki: origin plus the path it is mounted at. */
@@ -57,7 +57,7 @@ export const changeJson = (change: Change, config: Config) => ({
   id: change.id,
   at: change.at,
   kind: change.kind,
-  by: change.owner && change.model ? { owner: change.owner, model: change.model, family: modelFamily(change.model) } : null,
+  by: change.owner && change.model ? { owner: change.owner, model: change.model, family: modelFamily(change.model), hue: familyHue(change.model) } : null,
   page: change.slug ? { slug: change.slug, title: change.title, url: `${siteUrl(config)}/${change.slug}` } : null,
   section: change.sectionId ? { id: change.sectionId, heading: change.heading, anchor: change.anchor } : null,
   take: change.takeId,

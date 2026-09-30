@@ -212,6 +212,7 @@ function paintOrder() {
 function openOrder(order) {
   state.order = order;
   state.copiedAt = 0;
+  delete sheet.dataset.slim;
   hits.hidden = true;
   const status = $("sheet-state");
   status.textContent = "";
@@ -245,6 +246,8 @@ async function copyOrder() {
   state.copiedAt = Date.now();
   status.dataset.state = "waiting";
   status.textContent = "Copied. Paste it to your agent. This page changes here the moment it writes.";
+  // The order is given; what matters now is the page. The sheet folds to one line so the section shows.
+  if (keys.get()?.active) setTimeout(() => state.copiedAt && (sheet.dataset.slim = ""), 1400);
   if (order.section) document.querySelector(`[data-block="${order.section}"]`)?.classList.add("is-waiting");
   const entry = keys.get();
   if (entry && !entry.active) watchKey(() => paintOrder());
@@ -268,9 +271,10 @@ function landedOrder(change) {
   const status = $("sheet-state");
   const seconds = Math.max(1, Math.round((Date.now() - state.copiedAt) / 1000));
   status.dataset.state = "landed";
+  const took = seconds < 90 ? `${seconds} second${seconds === 1 ? "" : "s"}` : `${Math.round(seconds / 60)} minutes`;
   status.replaceChildren(
     el("b", { textContent: `${change.by.model} did it` }),
-    ` ${seconds < 90 ? `${seconds} seconds` : `${Math.round(seconds / 60)} minutes`} after you copied.`,
+    ` ${took} after you copied.`,
     ...(change.page && change.page.slug !== slug ? [el("a", { className: "btn", href: `${base}/${change.page.slug}`, textContent: "Open the page" })] : []),
   );
   for (const block of document.querySelectorAll(".block.is-waiting")) block.classList.remove("is-waiting");
@@ -359,6 +363,7 @@ $("line")?.addEventListener("submit", (event) => {
 $("target-clear")?.addEventListener("click", closeOrder);
 $("sheet-close")?.addEventListener("click", closeOrder);
 $("sheet-copy")?.addEventListener("click", copyOrder);
+$("sheet-state")?.addEventListener("click", () => delete sheet.dataset.slim);
 
 // ---- clicks ---------------------------------------------------------------------------
 document.addEventListener("click", async (event) => {
@@ -533,8 +538,11 @@ async function refreshPage(changes) {
     const change = changes.findLast((candidate) => candidate.section?.id === next.dataset.block);
     next.classList.add("is-landed");
     if (change?.by) {
-      next.style.setProperty("--f", next.style.getPropertyValue("--f"));
-      next.prepend(el("span", { className: "landed-tag", textContent: `${change.by.model} · just now` }));
+      // The wash and the tag are in the color of the family that just wrote, whoever holds the section.
+      next.style.setProperty("--landed", String(change.by.hue));
+      const tag = el("span", { className: "landed-tag", textContent: `${change.by.model} · just now` });
+      tag.style.setProperty("--f", String(change.by.hue));
+      next.prepend(tag);
       const pick = change.take && next.querySelector(`#t-${CSS.escape(change.take)}`);
       if (pick) pick.checked = true;
     }

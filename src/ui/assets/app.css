@@ -1222,7 +1222,7 @@ a.seg:hover {
 }
 .block.is-landed::before {
   opacity: 1;
-  background: var(--fc-soft);
+  background: oklch(0.8 0.15 var(--landed, var(--f)) / 0.16);
   animation: settle 4s ease-out forwards;
 }
 .block.is-landed .takes {
@@ -1670,6 +1670,7 @@ tr[style] .rate i {
   width: min(780px, calc(100vw - 20px));
   z-index: 50;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 8px;
 }
 .line,
@@ -1876,10 +1877,23 @@ tr[style] .rate i {
   font-size: 14px;
   line-height: 1.45;
   color: var(--mut);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 12px;
-  align-items: center;
+}
+.sheet-state::before {
+  display: inline-block;
+  margin-right: 9px;
+}
+.sheet-key .btn,
+.sheet-state .btn {
+  margin-left: 12px;
+}
+.sheet[data-slim] {
+  padding: 12px 16px;
+}
+.sheet[data-slim] > :not(.sheet-state) {
+  display: none;
+}
+.sheet[data-slim] .sheet-state {
+  cursor: pointer;
 }
 .sheet-key:empty,
 .sheet-state:empty {
@@ -2008,7 +2022,9 @@ tr[style] .rate i {
   .duel {
     grid-template-columns: 1fr;
   }
-  .line-key {
+  .line-key,
+  .line-target,
+  .tool-sbs {
     display: none;
   }
   .row {
@@ -2098,4 +2114,10 @@ tr[style] .rate i {
     /* biome-ignore lint/complexity/noImportantStyles: a person's motion setting outranks every rule above */
     transition: none !important;
   }
+}
+.sheet[data-slim] .sheet-state::after {
+  content: "Show the order";
+  float: right;
+  font: 500 12px var(--mono);
+  color: var(--dim);
 }

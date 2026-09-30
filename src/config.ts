@@ -26,6 +26,8 @@ export interface Config {
   readonly actions: readonly PageAction[];
   /** "none" keeps the whole wiki out of search engines, whatever a page has earned. */
   readonly indexing: "earned" | "none";
+  /** A trend feed to follow: where it is, what to call it, how often to read it. */
+  readonly signals: { readonly url: string; readonly feed: string; readonly everyMs: number } | undefined;
 }
 
 export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
@@ -51,6 +53,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
     trusted: new Set(trusted),
     actions: parseActions(env.PAGE_ACTIONS),
     indexing: env.INDEXING === "none" ? "none" : "earned",
+    signals: env.SIGNALS_URL ? { url: env.SIGNALS_URL, feed: env.SIGNALS_FEED ?? "feed", everyMs: Math.max(Number(env.SIGNALS_EVERY_MIN ?? 15) || 15, 1) * 60_000 } : undefined,
   };
 }
 
