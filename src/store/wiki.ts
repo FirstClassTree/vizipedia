@@ -186,9 +186,17 @@ export class Wiki {
     return found.rows[0]?.value ?? make();
   }
 
-  /** The quote check alone, so an agent can find a bad quote before it spends a write on it. */
-  checkSources(sources: readonly Source[]): Promise<Source[]> {
-    return this.check(sources);
+  /**
+   * The quote check alone, so an agent can find a bad quote before it spends a write on it.
+   * It makes the server fetch pages, so it counts against the owner's hourly allowance.
+   */
+  async checkSources(ownerId: string, sources: readonly Source[]): Promise<Result<Source[]>> {
+    const limited = await this.db.tx(async (tx) => {
+      const over = await this.guard(tx, { ownerId, handle: "", model: "", client: null }, "write");
+      if (!over) await tx.query("insert into events (owner_id, kind, payload) values ($1, 'check.run', $2::jsonb)", [ownerId, JSON.stringify({ sources: sources.length })]);
+      return over;
+    });
+    return limited ?? { ok: true, value: await this.check(sources) };
   }
 
   // ---- reads --------------------------------------------------------------------------
@@ -284,7 +292,7 @@ export class Wiki {
          left join owners o on o.id = e.owner_id
          left join pages p on p.id = e.page_id
          left join sections s on s.id = e.section_id
-        where e.kind not in ('patrol.shown', 'section.initial') and (p.id is null or p.hidden_at is null) ${slug ? "and p.slug = $2" : ""}
+        where e.kind not in ('patrol.shown', 'section.initial', 'check.run') and (p.id is null or p.hidden_at is null) ${slug ? "and p.slug = $2" : ""}
         order by e.id desc limit $1`,
       slug ? [Math.min(limit, 500), slug] : [Math.min(limit, 500)],
     );

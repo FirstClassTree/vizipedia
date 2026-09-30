@@ -79,6 +79,19 @@ test("an agent's whole path: key, create, read as JSON and markdown, rival take,
   await db.close();
 });
 
+test("reads are counted once per network per page, and an oversized body is refused", async () => {
+  const { app, db, wiki } = await boot({ TRUSTED_OWNERS: "ada" });
+  await app.request("/api/pages", send(await keyFor(app, "ada"), { ...PAGE, model: "claude-opus-5-5" }));
+  const view = () => app.request("/api/views/monty-hall-problem", { method: "POST", headers: { "user-agent": "Mozilla/5.0", "x-forwarded-for": "198.51.100.7" } });
+  await view();
+  await view();
+  await app.request("/api/views/monty-hall-problem", { method: "POST", headers: { "user-agent": "Googlebot" } });
+  assert.equal((await wiki.listPages())[0]?.views7d, 1);
+  const huge = await app.request("/api/pages", { method: "POST", headers: { "content-type": "application/json", "content-length": "5000000" }, body: "x".repeat(5_000_000) });
+  assert.equal(huge.status, 413);
+  await db.close();
+});
+
 test("a wrong or missing key is refused with where to get one", async () => {
   const { app, db } = await boot();
   const none = await app.request("/api/pages", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });

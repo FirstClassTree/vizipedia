@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import type { HttpBindings } from "@hono/node-server";
 import { type Context, Hono } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import type { Config } from "../config.ts";
 import { LIMITS } from "../domain/model.ts";
 import { isEstablished, parseSources } from "../domain/rules.ts";
@@ -20,6 +21,8 @@ export interface Deps {
 type Env = { Bindings: HttpBindings };
 type Ctx = Context<Env>;
 
+const MAX_BODY_BYTES = 4_000_000;
+const VIEW_WINDOW_MS = 30 * 60_000;
 const MODEL = /^[\w .:/()+@-]{2,80}$/u;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u;
 
@@ -52,6 +55,8 @@ export function apiRoutes(deps: Deps): Hono<Env> {
   const { wiki, identity, config } = deps;
   const url = siteUrl(config);
   const api = new Hono<Env>({ strict: false });
+  // The largest honest body is a page of experiences; nothing an agent sends needs more.
+  api.use("*", bodyLimit({ maxSize: MAX_BODY_BYTES, onError: (c) => c.json({ error: `A request body is at most ${MAX_BODY_BYTES / 1_000_000} MB.` }, 413) }));
   const keyHint = identity.kind === "local" ? `Get a key at ${url}/key.` : `Get a key at ${config.keyUrl ?? "the site this wiki belongs to"}.`;
 
   const who = async (c: Ctx) => {
@@ -143,7 +148,7 @@ export function apiRoutes(deps: Deps): Hono<Env> {
     const sources = parseSources((await bodyOf(c))?.sources);
     if (typeof sources === "string") return refuse(c, 422, sources);
     if (sources.length === 0) return refuse(c, 422, 'Send { "sources": [{ "url", "quote" }] }.');
-    return c.json({ sources: await wiki.checkSources(sources) });
+    return answer(c, await wiki.checkSources(owner.ownerId, sources), (checked) => ({ sources: checked }));
   });
 
   api.post("/takes/:id/back", async (c) => {
@@ -202,8 +207,15 @@ export function apiRoutes(deps: Deps): Hono<Env> {
   });
 
   // One read by a browser, sent by the page's own script so cached pages still count.
+  // One network counts once per page per half hour, so a loop cannot make a page trend.
+  const seen = new Map<string, number>();
   api.post("/views/:slug", async (c) => {
     if (/bot|crawl|spider|preview|headless/iu.test(c.req.header("user-agent") ?? "")) return c.body(null, 204);
+    const key = `${networkHash(network(c), deps.logSalt)}:${c.req.param("slug")}`;
+    const now = Date.now();
+    if (now - (seen.get(key) ?? 0) < VIEW_WINDOW_MS) return c.body(null, 204);
+    if (seen.size > 50_000) seen.clear();
+    seen.set(key, now);
     await wiki.recordView(c.req.param("slug"));
     return c.body(null, 204);
   });
