@@ -3,12 +3,13 @@ import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import type { HttpBindings } from "@hono/node-server";
 import { type Context, Hono } from "hono";
-import { EXPERIENCE_HEADERS, experienceDocument } from "../domain/experience.ts";
-import { leadingTake } from "../domain/rules.ts";
+import { html } from "hono/html";
+import { EXPERIENCE_HEADERS, experienceDocument, FIGURE_HEADERS } from "../domain/experience.ts";
 import { SLUG } from "../domain/slug.ts";
-import { homeView } from "../ui/home.ts";
-import { agentsView, changesView, graphView, keyView, missingView, rulesView, searchView, warsView } from "../ui/lists.ts";
-import { pageView } from "../ui/page.ts";
+import type { BoardView } from "../store/wiki.ts";
+import { agentsView, keyView, mapView, rulesView, searchView, wireView } from "../ui/lists.ts";
+import { hottestFight, nowView, rows, tick } from "../ui/now.ts";
+import { liveFragment, openView, pageView } from "../ui/page.ts";
 import type { Html, Site } from "../ui/parts.ts";
 import { skillMarkdown } from "../ui/skill.ts";
 import type { Deps } from "./api.ts";
@@ -48,8 +49,12 @@ interface Asset {
   readonly type: string;
 }
 
+// Two takes and the line between them.
 const ICON_SVG =
-  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28"><rect width="28" height="28" rx="7" fill="#1b1430"/><path d="M9 6H6v16h3M19 6h3v16h-3" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 9.5v9l7-4.5z" fill="#c4a7ff"/></svg>';
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28"><rect width="28" height="28" rx="7" fill="#14151a"/><path d="M5 6h8.5v16H5z" fill="#f5a35c"/><path d="M14.5 6H23v16h-8.5z" fill="#4fd39a"/><path d="M13 4l2 2.9-2 2.9 2 2.9-2 2.9 2 2.9-2 2.9 2 2.6" fill="none" stroke="#14151a" stroke-width="2.4" stroke-linejoin="round"/></svg>';
+
+const VIEWS: readonly BoardView[] = ["hot", "fights", "open", "new"];
+const TAG = /^[a-z0-9][a-z0-9-]{1,29}$/u;
 
 function loadAssets(base: string): { files: Map<string, Asset>; urls: Site["assets"] } {
   const here = (name: string): string => readFileSync(new URL(`../ui/assets/${name}`, import.meta.url), "utf8");
@@ -58,17 +63,17 @@ function loadAssets(base: string): { files: Map<string, Asset>; urls: Site["asse
     files.set(name, { body, type });
     return `${base}/assets/${name}?v=${createHash("sha256").update(body).digest("hex").slice(0, 10)}`;
   };
-  const font = add(
-    "display.woff2",
-    readFileSync(createRequire(import.meta.url).resolve("@fontsource-variable/bricolage-grotesque/files/bricolage-grotesque-latin-wght-normal.woff2")),
-    "font/woff2",
-  );
+  const require = createRequire(import.meta.url);
+  // Weight and width in one file: the titles are set narrow, the text is not.
+  const font = add("display.woff2", readFileSync(require.resolve("@fontsource-variable/bricolage-grotesque/files/bricolage-grotesque-latin-wdth-normal.woff2")), "font/woff2");
+  const mono = add("mono.woff2", readFileSync(require.resolve("@fontsource-variable/geist-mono/files/geist-mono-latin-wght-normal.woff2")), "font/woff2");
   return {
     files,
     urls: {
       font,
-      // The stylesheet names the font by the same versioned address the page preloads.
-      css: add("app.css", here("app.css").replace('url("display.woff2")', `url("${font}")`), "text/css; charset=utf-8"),
+      mono,
+      // The stylesheet names the fonts by the same versioned addresses the page preloads.
+      css: add("app.css", here("app.css").replace('url("display.woff2")', `url("${font}")`).replace('url("mono.woff2")', `url("${mono}")`), "text/css; charset=utf-8"),
       js: add("app.js", here("app.js"), "text/javascript; charset=utf-8"),
       graph: add("graph.js", here("graph.js"), "text/javascript; charset=utf-8"),
       icon: add("icon.svg", ICON_SVG, "image/svg+xml"),
@@ -92,20 +97,40 @@ export function siteRoutes(deps: Deps): Hono<Env> {
     return c.body(asset.body as string, 200, { "Content-Type": asset.type, "Cache-Control": "public, max-age=31536000, immutable", "X-Content-Type-Options": "nosniff" });
   });
 
-  app.get("/", async (c) => {
-    const [stats, pages, wars, changes, wanted] = await Promise.all([wiki.stats(), wiki.listPages({ limit: 24 }), wiki.wars(6), wiki.changes(12), wiki.wanted(18)]);
-    const top = pages.find((entry) => entry.playable);
-    const full = top ? await wiki.getPage(top.slug) : null;
-    const cover = full?.body.find((section) => section.kind === "experience" && leadingTake(section));
-    const take = cover ? leadingTake(cover) : null;
-    return page(c, homeView(site, { stats, pages, wars, changes, wanted, featured: top && cover && take ? { page: top, heading: cover.heading, take } : null }));
+  const fragment = async (c: Ctx, view: Html) => c.html(await view, 200, { ...HTML_HEADERS, "Cache-Control": "no-store", "X-Robots-Tag": "noindex" });
+  const viewOf = (c: Ctx): BoardView => VIEWS.find((view) => view === c.req.query("view")) ?? "hot";
+
+  const now = async (c: Ctx, tag?: string) => {
+    const view = viewOf(c);
+    const [stats, topics, wars, wire, tags] = await Promise.all([wiki.stats(), wiki.board({ view, tag, limit: 40 }), wiki.wars(30), wiki.changes(14), wiki.tags()]);
+    return page(c, nowView(site, { stats, view, tag, topics, front: hottestFight(wars), wire, tags }));
+  };
+  app.get("/", (c) => now(c));
+  app.get("/tag/:tag", (c) => (TAG.test(c.req.param("tag")) ? now(c, c.req.param("tag")) : c.notFound()));
+
+  // What a watching browser asks for after a write: the same markup, only the part that moved.
+  app.get("/_/board", async (c) => {
+    const tag = c.req.query("tag");
+    return fragment(c, rows(site, await wiki.board({ view: viewOf(c), tag: tag && TAG.test(tag) ? tag : undefined, limit: 40 })));
+  });
+  app.get("/_/wire", async (c) => {
+    const changes = await wiki.changes(40, undefined, Number(c.req.query("after")) || 0);
+    return fragment(c, html`${changes.map((change) => tick(site, change))}`);
+  });
+  app.get("/_/page/:slug", async (c) => {
+    const found = SLUG.test(c.req.param("slug")) ? await wiki.getPage(c.req.param("slug")) : null;
+    if (!found) return c.notFound();
+    const exists = await wiki.existing(found.body.flatMap((section) => section.takes.flatMap((take) => take.links.map((link) => link.slug))));
+    return fragment(c, liveFragment(site, found, exists));
   });
 
-  app.get("/wars", async (c) => page(c, warsView(site, await wiki.wars(100))));
+  app.get("/wars", (c) => c.redirect(`${config.base}/?view=fights`, 301));
+  app.get("/graph", (c) => c.redirect(`${config.base}/map`, 301));
+  app.get("/map", async (c) => page(c, mapView(site, (await wiki.stats()).pages)));
   app.get("/agents", async (c) => page(c, agentsView(site, await wiki.standings())));
-  app.get("/changes", async (c) => page(c, changesView(site, await wiki.changes(150))));
-  app.get("/graph", async (c) => page(c, graphView(site, (await wiki.stats()).pages)));
+  app.get("/changes", async (c) => page(c, wireView(site, await wiki.changes(150))));
   app.get("/rules", (c) => page(c, rulesView(site)));
+  app.get("/random", async (c) => c.redirect(`${config.base}/${(await wiki.randomSlug()) ?? ""}`, 302));
   app.get("/search", async (c) => {
     const q = (c.req.query("q") ?? "").trim().slice(0, 80);
     return page(c, searchView(site, q, q ? await wiki.listPages({ q, limit: 48 }) : []));
@@ -159,7 +184,8 @@ export function siteRoutes(deps: Deps): Hono<Env> {
   app.get("/x/:take", async (c) => {
     const id = c.req.param("take");
     const found = /^[0-9a-f-]{36}$/u.test(id) ? await wiki.getTake(id) : null;
-    if (found?.kind !== "experience" || found.take.hidden) return c.body("Not found", 404, EXPERIENCE_HEADERS);
+    if (!found || (found.kind !== "experience" && found.kind !== "figure") || found.take.hidden) return c.body("Not found", 404, EXPERIENCE_HEADERS);
+    const still = found.kind === "figure";
     let data: unknown = null;
     try {
       data = found.data ? JSON.parse(found.data) : null;
@@ -169,17 +195,19 @@ export function siteRoutes(deps: Deps): Hono<Env> {
     const document = experienceDocument({
       fragment: found.take.body,
       hue: found.page.hue,
+      // The site is one dark canvas; "sheet" stays for anyone who wants a light frame.
       surface: c.req.query("s") === "sheet" ? "sheet" : "stage",
       page: { slug: found.page.slug, title: found.page.title },
       data,
+      still,
     });
-    return c.body(document, 200, { ...EXPERIENCE_HEADERS, "Cache-Control": "public, max-age=120" });
+    return c.body(document, 200, { ...(still ? FIGURE_HEADERS : EXPERIENCE_HEADERS), "Cache-Control": "public, max-age=120" });
   });
 
   app.get("/:slug/history", async (c) => {
     const found = await wiki.getPage(c.req.param("slug"));
     if (!found) return c.notFound();
-    return page(c, changesView(site, await wiki.history(found.slug), found));
+    return page(c, wireView(site, await wiki.history(found.slug), found));
   });
 
   app.get("/:slug", async (c) => {
@@ -190,8 +218,7 @@ export function siteRoutes(deps: Deps): Hono<Env> {
     const found = await wiki.getPage(slug);
     if (!found) {
       if (wantsMarkdown) return c.body(`No page "${slug}". Create it with POST ${site.url}/api/pages.\n`, 404, { "Content-Type": "text/markdown; charset=utf-8" });
-      const wanted = (await wiki.wanted(500)).find((entry) => entry.slug === slug);
-      return page(c, missingView(site, slug, wanted?.links ?? 0, wanted?.title), 404);
+      return page(c, openView(site, slug, await wiki.openGround(slug)), 404);
     }
     if (wantsMarkdown) {
       return c.body(pageMarkdown(found, config), 200, {
@@ -207,6 +234,6 @@ export function siteRoutes(deps: Deps): Hono<Env> {
     return response;
   });
 
-  app.notFound(async (c) => c.html(await missingView(site, "nothing-here", 0), 404, HTML_HEADERS));
+  app.notFound(async (c) => c.html(await openView(site, "nothing-here", { signal: null, title: "Nothing here", what: "", wantedBy: [] }), 404, HTML_HEADERS));
   return app;
 }

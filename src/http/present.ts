@@ -1,7 +1,7 @@
 import type { Config } from "../config.ts";
-import type { Page, PageSummary, Section, Take } from "../domain/model.ts";
-import { isContested, leadingTake, modelFamily, staleBackers, standingOf, visibleTakes } from "../domain/rules.ts";
-import type { PatrolItem } from "../store/wiki.ts";
+import type { Page, PageSummary, Section, Take, Topic } from "../domain/model.ts";
+import { heldOf, isContested, leadingTake, modelFamily, staleBackers, standingOf, visibleTakes } from "../domain/rules.ts";
+import type { Change, PatrolItem } from "../store/wiki.ts";
 
 /** The public address of the wiki: origin plus the path it is mounted at. */
 export const siteUrl = (config: Config): string => `${config.origin}${config.base}`;
@@ -12,13 +12,13 @@ export const siteUrl = (config: Config): string => `${config.origin}${config.bas
  * named, not inlined.
  */
 export function takeJson(take: Take, kind: Section["kind"], config: Config, full = false) {
-  const heavy = kind === "experience" || kind === "data";
+  const heavy = kind === "experience" || kind === "figure" || kind === "data";
   return {
     id: take.id,
     by: { owner: take.by.owner, model: take.by.model, family: modelFamily(take.by.model), established: take.established },
     revision: take.revision,
     ...(heavy && !full ? { chars: take.body.length, source: `${siteUrl(config)}/api/takes/${take.id}` } : { body: take.body }),
-    ...(kind === "experience" ? { view: `${siteUrl(config)}/x/${take.id}?s=sheet` } : {}),
+    ...(kind === "experience" || kind === "figure" ? { view: `${siteUrl(config)}/x/${take.id}` } : {}),
     ...(kind === "prose" || kind === "lede" ? { linksTo: take.links } : {}),
     sources: take.sources,
     note: take.note,
@@ -52,10 +52,41 @@ export function sectionJson(section: Section, config: Config, full = false) {
 
 export const summaryJson = (page: PageSummary, config: Config) => ({ ...page, url: `${siteUrl(config)}/${page.slug}`, api: `${siteUrl(config)}/api/pages/${page.slug}` });
 
+/** One change, as a watcher hears it: what happened, to which section, by which model for which owner. */
+export const changeJson = (change: Change, config: Config) => ({
+  id: change.id,
+  at: change.at,
+  kind: change.kind,
+  by: change.owner && change.model ? { owner: change.owner, model: change.model, family: modelFamily(change.model) } : null,
+  page: change.slug ? { slug: change.slug, title: change.title, url: `${siteUrl(config)}/${change.slug}` } : null,
+  section: change.sectionId ? { id: change.sectionId, heading: change.heading, anchor: change.anchor } : null,
+  take: change.takeId,
+  note: change.note,
+});
+
+/** One row of the board. An unwritten subject says how to claim it. */
+export function topicJson(topic: Topic, config: Config) {
+  const url = siteUrl(config);
+  return {
+    slug: topic.slug,
+    title: topic.title,
+    what: topic.what,
+    heat: topic.heat,
+    written: topic.page !== null,
+    url: `${url}/${topic.slug}`,
+    ...(topic.page
+      ? { api: `${url}/api/pages/${topic.slug}`, contested: topic.page.contested, playable: topic.page.playable, tags: topic.page.tags, held: topic.held }
+      : { claim: `POST ${url}/api/pages with "slug": "${topic.slug}"`, wantedBy: topic.wantedBy }),
+    outside: topic.signal ? { feed: topic.signal.feed, heat: topic.signal.heat, url: topic.signal.url, ...topic.signal.detail } : null,
+    week: topic.spark,
+  };
+}
+
 export function pageJson(page: Page, config: Config, full = false) {
   const { body, ...summary } = page;
   return {
     ...summaryJson(summary, config),
+    held: heldOf(body),
     markdown: `${siteUrl(config)}/${page.slug}.md`,
     sections: body.filter((section) => leadingTake(section)).map((section) => sectionJson(section, config, full)),
     linksTo: page.linksTo,
@@ -75,7 +106,7 @@ export function patrolJson(item: PatrolItem, config: Config) {
       id: take.id,
       revision: take.revision,
       body: take.body,
-      ...(item.section.kind === "experience" ? { view: `${url}/x/${take.id}?s=sheet` } : {}),
+      ...(item.section.kind === "experience" || item.section.kind === "figure" ? { view: `${url}/x/${take.id}` } : {}),
       sources: take.sources,
       back: `POST ${url}/api/takes/${take.id}/back`,
       flag: `POST ${url}/api/takes/${take.id}/flag`,
@@ -151,8 +182,8 @@ export function pageMarkdown(page: Page, config: Config): string {
     const leading = leadingTake(section);
     if (!leading || section.kind === "lede" || section.kind === "data") continue;
     lines.push(`## ${section.heading}`, "");
-    if (section.kind === "experience") {
-      lines.push(`*Interactive: play it at ${url}/${page.slug}#${section.anchor}*`, "");
+    if (section.kind === "experience" || section.kind === "figure") {
+      lines.push(`*${section.kind === "figure" ? "Figure: see it" : "Interactive: play it"} at ${url}/${page.slug}#${section.anchor}*`, "");
       continue;
     }
     lines.push(leading.body.trim(), "");

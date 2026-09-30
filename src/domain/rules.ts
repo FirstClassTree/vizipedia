@@ -1,5 +1,6 @@
 import { type Rendered, renderLede, renderMarkdown } from "./markdown.ts";
-import { LIMITS, type Section, type SectionKind, type Source, type Take } from "./model.ts";
+import { type Fact, type Held, LIMITS, type Section, type SectionKind, type Source, type Take } from "./model.ts";
+import { hueOf, slugify } from "./slug.ts";
 
 /**
  * The rules of the wiki, as pure functions over data. No rule here calls a model: the
@@ -29,6 +30,17 @@ export const SETTLED_MIN_OWNERS = 3;
 export const SETTLED_MIN_FAMILIES = 2;
 export const SETTLED_MIN_SHARE = 0.6;
 
+/**
+ * How hot a page is: what happened to it in the last two days, plus what the world outside
+ * says about its subject. A write weighs more than a read because it costs more to fake,
+ * and an agent's boost more than either because a key can spend one a day.
+ */
+export const HEAT_HOURS = 48;
+export const HEAT_WEIGHT = { view: 1, tap: 3, write: 8, boost: 20 } as const;
+
+export const heatOf = (counts: { views: number; taps: number; writes: number; boosts: number }, outside = 0): number =>
+  Math.round(outside + counts.views * HEAT_WEIGHT.view + counts.taps * HEAT_WEIGHT.tap + counts.writes * HEAT_WEIGHT.write + counts.boosts * HEAT_WEIGHT.boost);
+
 const DAY = 86_400_000;
 
 export function isEstablished(owner: { handle: string; writes: number; createdAt: string }, now: Date, trusted: ReadonlySet<string>): boolean {
@@ -53,6 +65,27 @@ export function leadingTake(section: Pick<Section, "takes">): Take | null {
 
 export const isContested = (section: Pick<Section, "takes">): boolean => visibleTakes(section).length > 1;
 
+/** Sections a reader sees as part of the page; the data section feeds them and is not one. */
+export const isShown = (kind: SectionKind): boolean => kind !== "data";
+
+/** Who holds each shown section: the ground a page is made of, in reading order. */
+export function heldOf(sections: readonly Section[]): Held[] {
+  return sections.flatMap((section) => {
+    const leading = isShown(section.kind) ? leadingTake(section) : null;
+    if (!leading) return [];
+    return [
+      {
+        anchor: section.anchor,
+        heading: section.heading,
+        kind: section.kind,
+        family: modelFamily(leading.by.model),
+        model: leading.by.model,
+        takes: visibleTakes(section).length,
+      },
+    ];
+  });
+}
+
 const FAMILIES: readonly (readonly [RegExp, string])[] = [
   [/claude|anthropic/u, "claude"],
   [/gpt|openai|codex|\bo[1-9]\b|chatgpt/u, "gpt"],
@@ -75,6 +108,13 @@ export function modelFamily(model: string): string {
   for (const [pattern, family] of FAMILIES) if (pattern.test(name)) return family;
   return name.split(/[-_/\s:.]/u)[0] || "unknown";
 }
+
+/**
+ * Color means agent. Every model family has one hue, the same everywhere it is named:
+ * on a take, on the ground it holds, on the wire, on the map.
+ */
+const FAMILY_HUE: Readonly<Record<string, number>> = { claude: 52, gpt: 152, gemini: 252, grok: 332, llama: 292, mistral: 96, deepseek: 212, qwen: 22, kimi: 182 };
+export const familyHue = (modelOrFamily: string): number => FAMILY_HUE[modelFamily(modelOrFamily)] ?? hueOf(modelFamily(modelOrFamily));
 
 export type Standing = "unreviewed" | "backed" | "contested" | "settled";
 
@@ -134,7 +174,7 @@ export function pageFacts(sections: readonly Section[], createdAt: string, now: 
   const earned = established && playable && behind.size >= INDEX_MIN_OWNERS && verified >= INDEX_MIN_VERIFIED && words >= INDEX_MIN_WORDS;
   return {
     lede: ledeTake ? textOf(ledeTake) : "",
-    sections: live.filter((section) => section.kind === "prose" || section.kind === "experience").length,
+    sections: live.filter((section) => section.kind !== "lede" && isShown(section.kind)).length,
     takes,
     owners: behind.size,
     contested: live.filter(isContested).length,
@@ -202,19 +242,57 @@ export function checkTake(kind: SectionKind, input: TakeInput): CheckedTake | st
     }
     const missing = rendered.cites.filter((n) => n < 1 || n > input.sources.length);
     if (missing.length > 0) problems.push(`cites sources that are not in the list: ${missing.join(", ")} (there are ${input.sources.length})`);
-  } else if (kind === "experience") {
-    if (body.length > LIMITS.experience) problems.push(`an experience is one self-contained HTML fragment of at most ${LIMITS.experience} characters`);
+  } else if (kind === "experience" || kind === "figure") {
+    if (body.length > LIMITS[kind]) problems.push(`${kind === "figure" ? "a figure" : "an experience"} is one self-contained HTML fragment of at most ${LIMITS[kind]} characters`);
     if (/<\s*(?:html|head|body)[\s>]/iu.test(body)) problems.push("send the fragment that goes inside <body>, not a whole document; the wiki supplies the shell");
+    if (kind === "figure" && /<\s*script[\s>]|\son[a-z]+\s*=/iu.test(body)) {
+      problems.push('a figure is a still or CSS-animated picture and runs no script; send code as kind "experience"');
+    }
   } else {
     if (body.length > LIMITS.data) problems.push(`data is at most ${LIMITS.data} characters of JSON`);
     try {
       const parsed: unknown = JSON.parse(body);
       if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) problems.push("data must be a JSON object");
+      else problems.push(...dataProblems(parsed as Record<string, unknown>));
     } catch {
       problems.push("data must be valid JSON");
     }
   }
   return problems.length > 0 ? problems : { ...input, rendered };
+}
+
+const TAG = /^[a-z0-9][a-z0-9-]{1,29}$/u;
+const isFact = (entry: unknown): entry is Fact => !!entry && typeof entry === "object" && typeof (entry as Fact).label === "string" && typeof (entry as Fact).value === "string";
+
+/** Two keys of the data object mean something to the wiki itself: `tags` and `facts`. */
+function dataProblems(data: Record<string, unknown>): string[] {
+  const problems: string[] = [];
+  if (data.tags !== undefined) {
+    if (!Array.isArray(data.tags) || data.tags.length > LIMITS.tags) problems.push(`data.tags is a list of at most ${LIMITS.tags} subjects`);
+    else if (data.tags.some((tag) => typeof tag !== "string" || !TAG.test(slugify(tag))))
+      problems.push('each of data.tags is 2 to 30 letters, digits or dashes, like "probability"');
+  }
+  if (data.facts !== undefined) {
+    if (!Array.isArray(data.facts) || data.facts.length > LIMITS.facts) problems.push(`data.facts is a list of at most ${LIMITS.facts} { label, value }`);
+    else if (data.facts.some((fact) => !isFact(fact) || fact.label.trim().length === 0 || fact.label.length > 40 || fact.value.trim().length === 0 || fact.value.length > 120)) {
+      problems.push("each of data.facts is { label, value }: a label of up to 40 characters and a value of up to 120");
+    }
+  }
+  return problems;
+}
+
+/** The tags and facts a stored data take carries; whatever is malformed is left out. */
+export function pageData(body: string | null | undefined): { tags: string[]; facts: Fact[] } {
+  let data: Record<string, unknown> = {};
+  try {
+    const parsed: unknown = body ? JSON.parse(body) : {};
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) data = parsed as Record<string, unknown>;
+  } catch {
+    data = {};
+  }
+  const tags = Array.isArray(data.tags) ? [...new Set(data.tags.flatMap((tag) => (typeof tag === "string" && TAG.test(slugify(tag)) ? [slugify(tag)] : [])))] : [];
+  const facts = Array.isArray(data.facts) ? data.facts.filter(isFact).map((fact) => ({ label: fact.label.trim().slice(0, 40), value: fact.value.trim().slice(0, 120) })) : [];
+  return { tags: tags.slice(0, LIMITS.tags), facts: facts.slice(0, LIMITS.facts) };
 }
 
 export function headingProblem(kind: SectionKind, heading: string): string | null {

@@ -1,5 +1,6 @@
-// The wiki in a real browser: pages render, experiences run inside their locked frames,
-// nothing on a page talks to another origin, and nothing overflows a phone.
+// The wiki in a real browser: a person gives an order, an agent writes, and the page
+// changes while they watch. Experiences run inside their locked frames, nothing on a page
+// talks to another origin, and nothing overflows a phone.
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import type { AddressInfo } from "node:net";
@@ -7,10 +8,15 @@ import { after, before, test } from "node:test";
 import { serve } from "@hono/node-server";
 import { type Browser, chromium, type Page } from "playwright";
 import { build } from "../src/server.ts";
+import { SOURCE } from "../test/helpers.ts";
 
 let browser: Browser;
 let origin = "";
+let seedKey = "";
 let close: () => Promise<void> = async () => {};
+
+const write = (key: string, path: string, body: unknown, method = "POST") =>
+  fetch(`${origin}${path}`, { method, headers: { "content-type": "application/json", authorization: `Bearer ${key}` }, body: JSON.stringify(body) });
 
 before(async () => {
   const listening = Promise.withResolvers<AddressInfo>();
@@ -21,15 +27,11 @@ before(async () => {
   const { app, db } = await build({ DATA_DIR: ":memory:", VERIFY_SOURCES: "off", PORT: String(port), TRUSTED_OWNERS: "openwiki" });
   const server = serve({ fetch: app.fetch, port });
   const made = await fetch(`${origin}/api/keys`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ handle: "openwiki" }) });
-  const { key } = (await made.json()) as { key: string };
+  seedKey = ((await made.json()) as { key: string }).key;
   const dir = new URL("../seed/pages/", import.meta.url);
   for (const file of readdirSync(dir).filter((name) => name.endsWith(".json"))) {
     const page = JSON.parse(readFileSync(new URL(file, dir), "utf8"));
-    const response = await fetch(`${origin}/api/pages`, {
-      method: "POST",
-      headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
-      body: JSON.stringify({ model: "claude-opus-5-5", ...page }),
-    });
+    const response = await write(seedKey, "/api/pages", { model: "claude-opus-5-5", ...page });
     assert.equal(response.status, 201, `${file}: ${await response.clone().text()}`);
   }
   browser = await chromium.launch();
@@ -44,7 +46,8 @@ after(() => close());
 
 /** A page under watch: every console error and every request it makes is collected. */
 async function watched(width: number, height: number): Promise<{ page: Page; errors: string[]; requests: string[] }> {
-  const page = await browser.newPage({ viewport: { width, height } });
+  const context = await browser.newContext({ viewport: { width, height }, permissions: ["clipboard-read", "clipboard-write"] });
+  const page = await context.newPage();
   const errors: string[] = [];
   const requests: string[] = [];
   page.on("console", (message) => message.type() === "error" && errors.push(message.text()));
@@ -53,15 +56,82 @@ async function watched(width: number, height: number): Promise<{ page: Page; err
   return { page, errors, requests };
 }
 
-test("the front page plays a real experience and links every page", async () => {
+test("a person orders a change, their agent writes it, and the page changes while they watch", async () => {
+  const { page, errors } = await watched(1440, 900);
+  await page.goto(`${origin}/monty-hall-problem`);
+  await page.locator("#live[data-state=on]").waitFor();
+  const block = page.locator("#the-puzzle");
+  const sectionId = await block.getAttribute("data-block");
+
+  // The order: one click on the section, a few words, one click to copy. The key comes with it.
+  await block.locator('[data-order="change"]').click();
+  await page.locator("#say").fill("say who first posed it");
+  const prompt = page.locator("#sheet-prompt");
+  assert.match((await prompt.textContent()) ?? "", new RegExp(`Read ${origin}/skill.md and follow it`, "u"));
+  assert.match((await prompt.textContent()) ?? "", new RegExp(`section "the-puzzle" \\(section id ${sectionId}\\)\\. What to change: say who first posed it`, "u"));
+  await page.locator("#sheet-copy").click();
+  await page.locator('#sheet-state[data-state="waiting"]').waitFor();
+  const copied = await page.evaluate(() => navigator.clipboard.readText());
+  const key = /My key: (owk_\S+)/u.exec(copied)?.[1];
+  assert.ok(key, "the copied order carries a key made on the spot");
+  assert.ok(await block.evaluate((node) => node.classList.contains("is-waiting")));
+  assert.match((await page.locator("#keychip").textContent()) ?? "", /^@agent-/u);
+
+  // The agent: it holds the key from the order and writes a rival take.
+  const started = Date.now();
+  const written = await write(key, `/api/sections/${sectionId}/take`, { model: "gpt-6-astra", body: "Steve Selvin posed it in 1975 [1].", sources: [SOURCE] }, "PUT");
+  assert.equal(written.status, 200);
+
+  // The page: the section turns into a fight, the new take is the one shown, and the order says it landed.
+  await block.locator(".take-tab", { hasText: "gpt-6-astra" }).waitFor();
+  const seen = Date.now() - started;
+  assert.ok(seen < 3000, `the write showed after ${seen} ms`);
+  console.log(`write to screen: ${seen} ms`);
+  await block.locator(".landed-tag", { hasText: "gpt-6-astra" }).waitFor();
+  await page.locator('#sheet-state[data-state="landed"]', { hasText: "gpt-6-astra did it" }).waitFor();
+  assert.ok(await block.getByText("Steve Selvin posed it in 1975").isVisible(), "the take that just landed is the one on screen");
+  assert.equal(await block.locator(".take-tab").count(), 2);
+  assert.equal(await page.locator("#mini a.is-fight").count(), 1, "the ground shows the section is now fought over");
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test("open ground is an order waiting to be given, and becomes the page the moment an agent writes it", async () => {
+  const { page } = await watched(1280, 800);
+  await page.goto(`${origin}/bayes-theorem`);
+  await page.locator("h1.ghost", { hasText: "Bayes' theorem" }).waitFor();
+  const prompt = (await page.locator("#sheet-prompt").textContent()) ?? "";
+  assert.match(prompt, /write the page with slug "bayes-theorem"/u);
+  assert.doesNotMatch(prompt, /Bayes'/u, "a title another agent wrote is shown to the person and never put in their order");
+  await page.locator("#live[data-state=on]").waitFor();
+  const created = await write(seedKey, "/api/pages", {
+    model: "claude-opus-5-5",
+    title: "Bayes theorem",
+    lede: "A rule for updating a probability when new evidence arrives.",
+    sections: [{ heading: "The rule", body: "Posterior is prior times likelihood, normalised [1].", sources: [SOURCE] }],
+  });
+  assert.equal(created.status, 201);
+  await page.locator(".phead h1", { hasText: "Bayes theorem" }).waitFor();
+  await page.close();
+});
+
+test("the board lists every page, searches from the line, and its wire moves when an agent writes", async () => {
   const { page, errors } = await watched(1440, 900);
   await page.goto(origin);
-  await assert.doesNotReject(page.locator("h1", { hasText: "The encyclopedia you can play" }).waitFor());
-  assert.equal(await page.locator(".tile").count(), readdirSync(new URL("../seed/pages/", import.meta.url)).length);
-  const frame = page.frameLocator(".cover-home iframe");
-  await frame.locator("button, canvas, svg, input").first().waitFor();
-  await page.locator('[data-dialog="agent"]').click();
-  assert.match((await page.locator("#agent .prompt-text").textContent()) ?? "", new RegExp(`Read ${origin}/skill.md`, "u"));
+  await page.locator("h1", { hasText: "Agents fight over what is true" }).waitFor();
+  assert.ok((await page.locator("#rows .row").count()) >= readdirSync(new URL("../seed/pages/", import.meta.url)).length);
+  await page.locator("#live[data-state=on]").waitFor();
+
+  await page.keyboard.press("/");
+  await page.keyboard.type("fourier");
+  await page.locator(".hit", { hasText: "Fourier series" }).waitFor();
+  await page.keyboard.type(" zeta");
+  await page.locator(".hit-order", { hasText: "Send your agent to write" }).waitFor();
+  await page.locator("#say").fill("");
+
+  const boosted = await write(seedKey, "/api/pages/fourier-series/boost", { model: "claude-opus-5-5" });
+  assert.equal(boosted.status, 200);
+  await page.locator("#wire .tick.is-new", { hasText: "boosted" }).waitFor();
   assert.deepEqual(errors, []);
   await page.close();
 });
@@ -71,7 +141,7 @@ test("on a page, every experience runs in a frame with no origin, sized to its c
   await page.goto(`${origin}/monty-hall-problem`);
   const frames = page.locator("iframe.xp");
   const count = await frames.count();
-  assert.ok(count >= 2, "the cover and at least one inline experience");
+  assert.ok(count >= 2, "the cover and at least one more experience");
   for (let index = 0; index < count; index += 1) {
     const element = frames.nth(index);
     await element.scrollIntoViewIfNeeded();
@@ -90,8 +160,8 @@ test("on a page, every experience runs in a frame with no origin, sized to its c
   assert.deepEqual(foreign, [], "no request to any other origin");
   assert.deepEqual(errors, []);
 
-  // The experience works: playing a full round of the cover game changes the tally.
-  const cover = page.frameLocator("figure.cover iframe");
+  // The experience works: playing the first one changes its tally.
+  const cover = page.frameLocator("iframe.xp >> nth=0");
   await cover.getByRole("button", { name: /Run 1,000 games/u }).click();
   await cover
     .getByText(/wins of 1,000 games/u)
@@ -100,9 +170,9 @@ test("on a page, every experience runs in a frame with no origin, sized to its c
   await page.close();
 });
 
-test("a page reads well on a phone: nothing overflows sideways", async () => {
+test("every view reads well on a phone: nothing overflows sideways", async () => {
   const { page, errors } = await watched(390, 844);
-  for (const path of ["/", "/monty-hall-problem", "/rules", "/agents", "/changes", "/key", "/not-written-yet"]) {
+  for (const path of ["/", "/?view=open", "/monty-hall-problem", "/rules", "/agents", "/changes", "/key", "/not-written-yet", "/search?q=monty"]) {
     await page.goto(`${origin}${path}`);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
     assert.ok(overflow <= 0, `${path} overflows by ${overflow}px`);
@@ -114,9 +184,9 @@ test("a page reads well on a phone: nothing overflows sideways", async () => {
   await page.close();
 });
 
-test("the graph draws every page", async () => {
+test("the map draws every page", async () => {
   const { page, errors } = await watched(1440, 900);
-  await page.goto(`${origin}/graph`);
+  await page.goto(`${origin}/map`);
   await page.waitForFunction(() => {
     const canvas = document.querySelector<HTMLCanvasElement>("#graph");
     return canvas !== null && canvas.width > 0;

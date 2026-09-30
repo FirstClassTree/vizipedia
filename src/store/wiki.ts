@@ -1,6 +1,35 @@
 import { textOf, type WikiLink } from "../domain/markdown.ts";
-import { type Backing, LIMITS, type Page, type PageSummary, SECTION_KINDS, type Section, type SectionKind, type Source, type Take } from "../domain/model.ts";
-import { checkTake, FLAGS_TO_HIDE, headingProblem, isEstablished, leadingTake, pageFacts, parseSources, REVISIONS_PER_DAY, titleProblem } from "../domain/rules.ts";
+import {
+  type Backing,
+  type Fact,
+  type Held,
+  LIMITS,
+  type Page,
+  type PageSummary,
+  SECTION_KINDS,
+  type Section,
+  type SectionKind,
+  type Signal,
+  type Source,
+  type Take,
+  type Topic,
+} from "../domain/model.ts";
+import {
+  checkTake,
+  FLAGS_TO_HIDE,
+  HEAT_HOURS,
+  HEAT_WEIGHT,
+  headingProblem,
+  heatOf,
+  isEstablished,
+  leadingTake,
+  modelFamily,
+  pageData,
+  pageFacts,
+  parseSources,
+  REVISIONS_PER_DAY,
+  titleProblem,
+} from "../domain/rules.ts";
 import { hueOf, slugify, slugProblem } from "../domain/slug.ts";
 import { noChecker, type SourceChecker } from "../verify/quotes.ts";
 import { noScreen, type Screen } from "../verify/screen.ts";
@@ -61,6 +90,20 @@ export interface Change {
   readonly heading: string | null;
   readonly anchor: string | null;
   readonly note: string | null;
+  readonly sectionId: string | null;
+  readonly takeId: string | null;
+}
+
+export type BoardView = "hot" | "fights" | "open" | "new";
+
+/** One row of a trend feed, as the feed sends it. */
+export interface SignalInput {
+  readonly title?: unknown;
+  readonly slug?: unknown;
+  readonly what?: unknown;
+  readonly heat?: unknown;
+  readonly url?: unknown;
+  readonly detail?: unknown;
 }
 
 export interface War {
@@ -104,7 +147,31 @@ interface SectionRow {
 
 const iso = (value: unknown): string => (value instanceof Date ? value.toISOString() : new Date(String(value)).toISOString());
 const list = (ids: readonly string[]): string => ids.join(",");
-const PAGE_COLUMNS = "slug, title, hue, lede, created_at, updated_at, sections, takes, owners, contested, playable, verified, indexable";
+const PAGE_COLUMNS = "slug, title, hue, lede, created_at, updated_at, sections, takes, owners, contested, playable, verified, indexable, tags, facts";
+const P_COLUMNS = PAGE_COLUMNS.split(", ")
+  .map((column) => `p.${column}`)
+  .join(", ");
+/** Events that are not a change to a page: they stay on the log and off every feed. */
+const QUIET = "('patrol.shown', 'section.initial', 'check.run')";
+/** A page's heat, as columns: the same sum rules.heatOf makes, so lists can sort by it. */
+const HEAT_PARTS = `
+  coalesce((select sum(v.views) from views v where v.page_id = p.id and v.day >= current_date - 1), 0) as h_views,
+  coalesce((select sum(v.taps) from views v where v.page_id = p.id and v.day >= current_date - 1), 0) as h_taps,
+  (select count(*) from events e where e.page_id = p.id and e.at > now() - interval '${HEAT_HOURS} hours' and e.kind not in ('patrol.shown', 'check.run', 'page.boost')) as h_writes,
+  (select count(*) from events e where e.page_id = p.id and e.at > now() - interval '${HEAT_HOURS} hours' and e.kind = 'page.boost') as h_boosts,
+  coalesce((select g.heat from signals g where g.slug = p.slug and g.updated_at > now() - interval '7 days'), 0) as h_outside`;
+const HEAT_SUM = `(h_outside + h_views * ${HEAT_WEIGHT.view} + h_taps * ${HEAT_WEIGHT.tap} + h_writes * ${HEAT_WEIGHT.write} + h_boosts * ${HEAT_WEIGHT.boost})`;
+
+const heatRow = (row: Record<string, unknown>): number =>
+  heatOf({ views: Number(row.h_views), taps: Number(row.h_taps), writes: Number(row.h_writes), boosts: Number(row.h_boosts) }, Number(row.h_outside));
+
+const signalOf = (row: Record<string, unknown>): Signal => ({
+  feed: String(row.feed),
+  heat: Number(row.heat),
+  url: (row.url as string | null) ?? null,
+  detail: (row.detail as Record<string, unknown> | null) ?? {},
+  updatedAt: iso(row.updated_at),
+});
 
 const summaryOf = (row: Record<string, unknown>): PageSummary => ({
   slug: String(row.slug),
@@ -120,6 +187,8 @@ const summaryOf = (row: Record<string, unknown>): PageSummary => ({
   playable: Boolean(row.playable),
   verified: Number(row.verified),
   indexable: Boolean(row.indexable),
+  tags: (row.tags as string[] | null) ?? [],
+  facts: (row.facts as Fact[] | null) ?? [],
 });
 
 export class Wiki {
@@ -201,7 +270,9 @@ export class Wiki {
 
   // ---- reads --------------------------------------------------------------------------
 
-  async listPages(options: { sort?: "trending" | "new" | "contested" | "title"; q?: string; limit?: number; offset?: number } = {}): Promise<PageSummary[]> {
+  async listPages(
+    options: { sort?: "trending" | "new" | "contested" | "title"; q?: string; tag?: string; limit?: number; offset?: number } = {},
+  ): Promise<(PageSummary & { heat: number })[]> {
     const limit = Math.min(Math.max(options.limit ?? 60, 1), 200);
     const params: unknown[] = [limit, Math.max(options.offset ?? 0, 0)];
     let where = "p.hidden_at is null";
@@ -209,32 +280,206 @@ export class Wiki {
       params.push(`%${options.q.trim().replace(/[%_\\]/gu, "\\$&")}%`);
       where += ` and (p.title ilike $${params.length} or p.lede ilike $${params.length})`;
     }
+    if (options.tag) {
+      params.push(JSON.stringify([options.tag]));
+      where += ` and p.tags @> $${params.length}::jsonb`;
+    }
     const order = {
       new: "created_at desc",
       title: "title asc",
       contested: "contested desc, updated_at desc",
-      // What is moving: a write weighs as much as eight reads.
-      trending: "views7d + 8 * writes7d desc, updated_at desc",
+      trending: `${HEAT_SUM} desc, updated_at desc`,
     }[options.sort ?? "trending"];
     const rows = await this.db.query(
       `select * from (
-         select ${PAGE_COLUMNS.split(", ")
-           .map((column) => `p.${column}`)
-           .join(", ")},
+         select ${P_COLUMNS}, ${HEAT_PARTS},
                 coalesce((select sum(v.views) from views v where v.page_id = p.id and v.day > current_date - 7), 0) as views7d,
                 (select count(*) from events e where e.page_id = p.id and e.at > now() - interval '7 days') as writes7d
            from pages p where ${where}
        ) listed order by ${order} limit $1 offset $2`,
       params,
     );
-    return rows.rows.map((row) => ({ ...summaryOf(row), views7d: Number(row.views7d), writes7d: Number(row.writes7d) }));
+    return rows.rows.map((row) => ({ ...summaryOf(row), views7d: Number(row.views7d), writes7d: Number(row.writes7d), heat: heatRow(row) }));
+  }
+
+  /**
+   * The board: what is hot, written or not. A written page is ranked by its own heat; a
+   * subject a feed reports, or a page other pages link to, that nobody has written is
+   * open ground and ranks beside them.
+   */
+  async board(options: { view?: BoardView; tag?: string; limit?: number } = {}): Promise<Topic[]> {
+    const view = options.view ?? "hot";
+    const limit = Math.min(Math.max(options.limit ?? 40, 1), 200);
+    const topics: Topic[] = [];
+
+    if (view !== "open") {
+      const params: unknown[] = [limit];
+      let where = "p.hidden_at is null";
+      if (view === "fights") where += " and p.contested > 0";
+      if (options.tag) {
+        params.push(JSON.stringify([options.tag]));
+        where += ` and p.tags @> $${params.length}::jsonb`;
+      }
+      const rows = await this.db.query<Record<string, unknown>>(
+        `select * from (
+           select p.id, ${P_COLUMNS}, ${HEAT_PARTS},
+                  (select row_to_json(g) from signals g where g.slug = p.slug) as signal,
+                  (select count(*) from links l where l.target_slug = p.slug) as wanted_by
+             from pages p where ${where}
+         ) listed order by ${view === "new" ? "created_at desc" : `${HEAT_SUM} desc, updated_at desc`} limit $1`,
+        params,
+      );
+      const ids = rows.rows.map((row) => String(row.id));
+      const [held, sparks] = await Promise.all([this.heldBy(ids), this.sparks(ids)]);
+      for (const row of rows.rows) {
+        const page = summaryOf(row);
+        topics.push({
+          slug: page.slug,
+          title: page.title,
+          what: page.lede,
+          heat: heatRow(row),
+          page,
+          held: held.get(String(row.id)) ?? [],
+          signal: row.signal ? signalOf(row.signal as Record<string, unknown>) : null,
+          spark: sparks.get(String(row.id)) ?? ZERO_WEEK,
+          wantedBy: Number(row.wanted_by),
+        });
+      }
+    }
+
+    if ((view === "hot" || view === "open") && !options.tag) {
+      const open = await this.db.query<Record<string, unknown>>(
+        `select * from (
+           select g.slug, g.title, g.what, g.feed, g.heat, g.url, g.detail, g.updated_at,
+                  (select count(*) from links l join pages s on s.id = l.page_id where l.target_slug = g.slug and s.hidden_at is null) as wanted_by
+             from signals g
+            where g.updated_at > now() - interval '7 days' and not exists (select 1 from pages p where p.slug = g.slug)
+           union all
+           select l.target_slug, min(l.title), '', null, 0, null, null, null, count(*)
+             from links l join pages s on s.id = l.page_id
+            where s.hidden_at is null and not exists (select 1 from pages p where p.slug = l.target_slug)
+              and not exists (select 1 from signals g where g.slug = l.target_slug)
+            group by l.target_slug
+         ) o order by o.heat + ${HEAT_WEIGHT.write} * o.wanted_by desc, o.slug limit $1`,
+        [limit],
+      );
+      for (const row of open.rows) {
+        const wantedBy = Number(row.wanted_by);
+        topics.push({
+          slug: String(row.slug),
+          title: String(row.title || String(row.slug).replaceAll("-", " ")),
+          what: String(row.what ?? ""),
+          heat: Math.round(Number(row.heat) + HEAT_WEIGHT.write * wantedBy),
+          page: null,
+          held: [],
+          signal: row.feed ? signalOf(row) : null,
+          spark: ZERO_WEEK,
+          wantedBy,
+        });
+      }
+    }
+    if (view === "hot") topics.sort((a, b) => b.heat - a.heat);
+    return topics.slice(0, limit);
+  }
+
+  /** What is known about a subject nobody has written: what a feed says, and who links to it. */
+  async openGround(slug: string): Promise<{ signal: Signal | null; title: string | null; what: string; wantedBy: { slug: string; title: string }[] }> {
+    const [signal, wanting] = await Promise.all([
+      this.db.query<Record<string, unknown>>("select * from signals where slug = $1", [slug]),
+      this.db.query<{ slug: string; title: string; label: string }>(
+        "select p.slug, p.title, l.title as label from links l join pages p on p.id = l.page_id where l.target_slug = $1 and p.hidden_at is null order by p.slug limit 40",
+        [slug],
+      ),
+    ]);
+    const row = signal.rows[0];
+    return {
+      signal: row ? signalOf(row) : null,
+      title: row ? String(row.title) : (wanting.rows.find((link) => link.label)?.label ?? null),
+      what: row ? String(row.what) : "",
+      wantedBy: wanting.rows.map((link) => ({ slug: link.slug, title: link.title })),
+    };
+  }
+
+  /** Subjects pages are filed under, most used first. */
+  async tags(limit = 60): Promise<{ tag: string; pages: number }[]> {
+    const rows = await this.db.query<{ tag: string; pages: number }>(
+      `select tag, count(*) as pages from pages p, jsonb_array_elements_text(p.tags) tag
+        where p.hidden_at is null group by tag order by pages desc, tag limit $1`,
+      [limit],
+    );
+    return rows.rows.map((row) => ({ tag: row.tag, pages: Number(row.pages) }));
+  }
+
+  async randomSlug(): Promise<string | null> {
+    const found = await this.db.query<{ slug: string }>("select slug from pages where hidden_at is null order by random() limit 1");
+    return found.rows[0]?.slug ?? null;
+  }
+
+  private async heldBy(pageIds: readonly string[]): Promise<Map<string, Held[]>> {
+    const held = new Map<string, Held[]>();
+    if (pageIds.length === 0) return held;
+    const rows = await this.db.query<Record<string, unknown>>(
+      `select s.page_id, s.anchor, s.heading, s.kind, t.model,
+              (select count(*) from takes x where x.section_id = s.id and x.hidden_at is null) as takes
+         from sections s join takes t on t.id = s.leading_take_id
+        where s.page_id = any(string_to_array($1, ',')::uuid[]) and s.kind <> 'data' order by s.page_id, s.position`,
+      [list(pageIds)],
+    );
+    for (const row of rows.rows) {
+      const entry: Held = {
+        anchor: String(row.anchor),
+        heading: String(row.heading),
+        kind: row.kind as SectionKind,
+        family: modelFamily(String(row.model)),
+        model: String(row.model),
+        takes: Number(row.takes),
+      };
+      held.set(String(row.page_id), [...(held.get(String(row.page_id)) ?? []), entry]);
+    }
+    return held;
+  }
+
+  /** Heat per day for the last seven days, oldest first: reads, taps and writes on that day. */
+  private async sparks(pageIds: readonly string[]): Promise<Map<string, number[]>> {
+    const sparks = new Map<string, number[]>();
+    if (pageIds.length === 0) return sparks;
+    const [views, events] = await Promise.all([
+      this.db.query<{ page_id: string; ago: number; views: number; taps: number }>(
+        `select page_id, (current_date - day) as ago, views, taps from views
+          where page_id = any(string_to_array($1, ',')::uuid[]) and day > current_date - 7`,
+        [list(pageIds)],
+      ),
+      this.db.query<{ page_id: string; ago: number; writes: number; boosts: number }>(
+        `select page_id, (current_date - (at at time zone 'utc')::date) as ago,
+                count(*) filter (where kind <> 'page.boost') as writes, count(*) filter (where kind = 'page.boost') as boosts
+           from events
+          where page_id = any(string_to_array($1, ',')::uuid[]) and at > now() - interval '7 days' and kind not in ('patrol.shown', 'check.run')
+          group by page_id, ago`,
+        [list(pageIds)],
+      ),
+    ]);
+    const add = (pageId: string, ago: number, heat: number): void => {
+      const week = sparks.get(pageId) ?? [...ZERO_WEEK];
+      const index = 6 - Number(ago);
+      if (index >= 0 && index < 7) week[index] = (week[index] ?? 0) + heat;
+      sparks.set(pageId, week);
+    };
+    for (const row of views.rows) add(row.page_id, row.ago, Number(row.views) * HEAT_WEIGHT.view + Number(row.taps) * HEAT_WEIGHT.tap);
+    for (const row of events.rows) add(row.page_id, row.ago, Number(row.writes) * HEAT_WEIGHT.write + Number(row.boosts) * HEAT_WEIGHT.boost);
+    return sparks;
   }
 
   async getPage(slug: string): Promise<Page | null> {
-    const found = await this.db.query<Record<string, unknown>>(`select id, ${PAGE_COLUMNS} from pages where slug = $1 and hidden_at is null`, [slug]);
+    const found = await this.db.query<Record<string, unknown>>(
+      `select p.id, ${P_COLUMNS}, ${HEAT_PARTS},
+              (select row_to_json(g) from signals g where g.slug = p.slug) as signal,
+              coalesce((select max(e.id) from events e where e.page_id = p.id), 0) as last_event
+         from pages p where p.slug = $1 and p.hidden_at is null`,
+      [slug],
+    );
     const row = found.rows[0];
     if (!row) return null;
-    const [body, linksTo, linkedFrom] = await Promise.all([
+    const [body, linksTo, linkedFrom, sparks] = await Promise.all([
       this.sectionsOf(this.db, String(row.id)),
       this.db.query<{ slug: string; title: string; exists: boolean }>(
         `select l.target_slug as slug, coalesce(t.title, l.title) as title, t.id is not null as exists
@@ -246,9 +491,14 @@ export class Wiki {
         "select p.slug, p.title from links l join pages p on p.id = l.page_id where l.target_slug = $1 and p.hidden_at is null order by p.slug",
         [slug],
       ),
+      this.sparks([String(row.id)]),
     ]);
     return {
       ...summaryOf(row),
+      heat: heatRow(row),
+      spark: sparks.get(String(row.id)) ?? ZERO_WEEK,
+      signal: row.signal ? signalOf(row.signal as Record<string, unknown>) : null,
+      lastEvent: Number(row.last_event),
       body,
       linksTo: linksTo.rows.map((link) => ({ slug: link.slug, title: link.title, exists: Boolean(link.exists) })),
       linkedFrom: linkedFrom.rows.map((link) => ({ slug: link.slug, title: link.title, exists: true })),
@@ -264,9 +514,7 @@ export class Wiki {
 
   async getTake(takeId: string): Promise<{ take: Take; kind: SectionKind; page: PageSummary; data: string | null } | null> {
     const found = await this.db.query<Record<string, unknown>>(
-      `select s.id as section_id, s.page_id, ${PAGE_COLUMNS.split(", ")
-        .map((column) => `p.${column}`)
-        .join(", ")}
+      `select s.id as section_id, s.page_id, ${P_COLUMNS}
          from takes t join sections s on s.id = t.section_id join pages p on p.id = s.page_id
         where t.id = $1 and p.hidden_at is null`,
       [takeId],
@@ -285,16 +533,36 @@ export class Wiki {
     return this.changes(limit, slug);
   }
 
-  async changes(limit = 50, slug?: string): Promise<Change[]> {
+  /** The newest event there is: where a listener that wants only what comes next starts. */
+  async lastEventId(): Promise<number> {
+    const found = await this.db.query<{ id: number }>("select coalesce(max(id), 0) as id from events");
+    return Number(found.rows[0]?.id ?? 0);
+  }
+
+  /**
+   * What changed, newest first. With `after`, everything since that event, oldest first:
+   * what a browser that is watching asks for.
+   */
+  async changes(limit = 50, slug?: string, after?: number): Promise<Change[]> {
+    const params: unknown[] = [Math.min(limit, 500)];
+    let where = "";
+    if (slug) {
+      params.push(slug);
+      where += ` and p.slug = $${params.length}`;
+    }
+    if (after !== undefined) {
+      params.push(after);
+      where += ` and e.id > $${params.length}`;
+    }
     const rows = await this.db.query<Record<string, unknown>>(
-      `select e.id, e.at, e.kind, o.handle, e.model, p.slug, p.title, p.hue, s.heading, s.anchor, e.payload
+      `select e.id, e.at, e.kind, o.handle, e.model, p.slug, p.title, p.hue, s.heading, s.anchor, e.payload, e.section_id, e.take_id
          from events e
          left join owners o on o.id = e.owner_id
          left join pages p on p.id = e.page_id
          left join sections s on s.id = e.section_id
-        where e.kind not in ('patrol.shown', 'section.initial', 'check.run') and (p.id is null or p.hidden_at is null) ${slug ? "and p.slug = $2" : ""}
-        order by e.id desc limit $1`,
-      slug ? [Math.min(limit, 500), slug] : [Math.min(limit, 500)],
+        where e.kind not in ${QUIET} and (p.id is null or p.hidden_at is null) ${where}
+        order by e.id ${after === undefined ? "desc" : "asc"} limit $1`,
+      params,
     );
     return rows.rows.map((row) => ({
       id: Number(row.id),
@@ -308,6 +576,8 @@ export class Wiki {
       heading: (row.heading as string | null) ?? null,
       anchor: (row.anchor as string | null) ?? null,
       note: ((row.payload as { note?: string } | null)?.note as string | undefined) ?? null,
+      sectionId: (row.section_id as string | null) ?? null,
+      takeId: (row.take_id as string | null) ?? null,
     }));
   }
 
@@ -329,9 +599,9 @@ export class Wiki {
   }
 
   /** Pages, the pages they ask for that nobody has written, and the links between them all. */
-  async graph(): Promise<{ nodes: { slug: string; title: string; hue: number | null; weight: number; written: boolean }[]; edges: [string, string][] }> {
+  async graph(): Promise<{ nodes: { slug: string; title: string; hue: number | null; family: string | null; weight: number; written: boolean }[]; edges: [string, string][] }> {
     const [pages, links] = await Promise.all([
-      this.db.query<{ slug: string; title: string; hue: number; takes: number }>("select slug, title, hue, takes from pages where hidden_at is null order by slug"),
+      this.db.query<{ id: string; slug: string; title: string; hue: number; takes: number }>("select id, slug, title, hue, takes from pages where hidden_at is null order by slug"),
       this.db.query<{ source: string; target: string; title: string }>(
         `select p.slug as source, l.target_slug as target, l.title from links l
            join pages p on p.id = l.page_id
@@ -339,11 +609,23 @@ export class Wiki {
           order by p.slug, l.target_slug`,
       ),
     ]);
+    const held = await this.heldBy(pages.rows.map((page) => page.id));
+    /** The family that holds most of a page. */
+    const holder = (pageId: string): string | null => {
+      const counts = new Map<string, number>();
+      for (const entry of held.get(pageId) ?? []) counts.set(entry.family, (counts.get(entry.family) ?? 0) + 1);
+      return [...counts].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+    };
     const nodes = new Map(
-      pages.rows.map((page) => [page.slug, { slug: page.slug, title: page.title, hue: Number(page.hue) as number | null, weight: Number(page.takes), written: true }]),
+      pages.rows.map((page) => [
+        page.slug,
+        { slug: page.slug, title: page.title, hue: Number(page.hue) as number | null, family: holder(page.id), weight: Number(page.takes), written: true },
+      ]),
     );
     for (const link of links.rows) {
-      if (!nodes.has(link.target)) nodes.set(link.target, { slug: link.target, title: link.title || link.target.replaceAll("-", " "), hue: null, weight: 0, written: false });
+      if (!nodes.has(link.target)) {
+        nodes.set(link.target, { slug: link.target, title: link.title || link.target.replaceAll("-", " "), hue: null, family: null, weight: 0, written: false });
+      }
     }
     return { nodes: [...nodes.values()], edges: links.rows.map((link) => [link.source, link.target]) };
   }
@@ -676,6 +958,68 @@ export class Wiki {
     );
   }
 
+  /** A person saying "this is hot right now". Counted like a read; the caller limits it to one a day per network. */
+  async recordTap(slug: string): Promise<void> {
+    await this.db.query(
+      `insert into views (page_id, day, views, taps) select id, current_date, 0, 1 from pages where slug = $1 and hidden_at is null
+       on conflict (page_id, day) do update set taps = views.taps + 1`,
+      [slug],
+    );
+  }
+
+  /** An agent saying "this is hot right now", once a day per owner per page. It weighs more than a tap because a key is spent on it. */
+  async boost(caller: Caller, slug: string, note: string | null): Promise<Result<{ page: string; heat: number }>> {
+    const outcome = await this.db.tx(async (tx): Promise<Result<null>> => {
+      const page = await tx.query<{ id: string }>("select id from pages where slug = $1 and hidden_at is null", [slug]);
+      const pageId = page.rows[0]?.id;
+      if (!pageId) return fail(404, `No page "${slug}".`);
+      const limited = await this.guard(tx, caller, "write");
+      if (limited) return limited;
+      const today = await tx.query<{ n: number }>(
+        "select count(*) as n from events where owner_id = $1 and page_id = $2 and kind = 'page.boost' and at > now() - interval '1 day'",
+        [caller.ownerId, pageId],
+      );
+      if (Number(today.rows[0]?.n ?? 0) > 0) return fail(429, "You boosted this page in the last day. One boost a day per page.");
+      await this.log(tx, caller, "page.boost", { pageId }, { note: note?.slice(0, LIMITS.note) ?? null });
+      return { ok: true, value: null };
+    });
+    if (!outcome.ok) return outcome;
+    const page = await this.getPage(slug);
+    return page ? { ok: true, value: { page: slug, heat: page.heat } } : fail(500, "Boosted, but the page could not be read back.");
+  }
+
+  /**
+   * One feed's view of what is talked about, replaced whole: a subject the feed no longer
+   * lists is no longer hot by that feed.
+   */
+  async putSignals(feed: string, rows: readonly SignalInput[]): Promise<Result<{ kept: number }>> {
+    if (!/^[a-z0-9][a-z0-9-]{1,39}$/u.test(feed)) return fail(422, 'feed is a short lowercase name, like "phoenix".');
+    if (rows.length > 500) return fail(422, "A feed is at most 500 subjects.");
+    const clean: { slug: string; title: string; what: string; heat: number; url: string | null; detail: Record<string, unknown> }[] = [];
+    for (const [index, row] of rows.entries()) {
+      const title = typeof row.title === "string" ? row.title.trim().slice(0, LIMITS.title) : "";
+      const slug = typeof row.slug === "string" && row.slug ? row.slug : slugify(title);
+      const heat = Number(row.heat ?? 0);
+      if (titleProblem(title) || slugProblem(slug) || !Number.isFinite(heat) || heat < 0) return fail(422, `subject ${index + 1} needs a title and a heat of 0 or more`);
+      const url = typeof row.url === "string" && /^https?:\/\//u.test(row.url) ? row.url.slice(0, 600) : null;
+      const detail = row.detail && typeof row.detail === "object" && !Array.isArray(row.detail) ? (row.detail as Record<string, unknown>) : {};
+      if (JSON.stringify(detail).length > 4000) return fail(422, `subject ${index + 1}: detail is at most 4,000 characters of JSON`);
+      if (!clean.some((entry) => entry.slug === slug)) clean.push({ slug, title, what: typeof row.what === "string" ? row.what.trim().slice(0, 400) : "", heat, url, detail });
+    }
+    await this.db.tx(async (tx) => {
+      await tx.query("delete from signals where feed = $1", [feed]);
+      for (const entry of clean) {
+        await tx.query(
+          `insert into signals (slug, title, what, feed, heat, url, detail) values ($1, $2, $3, $4, $5, $6, $7::jsonb)
+           on conflict (slug) do update set title = excluded.title, what = excluded.what, feed = excluded.feed, heat = excluded.heat,
+                  url = excluded.url, detail = excluded.detail, updated_at = now()`,
+          [entry.slug, entry.title, entry.what, feed, entry.heat, entry.url, JSON.stringify(entry.detail)],
+        );
+      }
+    });
+    return { ok: true, value: { kept: clean.length } };
+  }
+
   /** Re-derive every page's facts; run at boot so a rule that changed in code reaches stored pages. */
   async refreshAll(): Promise<void> {
     const pages = await this.db.query<{ id: string }>("select id from pages");
@@ -883,9 +1227,24 @@ export class Wiki {
       await tx.query("update sections set leading_take_id = $2 where id = $1", [section.id, leading?.id ?? null]);
       for (const link of leading?.links ?? []) if (!links.has(link.slug)) links.set(link.slug, link.title);
     }
+    const dataSection = sections.find((section) => section.kind === "data");
+    const data = pageData(dataSection ? leadingTake(dataSection)?.body : null);
     await tx.query(
-      `update pages set lede = $2, sections = $3, takes = $4, owners = $5, contested = $6, playable = $7, verified = $8, indexable = $9, updated_at = now() where id = $1`,
-      [pageId, facts.lede, facts.sections, facts.takes, facts.owners, facts.contested, facts.playable, facts.verified, facts.indexable],
+      `update pages set lede = $2, sections = $3, takes = $4, owners = $5, contested = $6, playable = $7, verified = $8, indexable = $9,
+              tags = $10::jsonb, facts = $11::jsonb, updated_at = now() where id = $1`,
+      [
+        pageId,
+        facts.lede,
+        facts.sections,
+        facts.takes,
+        facts.owners,
+        facts.contested,
+        facts.playable,
+        facts.verified,
+        facts.indexable,
+        JSON.stringify(data.tags),
+        JSON.stringify(data.facts),
+      ],
     );
     await tx.query("delete from links where page_id = $1", [pageId]);
     for (const [slug, title] of links) await tx.query("insert into links (page_id, target_slug, title) values ($1, $2, $3) on conflict do nothing", [pageId, slug, title]);
@@ -899,6 +1258,8 @@ export class Wiki {
     return section && slug ? { ok: true, value: { page: slug, section, take: takeId } } : fail(500, "Written, but the section could not be read back.");
   }
 }
+
+const ZERO_WEEK: readonly number[] = [0, 0, 0, 0, 0, 0, 0];
 
 function uniqueAnchor(wanted: string, taken: Set<string>): string {
   let anchor = wanted;

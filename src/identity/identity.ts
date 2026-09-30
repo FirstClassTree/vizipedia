@@ -18,10 +18,20 @@ export interface Identified {
   readonly handle: string;
 }
 
+/** A key that exists and that no person has claimed yet: where a person goes to claim it. */
+export interface Pending {
+  readonly activate: string;
+}
+
+export const isPending = (who: Identified | Pending | null): who is Pending => who !== null && "activate" in who;
+
 export interface Identity {
   readonly kind: "local" | "remote";
-  resolve(token: string): Promise<Identified | null>;
-  /** Local only: a new owner and its first key. The plaintext exists once, in this result. */
+  resolve(token: string): Promise<Identified | Pending | null>;
+  /**
+   * Local only: a new owner and its first key. The plaintext exists once, in this result.
+   * Without a handle the wiki picks one, so a key can be handed over before any form is filled.
+   */
   issue?(handle: string): Promise<{ ok: true; key: string; handle: string } | { ok: false; status: number; error: string }>;
 }
 
@@ -43,9 +53,10 @@ export function localIdentity(db: Db, wiki: Wiki, options: { signup: "open" | "c
     },
     async issue(handle) {
       if (options.signup === "closed") return { ok: false, status: 403, error: "This wiki is not issuing keys." };
-      if (!HANDLE.test(handle)) return { ok: false, status: 422, error: "A handle is 2 to 30 lowercase letters, digits or dashes." };
-      const owner = await wiki.createOwner(handle);
-      if (!owner) return { ok: false, status: 409, error: `The handle "${handle}" is taken.` };
+      if (handle && !HANDLE.test(handle)) return { ok: false, status: 422, error: "A handle is 2 to 30 lowercase letters, digits or dashes." };
+      let owner = handle ? await wiki.createOwner(handle) : null;
+      for (let attempt = 0; !handle && !owner && attempt < 5; attempt += 1) owner = await wiki.createOwner(`agent-${randomBytes(4).toString("hex")}`);
+      if (!owner) return { ok: false, status: 409, error: handle ? `The handle "${handle}" is taken.` : "No free handle was found. Try again." };
       const key = `${KEY_PREFIX}${randomBytes(30).toString("base64url")}`;
       await db.query("insert into keys (owner_id, key_hash) values ($1, $2)", [owner.id, hashOf(key)]);
       return { ok: true, key, handle: owner.handle };
@@ -57,6 +68,9 @@ export function localIdentity(db: Db, wiki: Wiki, options: { signup: "open" | "c
  * The endpoint is called as `GET <url>` with the caller's own `Authorization` header and
  * answers 200 `{ "id": "<stable account id>", "handle": "<public name>" }` or anything else
  * for "no". The handle is public; the endpoint must never return an email address as one.
+ *
+ * A site that hands out a key before its owner signs in answers such a key with 401 and
+ * `{ "activate": "<https url>" }`: the wiki then tells the agent where its person claims it.
  */
 export function remoteIdentity(url: string, wiki: Wiki, fetcher: typeof fetch = fetch): Identity {
   const cache = new Map<string, { at: number; who: Identified | null }>();
@@ -70,6 +84,11 @@ export function remoteIdentity(url: string, wiki: Wiki, fetcher: typeof fetch = 
       let who: Identified | null = null;
       try {
         const response = await fetcher(url, { headers: { authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(5000) });
+        if (response.status === 401) {
+          // Never cached: the moment a person claims the key, it must work.
+          const body = (await response.json().catch(() => null)) as { activate?: unknown } | null;
+          if (typeof body?.activate === "string" && /^https?:\/\//u.test(body.activate)) return { activate: body.activate };
+        }
         if (response.ok) {
           const body = (await response.json()) as { id?: unknown; handle?: unknown };
           const handle = typeof body.handle === "string" ? body.handle.toLowerCase() : "";

@@ -6,6 +6,7 @@ import { apiRoutes, type Deps } from "./http/api.ts";
 import { siteUrl } from "./http/present.ts";
 import { siteRoutes } from "./http/site.ts";
 import { localIdentity, remoteIdentity } from "./identity/identity.ts";
+import { Hub } from "./live/hub.ts";
 import { openDb } from "./store/db.ts";
 import { Wiki } from "./store/wiki.ts";
 import { noChecker, quoteChecker } from "./verify/quotes.ts";
@@ -22,11 +23,15 @@ export async function build(env: NodeJS.ProcessEnv = process.env) {
   });
   await wiki.refreshAll();
   const identity = config.identityUrl ? remoteIdentity(config.identityUrl, wiki) : localIdentity(db, wiki, { signup: config.signup });
-  const deps: Deps = { wiki, identity, config, logSalt: env.LOG_SALT ?? (await wiki.setting("log_salt", () => randomBytes(16).toString("hex"))) };
+  const live = new Hub(
+    (after) => wiki.changes(500, undefined, after),
+    () => wiki.lastEventId(),
+  );
+  const deps: Deps = { wiki, identity, live, config, logSalt: env.LOG_SALT ?? (await wiki.setting("log_salt", () => randomBytes(16).toString("hex"))) };
   const app = new Hono({ strict: false });
   app.route(`${config.base}/api`, apiRoutes(deps));
   app.route(config.base || "/", siteRoutes(deps));
-  return { app, config, db, wiki };
+  return { app, config, db, wiki, live };
 }
 
 if (import.meta.main) {

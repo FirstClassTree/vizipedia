@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { EXPERIENCE_CSP } from "../src/domain/experience.ts";
+import { EXPERIENCE_CSP, FIGURE_CSP } from "../src/domain/experience.ts";
+import { remoteIdentity } from "../src/identity/identity.ts";
 import { build } from "../src/server.ts";
 import { PAGE, SOURCE } from "./helpers.ts";
 
@@ -131,7 +132,7 @@ test("an experience is served as a locked box, and only as one", async () => {
   const policy = html.headers.get("content-security-policy") ?? "";
   assert.match(policy, /script-src 'self'/u);
   assert.doesNotMatch(policy, /script-src[^;]*unsafe-inline/u, "the reading page runs no inline script");
-  assert.match(await html.text(), /<iframe class="xp xp-stage" src="\/x\/[0-9a-f-]+\?r=1&amp;s=stage" sandbox="allow-scripts"/u);
+  assert.match(await html.text(), /<iframe class="xp xp-experience" src="\/x\/[0-9a-f-]+\?r=1" sandbox="allow-scripts"/u);
   await db.close();
 });
 
@@ -168,7 +169,10 @@ test("search engines are offered nothing a page has not earned", async () => {
   assert.match(await (await app.request("/llms.txt")).text(), /\[Monty Hall problem\]\(https:\/\/wiki.test\/monty-hall-problem.md\)/u);
   const missing = await app.request("/bayes-theorem");
   assert.equal(missing.status, 404);
-  assert.match(await missing.text(), /No agent has written this page, and 1 page already links to it/u);
+  const open = await missing.text();
+  assert.match(open, /open ground/u);
+  assert.match(open, /Linked from <a href="\/monty-hall-problem">Monty Hall problem<\/a>/u);
+  assert.match(open, /data-order="write" data-slug="bayes-theorem"/u, "a missing page is an order waiting to be given");
   await db.close();
 });
 
@@ -180,5 +184,174 @@ test("the operator can take a page down and it is gone everywhere", async () => 
   assert.equal((await app.request("/monty-hall-problem")).status, 404);
   assert.equal((await app.request("/api/pages/monty-hall-problem")).status, 404);
   assert.equal(((await (await app.request("/api/pages")).json()) as { pages: unknown[] }).pages.length, 0);
+  await db.close();
+});
+
+test("a figure is shown at once because none of its code can run", async () => {
+  const { app, db } = await boot();
+  const newcomer = await keyFor(app, "newcomer");
+  const scripted = await app.request(
+    "/api/pages",
+    send(newcomer, { ...PAGE, model: "some-model", sections: [...PAGE.sections, { kind: "figure", heading: "The doors", body: '<svg onload="alert(1)"></svg>' }] }),
+  );
+  assert.equal(scripted.status, 422);
+  assert.match(((await scripted.json()) as { problems: string[] }).problems.join(" "), /a figure .* runs no script/u);
+
+  const created = await app.request(
+    "/api/pages",
+    send(newcomer, {
+      ...PAGE,
+      model: "some-model",
+      sections: [...PAGE.sections, { kind: "figure", heading: "The doors", body: '<svg viewBox="0 0 10 10"><rect width="10" height="10"/></svg>' }],
+    }),
+  );
+  assert.equal(created.status, 201);
+  const figure = ((await created.json()) as { sections: { kind: string; take: string }[] }).sections.find((section) => section.kind === "figure");
+  const framed = await app.request(`/x/${figure?.take}`);
+  assert.equal(framed.headers.get("content-security-policy"), FIGURE_CSP);
+  assert.match(FIGURE_CSP, /script-src 'sha256-[A-Za-z0-9+/=]+'/u);
+  assert.doesNotMatch(FIGURE_CSP, /unsafe-inline'; style|script-src[^;]*unsafe-inline/u, "only the wiki's own height script may run in a figure");
+  const document = await framed.text();
+  assert.doesNotMatch(document, /window\.OW/u);
+  const html = await (await app.request("/monty-hall-problem")).text();
+  assert.match(html, /<iframe class="xp xp-figure"/u, "a new owner's figure needs no click");
+  assert.match(html, /data-run="\/x\//u, "its experience still does");
+  await db.close();
+});
+
+test("the board ranks what is hot, written or not, and a feed's subject is open ground until claimed", async () => {
+  const { app, db } = await boot({ ADMIN_TOKEN: "op-secret", TRUSTED_OWNERS: "ada" });
+  const ada = await keyFor(app, "ada");
+  await app.request("/api/pages", send(ada, { ...PAGE, model: "claude-opus-5-5", data: { tags: ["Probability", "paradox"], facts: [{ label: "Posed", value: "1975" }] } }));
+  const feed = { feed: "phoenix", topics: [{ title: "Jev Decision Model", what: "A model that picks.", heat: 900, detail: { mentions: 39 }, url: "https://example.org/jev" }] };
+  assert.equal((await app.request("/api/signals", send("wrong", feed, "PUT"))).status, 401);
+  assert.equal((await app.request("/api/signals", send("op-secret", feed, "PUT"))).status, 200);
+
+  type Row = { slug: string; written: boolean; heat: number; claim?: string; tags?: string[]; outside: { mentions?: number } | null };
+  const board = async (query = ""): Promise<Row[]> => ((await (await app.request(`/api/board${query}`)).json()) as { topics: Row[] }).topics;
+  const hot = await board();
+  assert.deepEqual(
+    hot.map((row) => [row.slug, row.written]),
+    [
+      ["jev-decision-model", false],
+      ["monty-hall-problem", true],
+      ["bayes-theorem", false],
+    ],
+    "the feed's subject leads, then the written page, then the page that is only linked to",
+  );
+  assert.match(hot[0]?.claim ?? "", /"slug": "jev-decision-model"/u);
+  assert.equal(hot[0]?.outside?.mentions, 39);
+  assert.deepEqual(hot[1]?.tags, ["probability", "paradox"]);
+  assert.deepEqual(
+    (await board("?view=open")).map((row) => row.slug),
+    ["jev-decision-model", "bayes-theorem"],
+  );
+  assert.deepEqual(
+    (await board("?tag=paradox")).map((row) => row.slug),
+    ["monty-hall-problem"],
+  );
+
+  const open = await (await app.request("/jev-decision-model")).text();
+  assert.match(open, /39 mentions outside this week/u);
+  const home = await (await app.request("/")).text();
+  assert.match(home, /row-open[^>]*data-topic="jev-decision-model"/u);
+  assert.match(home, /href="\/tag\/probability"/u);
+  assert.match(await (await app.request("/tag/probability")).text(), /Monty Hall problem/u);
+  const page = await (await app.request("/monty-hall-problem")).text();
+  assert.match(page, /<dt>Posed<\/dt><dd>1975<\/dd>/u);
+
+  // A boost is one a day per owner; a person's tap is one a day per network.
+  const before = hot[1]?.heat ?? 0;
+  assert.equal((await app.request("/api/pages/monty-hall-problem/boost", send(ada, { model: "claude-opus-5-5" }))).status, 200);
+  assert.equal((await app.request("/api/pages/monty-hall-problem/boost", send(ada, { model: "claude-opus-5-5" }))).status, 429);
+  const tap = () => app.request("/api/heat/monty-hall-problem", { method: "POST", headers: { "user-agent": "Mozilla/5.0", "x-forwarded-for": "198.51.100.9" } });
+  assert.deepEqual(await (await tap()).json(), { counted: true });
+  assert.deepEqual(await (await tap()).json(), { counted: false });
+  const after = (await board()).find((row) => row.slug === "monty-hall-problem")?.heat ?? 0;
+  assert.equal(after - before, 20 + 3);
+
+  // Claiming the ground: the subject is now a page and keeps what the feed says about it.
+  const claimed = await app.request("/api/pages", send(ada, { ...PAGE, model: "claude-opus-5-5", title: "Jev Decision Model" }));
+  assert.equal(claimed.status, 201);
+  const now = (await board())[0];
+  assert.equal(now?.slug, "jev-decision-model");
+  assert.equal(now?.written, true);
+  await db.close();
+});
+
+test("a browser that is watching hears a write as it lands, and can ask for what it missed", async () => {
+  const { app, db, live } = await boot({ TRUSTED_OWNERS: "ada,lin" });
+  const ada = await keyFor(app, "ada");
+  const created = await app.request("/api/pages", send(ada, { ...PAGE, model: "claude-opus-5-5" }));
+  const prose = ((await created.json()) as { sections: { id: string; kind: string }[] }).sections.find((section) => section.kind === "prose");
+
+  const stream = await app.request("/api/live?page=monty-hall-problem");
+  assert.equal(stream.status, 200);
+  assert.match(stream.headers.get("content-type") ?? "", /text\/event-stream/u);
+  const reader = (stream.body as ReadableStream<Uint8Array>).getReader();
+  const decoder = new TextDecoder();
+  let heard = "";
+  const until = async (pattern: RegExp): Promise<void> => {
+    while (!pattern.test(heard)) {
+      const chunk = await reader.read();
+      if (chunk.done) throw new Error(`stream ended before ${pattern}`);
+      heard += decoder.decode(chunk.value);
+    }
+  };
+  await until(/event: ready/u);
+
+  const rival = await app.request(
+    `/api/sections/${prose?.id}/take`,
+    send(await keyFor(app, "lin"), { model: "gpt-6", body: "Only if the host knows [1].", sources: [SOURCE] }, "PUT"),
+  );
+  assert.equal(rival.status, 200);
+  await until(/event: change\ndata: (.+)\n/u);
+  const change = JSON.parse(/event: change\ndata: (.+)\n/u.exec(heard)?.[1] ?? "{}") as {
+    kind: string;
+    by: { owner: string; family: string };
+    section: { id: string; anchor: string };
+  };
+  assert.equal(change.kind, "take.create");
+  assert.deepEqual(change.by, { owner: "lin", model: "gpt-6", family: "gpt" });
+  assert.equal(change.section.id, prose?.id);
+  await reader.cancel();
+  await live.settled();
+
+  const missed = (await (await app.request("/api/changes?after=0&page=monty-hall-problem")).json()) as { changes: { id: number; kind: string }[] };
+  assert.deepEqual(
+    missed.changes.map((entry) => entry.kind),
+    ["page.create", "take.create"],
+    "oldest first, so a browser can replay them in order",
+  );
+  const fragment = await app.request("/_/page/monty-hall-problem");
+  assert.equal(fragment.headers.get("cache-control"), "no-store");
+  const html = await fragment.text();
+  assert.match(html, /<section class="block block-prose is-fight"/u);
+  assert.match(html, /gpt-6/u);
+  assert.doesNotMatch(html, /<html/u, "only the part of the page that moves");
+  assert.match(await (await app.request(`/_/wire?after=${missed.changes[0]?.id}`)).text(), /challenged/u);
+  await db.close();
+});
+
+test("a key can be handed over before its owner signs in, and says where to claim it", async () => {
+  const { app, db, wiki } = await boot();
+  const made = await app.request("/api/keys", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
+  assert.equal(made.status, 201);
+  const local = (await made.json()) as { key: string; handle: string; activate: null };
+  assert.match(local.handle, /^agent-[0-9a-f]{8}$/u, "no form to fill: the wiki picks a name");
+  assert.equal(local.activate, null);
+
+  const calls: string[] = [];
+  const identity = remoteIdentity("https://site.test/api/wiki/identity", wiki, (async (_url: string, init: { headers: { authorization: string } }) => {
+    calls.push(init.headers.authorization);
+    if (init.headers.authorization === "Bearer pending") return Response.json({ activate: "https://site.test/wiki/activate?code=abc" }, { status: 401 });
+    if (init.headers.authorization === "Bearer good") return Response.json({ id: "acct-1", handle: "u-1234567890" });
+    return Response.json({ error: "no" }, { status: 401 });
+  }) as never);
+  assert.deepEqual(await identity.resolve("pending"), { activate: "https://site.test/wiki/activate?code=abc" });
+  assert.deepEqual(await identity.resolve("pending"), { activate: "https://site.test/wiki/activate?code=abc" });
+  assert.equal(calls.length, 2, "a waiting key is asked about every time: the moment it is claimed it must work");
+  assert.equal(await identity.resolve("bad"), null);
+  assert.equal(((await identity.resolve("good")) as { handle: string }).handle, "u-1234567890");
   await db.close();
 });

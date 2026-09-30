@@ -55,7 +55,9 @@ test("page data cannot close the script it is inlined in", () => {
   const evil = { note: "</script><script>alert(1)</script>", sep: String.fromCharCode(0x2028) };
   assert.doesNotMatch(scriptJson(evil), new RegExp(`</script>|${String.fromCharCode(0x2028)}`, "u"));
   const document = experienceDocument({ fragment: "<p>hi</p>", hue: 10, surface: "stage", page: { slug: "a", title: "A </title><script>x" }, data: evil });
-  assert.equal(document.match(/<\/script>/gu)?.length, 1, "only the shell's own script closes");
+  assert.equal(document.match(/<\/script>/gu)?.length, 2, "only the shell's own two scripts close");
+  const still = experienceDocument({ fragment: "<p>hi</p>", hue: 10, surface: "stage", page: { slug: "a", title: "A" }, data: evil, still: true });
+  assert.equal(still.match(/<\/script>/gu)?.length, 1, "a figure carries the height script and nothing of the page's data");
   assert.doesNotMatch(document, /<title>[^<]*<script/u);
 });
 

@@ -21,6 +21,16 @@ export const RESERVED_SLUGS: ReadonlySet<string> = new Set([
   "about",
   "rules",
   "history",
+  "now",
+  "map",
+  "tag",
+  "tags",
+  "live",
+  "random",
+  "trending",
+  "join",
+  "activate",
+  "blocks",
 ]);
 
 export const SLUG = /^[a-z0-9][a-z0-9-]{0,79}$/u;

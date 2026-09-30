@@ -1,4 +1,5 @@
-// The wiki as a graph: pages are nodes in their own color, [[links]] are edges.
+// The wiki as a map: a page is a node in the color of the model family that holds most of
+// it, [[links]] are edges, and a page nobody has written is a hollow node.
 // A small force layout on a canvas; drag to pan or move a node, wheel to zoom, click to open.
 const canvas = document.getElementById("graph");
 const context = canvas.getContext("2d");
@@ -75,11 +76,14 @@ function draw() {
     context.beginPath();
     context.arc(node.x, node.y, node.r, 0, Math.PI * 2);
     if (node.written) {
-      context.fillStyle = `oklch(0.8 0.16 ${node.hue})`;
-      context.shadowColor = `oklch(0.7 0.2 ${node.hue})`;
-      context.shadowBlur = node === hover ? 28 : 12;
+      context.fillStyle = `oklch(0.8 0.15 ${node.tint})`;
       context.fill();
-      context.shadowBlur = 0;
+      if (node === hover) {
+        context.lineWidth = 2 / view.k;
+        context.strokeStyle = "#fff";
+        context.stroke();
+        context.lineWidth = 1.2 / view.k;
+      }
     } else {
       // A page that is asked for and not written: a hollow, dashed node.
       context.setLineDash([3 / view.k, 3 / view.k]);
@@ -89,7 +93,7 @@ function draw() {
     }
     const near = node === hover || (hover && edges.some(([a, b]) => (a === hover && b === node) || (b === hover && a === node)));
     if (!node.written && !near && view.k < 1.3) continue;
-    context.font = `${node.written ? 600 : 400} ${node.written ? label : label * 0.85}px ui-sans-serif, system-ui, sans-serif`;
+    context.font = `${node.written ? 600 : 400} ${node.written ? label : label * 0.85}px Display, ui-sans-serif, system-ui, sans-serif`;
     context.fillStyle = node === hover || node.written ? "#fff" : "rgba(255,255,255,0.72)";
     context.fillText(node.title, node.x, node.y + node.r + label * 1.25);
   }
@@ -175,7 +179,7 @@ nodes = graph.nodes.map((node, index) => {
   const made = {
     slug: node.slug,
     title: node.title,
-    hue: node.hue,
+    tint: node.tint ?? 268,
     written: node.written,
     r: node.written ? 9 + Math.min(14, Math.sqrt(node.weight) * 2.2) : 5,
     x: Math.cos(angle) * 220,

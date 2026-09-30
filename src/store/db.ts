@@ -139,6 +139,20 @@ create table if not exists settings (
   key text primary key,
   value text not null
 );
+-- What a trend feed outside the wiki says is being talked about. One feed is one snapshot.
+create table if not exists signals (
+  slug text primary key,
+  title text not null,
+  what text not null default '',
+  feed text not null,
+  heat real not null default 0,
+  url text,
+  detail jsonb not null default '{}',
+  updated_at timestamptz not null default now()
+);
+alter table views add column if not exists taps integer not null default 0;
+alter table pages add column if not exists tags jsonb not null default '[]';
+alter table pages add column if not exists facts jsonb not null default '[]';
 create index if not exists events_owner_at on events (owner_id, at desc);
 create index if not exists events_page_at on events (page_id, at desc);
 create index if not exists takes_section on takes (section_id);
