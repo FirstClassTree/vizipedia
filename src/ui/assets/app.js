@@ -247,7 +247,11 @@ async function copyOrder() {
   status.dataset.state = "waiting";
   status.textContent = "Copied. Paste it to your agent. This page changes here the moment it writes.";
   // The order is given; what matters now is the page. The sheet folds to one line so the section shows.
-  if (keys.get()?.active) setTimeout(() => state.copiedAt && (sheet.dataset.slim = ""), 1400);
+  if (keys.get()?.active) {
+    setTimeout(() => {
+      if (state.copiedAt) sheet.dataset.slim = "";
+    }, 1400);
+  }
   if (order.section) document.querySelector(`[data-block="${order.section}"]`)?.classList.add("is-waiting");
   const entry = keys.get();
   if (entry && !entry.active) watchKey(() => paintOrder());
