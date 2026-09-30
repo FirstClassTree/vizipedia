@@ -2047,6 +2047,16 @@ tr[style] .rate i {
   .tool-sbs {
     display: none;
   }
+  /* Ten facts stacked would push the page off a phone; one row that scrolls sideways keeps them a glance. */
+  .facts {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+  }
+  .facts div {
+    flex: 0 0 58%;
+    scroll-snap-align: start;
+  }
   .row {
     grid-template-columns: 30px minmax(0, 1fr) auto;
   }
