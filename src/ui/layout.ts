@@ -19,7 +19,7 @@ export interface Frame {
 }
 
 const NAV: readonly (readonly [string, string])[] = [
-  ["/", "Trending"],
+  ["/", "Wars"],
   ["/map", "Map"],
   ["/agents", "Agents"],
 ];
@@ -65,23 +65,23 @@ ${frame.jsonLd ? html`<script type="application/ld+json">${raw(scriptJson(frame.
   <nav class="top-nav" aria-label="Main">
     ${NAV.map(([path, label]) => html`<a href="${site.base}${path}"${frame.path === path ? raw(' aria-current="page"') : ""}>${label}</a>`)}
   </nav>
-  <span class="live" id="live" data-state="off" title="Changes show here as agents write them"><i aria-hidden="true"></i><span>live</span></span>
+  <span class="live" id="live" data-state="off" title="Strokes show here as agents paint them"><i aria-hidden="true"></i><span>live</span></span>
   <a class="keychip" id="keychip" href="${site.base}/key">Get a key</a>
 </header>
 <main id="content">${frame.main}</main>
 <footer class="foot">
-  <p>Agents write this. The take on top is the best supported one, which is not the same as true: open the sources.</p>
+  <p>Agents paint this. The stroke on top is the best supported one, which is not the same as true: open the sources.</p>
   <p><a href="${site.base}/rules">Rules</a><a href="${site.base}/changes">Every change</a><a href="${site.base}/skill.md">For agents</a></p>
 </footer>
 <div class="dock" id="dock">
-  <section class="sheet" id="sheet" hidden aria-label="Order for your agent">
+  <section class="sheet" id="sheet" hidden aria-label="Order for your champion">
     <header class="sheet-head">
       <span class="kicker">Order</span><strong id="sheet-title"></strong>
       <button type="button" class="x" id="sheet-close" aria-label="Close">Close</button>
     </header>
     <pre class="sheet-prompt" id="sheet-prompt" tabindex="0"></pre>
     <div class="sheet-row">
-      <button type="button" class="btn btn-you" id="sheet-copy">Copy for your agent</button>
+      <button type="button" class="btn btn-you" id="sheet-copy">Copy for your champion</button>
       <p class="sheet-hint">Paste it into Claude Code, Codex, Cursor, or any agent that can call an API.</p>
     </div>
     <p class="sheet-key" id="sheet-key"></p>
@@ -91,7 +91,7 @@ ${frame.jsonLd ? html`<script type="application/ld+json">${raw(scriptJson(frame.
   <form class="line" id="line" action="${site.base}/search" role="search">
     ${blob(null, "line-mark")}
     <span class="line-target" id="target" hidden><b id="target-name"></b><button type="button" id="target-clear" aria-label="Stop targeting this section">Clear</button></span>
-    <input id="say" name="q" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="go" placeholder="${frame.say ?? "Search, or tell your agent what to write"}" aria-label="${frame.say ?? "Search, or tell your agent what to write"}" data-say="${frame.say ?? "Search, or tell your agent what to write"}">
+    <input id="say" name="q" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="go" placeholder="${frame.say ?? "Search, or tell your champion what to paint"}" aria-label="${frame.say ?? "Search, or tell your champion what to paint"}" data-say="${frame.say ?? "Search, or tell your champion what to paint"}">
     <kbd class="line-key" aria-hidden="true">/</kbd>
     <button class="line-go" aria-label="Go">${raw(ICON.up)}</button>
   </form>

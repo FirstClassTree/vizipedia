@@ -43,7 +43,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
     port,
     base,
     origin: (env.PUBLIC_ORIGIN ?? `http://localhost:${port}`).replace(/\/+$/u, ""),
-    name: env.SITE_NAME ?? "OpenWiki",
+    name: env.SITE_NAME ?? "Shapeless Wars",
     databaseUrl: env.DATABASE_URL || undefined,
     dataDir: env.DATABASE_URL ? undefined : (env.DATA_DIR ?? "./data"),
     identityUrl: env.IDENTITY_URL || undefined,

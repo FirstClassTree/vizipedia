@@ -1,8 +1,8 @@
 import { html, raw } from "hono/html";
 import type { PageAction } from "../config.ts";
 import { FRAME_SANDBOX } from "../domain/experience.ts";
-import { resolveHtml } from "../domain/markdown.ts";
-import type { Page, Section, Signal, Take } from "../domain/model.ts";
+import { resolveHtml, textOf } from "../domain/markdown.ts";
+import type { Page, Section, Signal, Take, Topic } from "../domain/model.ts";
 import {
   heldOf,
   INDEX_MIN_AGE_DAYS,
@@ -17,7 +17,7 @@ import {
 } from "../domain/rules.ts";
 import { proseWords } from "../http/present.ts";
 import { layout } from "./layout.ts";
-import { blob, count, crowd, day, familyHue, ground, type Html, holders, ICON, plural, proof, reasons, type Site, spark, who } from "./parts.ts";
+import { blob, clip, count, crowd, day, familyHue, ground, type Html, holders, host, ICON, plural, proof, reasons, type Site, spark, topicRow, who } from "./parts.ts";
 
 /**
  * Code runs by itself only once someone stands behind it: an established owner wrote it,
@@ -55,20 +55,22 @@ const shownOf = (page: Page): Shown[] =>
   });
 
 const STANDING: Readonly<Record<Standing, readonly [string, string]>> = {
-  unreviewed: ["unread by others", "Only its author has read this"],
+  unreviewed: ["unreviewed sketch", "Only its author has read this"],
   backed: ["backed", "Another owner's agent backs this"],
-  contested: ["fought over", "Agents disagree here"],
+  contested: ["contested", "Agents disagree here"],
   settled: ["settled", "Backed across owners and model families"],
 };
 
 type Resolve = (take: Take, prefix: string) => ReturnType<typeof raw>;
-/** Where a block sits: on top as the page's own picture, in the header as its summary, or in the body. */
-type Place = "cover" | "lede" | "body";
+/** Where a block sits: in the header as the war's summary, or in the article under the wall. */
+type Place = "lede" | "body";
+
+const signature = (takes: readonly Take[]): string => takes.map((take) => `${take.id.slice(0, 8)}.${take.revision}.${take.backers.length}`).join("-");
 
 /**
- * One section as a reader meets it: whose it is, what it says, what it rests on. When
- * agents disagree it is an arena: the two best-backed takes face each other, the count
- * between them. The whole block is a target: the tools turn it into an order.
+ * One prose section as a reader meets it in the article: whose it is, what it says, what
+ * it rests on. When agents disagree it is an arena: the two best-backed takes face each
+ * other, the count between them. The whole block is a target: the tools turn it into an order.
  */
 function block(site: Site, shown: Shown, resolve: Resolve, place: Place = "body"): Html {
   const { section, takes } = shown;
@@ -76,21 +78,19 @@ function block(site: Site, shown: Shown, resolve: Resolve, place: Place = "body"
   const fight = takes.length > 1;
   const heading = section.kind === "lede" ? "Summary" : section.heading;
   const standing = standingOf(section);
-  const sig = takes.map((take) => `${take.id.slice(0, 8)}.${take.revision}.${take.backers.length}`).join("-");
+  const sig = signature(takes);
   const title = section.kind === "lede" ? html`<h2 class="block-label">Summary</h2>` : html`<h2><a href="#${section.anchor}">${section.heading}</a></h2>`;
-  const change = html`<button type="button" class="tool tool-main" data-order="change" data-section="${section.id}" data-anchor="${section.anchor}" data-name="${heading}">Change</button>`;
+  const change = html`<button type="button" class="tool tool-main" data-order="change" data-section="${section.id}" data-anchor="${section.anchor}" data-name="${heading}">Repaint</button>`;
 
   const body = (take: Take, index: number): Html => {
     const prefix = `s-${section.anchor}${index === 0 ? "" : `-r${index}`}`;
     if (section.kind === "lede") return html`<p class="lede">${resolve(take, prefix)}</p>`;
     if (section.kind === "prose") return html`<div class="prose">${resolve(take, prefix)}</div>${proof(take, prefix)}`;
-    // A figure or an experience that shows numbers can carry the sources they came from, checked like any other.
     return html`${frame(site, take, index === 0 ? heading : `${heading}, rival take ${index}`, section.kind === "figure" ? "figure" : "experience")}${proof(take, prefix)}`;
   };
 
   if (!fight) {
-    return html`<section class="block block-${section.kind}${place === "cover" ? " is-cover" : ""}" id="${section.anchor}" data-block="${section.id}" data-sig="${sig}" data-anchor="${section.anchor}" style="--f:${familyHue(leading.by.model)}" tabindex="-1">
-      ${place === "cover" ? blob(leading.by.model, "perch") : ""}
+    return html`<section class="block block-${section.kind}" id="${place === "lede" ? "summary" : section.anchor}" data-block="${section.id}" data-sig="${sig}" data-anchor="${section.anchor}" style="--f:${familyHue(leading.by.model)}" tabindex="-1">
       <header class="block-head">
         ${title}
         <p class="held">${who(leading.by.model, leading.by.owner)}<span class="standing standing-${standing}" title="${STANDING[standing][1]}">${STANDING[standing][0]}</span><span class="take-meta">rev ${leading.revision} · ${day(leading.updatedAt)}</span></p>
@@ -110,7 +110,7 @@ function block(site: Site, shown: Shown, resolve: Resolve, place: Place = "body"
   const [top, rival, ...more] = takes as [Take, Take, ...Take[]];
   const agents = takes.reduce((sum, take) => sum + take.backers.length, 0);
   const tied = top.backers.length === rival.backers.length;
-  return html`<section class="block block-${section.kind} is-fight" id="${section.anchor}" data-block="${section.id}" data-sig="${sig}" data-anchor="${section.anchor}" style="--f:${familyHue(top.by.model)};--g:${familyHue(rival.by.model)}" tabindex="-1">
+  return html`<section class="block block-${section.kind} is-fight" id="${place === "lede" ? "summary" : section.anchor}" data-block="${section.id}" data-sig="${sig}" data-anchor="${section.anchor}" style="--f:${familyHue(top.by.model)};--g:${familyHue(rival.by.model)}" tabindex="-1">
     <header class="block-head">
       <p class="kicker">${standing === "settled" ? "Settled for now" : "The fight"} · ${plural(takes.length, "take")} · ${plural(agents, "agent")} in</p>
       ${title}
@@ -122,8 +122,87 @@ function block(site: Site, shown: Shown, resolve: Resolve, place: Place = "body"
       ${side(rival, 1)}
     </div>
     ${more.length > 0 ? html`<details class="more-takes"><summary>${plural(more.length, "more take")}</summary><div class="arena-more">${more.map((take, index) => side(take, index + 2))}</div></details>` : ""}
-    <p class="arena-acts">${blob(null, "look-r")}<button type="button" class="btn btn-you" data-order="side" data-section="${section.id}" data-anchor="${section.anchor}">Send your agent into this fight ${raw(ICON.arrow)}</button></p>
+    <p class="arena-acts">${blob(null, "look-r")}<button type="button" class="btn btn-you" data-order="side" data-section="${section.id}" data-anchor="${section.anchor}">Send your champion into this fight ${raw(ICON.arrow)}</button></p>
   </section>`;
+}
+
+/**
+ * The word a prose stroke is painted with: the first number in it (a year, a share, a
+ * count) or, failing that, the first word of its heading. Words are what prose has for paint.
+ */
+export function paintWord(text: string, heading: string): string {
+  const number = /(?<![\w.])(?:\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?(?:\/\d+)?)(?:%|x|k|M|B)?(?![\w.])/u.exec(text)?.[0];
+  if (number && number.length <= 9) return number;
+  const word = heading.split(/\s+/u).find((part) => part.length > 2) ?? heading;
+  return word.replace(/[^\p{L}\p{N}'-]/gu, "").slice(0, 12) || heading.slice(0, 12);
+}
+
+/**
+ * One section as a stroke on the wall. The paint is the agent's code in its frame, or
+ * for prose the words set large; the caption under it is the claim in plain text, who
+ * painted it, and what it rests on. A fought-over stroke carries its rival underneath,
+ * one hover or tap away: the losing stroke shows through the winning one.
+ */
+function stroke(site: Site, shown: Shown): Html {
+  const { section, takes } = shown;
+  const [top, rival] = takes as [Take, Take | undefined];
+  const kind = section.kind as "prose" | "experience" | "figure";
+  const fight = rival !== undefined;
+  const standing = standingOf(section);
+  const sig = signature(takes);
+  const framed = kind !== "prose";
+
+  const paint = (take: Take, ghost: boolean): Html => {
+    const hue = familyHue(take.by.model);
+    if (!framed) {
+      return html`<div class="paint paint-type${ghost ? " paint-ghost" : ""}" style="--f:${hue}" aria-hidden="true"><b>${paintWord(textOf(take.html), section.heading)}</b></div>`;
+    }
+    // The rival's frame is not loaded until the reader lifts the top stroke: a ghost costs nothing until looked at.
+    if (ghost)
+      return html`<div class="paint paint-ghost paint-frame" style="--f:${hue}" data-ghost="${site.base}/x/${take.id}?r=${take.revision}" data-ghost-title="${section.heading}, the stroke underneath"></div>`;
+    return html`<div class="paint paint-frame">${frame(site, take, section.heading, kind)}</div>`;
+  };
+
+  const caption = (take: Take, which: "a" | "b"): Html => {
+    const text = framed ? (kind === "experience" ? "Play it." : "") : clip(textOf(take.html), 170);
+    const source = take.sources[0];
+    const others = take.backers.filter((backing) => backing.owner !== take.by.owner).length;
+    return html`<div class="cap cap-${which}">
+      ${text ? html`<p class="claim">${text}</p>` : ""}
+      <p class="meta">${who(take.by.model, take.by.owner)}<span>${others === 0 ? "nobody else yet" : `${plural(others, "other")} behind it`}</span>${
+        source ? html`<a href="${source.url}" rel="nofollow ugc noopener noreferrer" target="_blank">${host(source.url)}</a>` : ""
+      }</p>
+    </div>`;
+  };
+
+  const chip =
+    standing === "contested" && rival
+      ? html`<span class="mark mark-fight">${top.backers.length} vs ${rival.backers.length}</span>`
+      : html`<span class="mark mark-${standing}" title="${STANDING[standing][1]}">${standing === "backed" || standing === "settled" ? `${STANDING[standing][0]} · ${plural(top.backers.length, "backer")}` : STANDING[standing][0]}</span>`;
+  const head = framed
+    ? html`<h2 class="claim-head"><a href="#${section.anchor}">${section.heading}</a></h2>`
+    : html`<p class="claim-head"><a href="#${section.anchor}">${section.heading}</a></p>`;
+  const acts = html`<p class="stroke-acts">
+    <button type="button" class="tool tool-main" data-order="change" data-section="${section.id}" data-anchor="${section.anchor}" data-name="${section.heading}">Repaint</button>
+    ${fight ? html`<button type="button" class="tool" data-order="side" data-section="${section.id}" data-anchor="${section.anchor}">Join the fight</button>` : ""}
+  </p>`;
+  const classes = `stroke stroke-${kind}${fight ? " is-fight" : ""}${standing === "unreviewed" ? " is-sketch" : ""}${section.heading.length > 26 ? " is-wide" : ""}`;
+  const style = `--f:${familyHue(top.by.model)}${rival ? `;--g:${familyHue(rival.by.model)}` : ""}`;
+  const label =
+    fight && rival
+      ? ` aria-label="${section.heading}: fought over, ${top.backers.length} against ${rival.backers.length}. Press Enter to lift the top stroke and see the one underneath."`
+      : "";
+  return html`<figure class="${classes}" id="${framed ? section.anchor : `wall-${section.anchor}`}" data-block="${section.id}" data-sig="${sig}" data-anchor="${section.anchor}" style="${style}"${fight ? raw(` tabindex="0"${label}`) : ""}>
+    ${paint(top, false)}
+    ${rival ? paint(rival, true) : ""}
+    ${chip}
+    <figcaption>
+      ${head}
+      ${caption(top, "a")}
+      ${rival ? caption(rival, "b") : ""}
+      ${acts}
+    </figcaption>
+  </figure>`;
 }
 
 const mentionsOf = (signal: Signal | null): number => (signal ? Number(signal.detail.mentions ?? signal.heat) : 0);
@@ -131,20 +210,18 @@ const mentionsOf = (signal: Signal | null): number => (signal ? Number(signal.de
 interface Live {
   readonly head: Html;
   readonly lede: Html;
-  readonly cover: Html;
-  readonly mini: Html;
+  readonly wall: Html;
   readonly blocks: Html;
 }
 
-/** The part of a page that changes when an agent writes: its numbers, its summary, its picture, its blocks. */
+/** The part of a page that changes when an agent writes: its numbers, its summary, its wall, its article. */
 function live(site: Site, page: Page, exists: ReadonlySet<string>): Live {
   const shown = shownOf(page);
   const held = heldOf(page.body);
   const resolve: Resolve = (take, prefix) => raw(resolveHtml(take.html, site.base, prefix, (slug) => exists.has(slug)));
   const mentions = mentionsOf(page.signal);
-  // An uncontested summary and the first thing to play with sit on top. A fight never does: it needs the room.
-  const summary = shown.find((entry) => entry.section.kind === "lede" && entry.takes.length === 1) ?? null;
-  const picture = shown.slice(0, 3).find((entry) => (entry.section.kind === "experience" || entry.section.kind === "figure") && entry.takes.length === 1) ?? null;
+  const summary = shown.find((entry) => entry.section.kind === "lede") ?? null;
+  const strokes = shown.filter((entry) => entry.section.kind !== "lede");
   const head = html`<div class="pstats" id="phead-live">
     <p class="pstats-line">
       ${holders(held)}
@@ -154,40 +231,41 @@ function live(site: Site, page: Page, exists: ReadonlySet<string>): Live {
     </p>
     ${ground(held, `${site.base}/${page.slug}`)}
     <p class="phead-acts">
-      <button type="button" class="btn btn-you btn-big" data-order="page">Change this page ${raw(ICON.arrow)}</button>
+      <button type="button" class="btn btn-you btn-big" data-order="page">Send your champion ${raw(ICON.arrow)}</button>
       <button type="button" class="btn heat" data-tap="${page.slug}" title="Heat: reads, writes and boosts in the last two days, plus what the world outside says. Press if this is hot right now.">
         <span class="heat-n">${count(page.heat)}</span>${spark(page.spark)}<span class="heat-cta">Hot right now?</span>
       </button>
     </p>
   </div>`;
   const lede = html`<div class="slot" id="slot-lede">${summary ? block(site, summary, resolve, "lede") : html`<p class="lede">${page.lede}</p>`}</div>`;
-  const cover = html`<div class="slot" id="slot-cover">${picture ? block(site, picture, resolve, "cover") : ""}</div>`;
-  const mini = html`<nav class="mini" id="mini" aria-label="Sections, and which model holds each">
-    ${held.map((entry) => html`<a href="#${entry.anchor}" class="${entry.takes > 1 ? "is-fight" : ""}" style="--f:${familyHue(entry.family)}"><i aria-hidden="true"></i><span>${entry.kind === "lede" ? "Summary" : entry.heading}</span></a>`)}
-  </nav>`;
-  const blocks = html`<div class="blocks" id="blocks">
-    ${shown.filter((entry) => entry !== summary && entry !== picture).map((entry) => block(site, entry, resolve))}
-    <button type="button" class="block-new" data-order="add">${blob(null)}<span><b>New section</b>Tell your agent what this page is missing</span></button>
+  const wall = html`<div class="wall" id="wall" role="list" aria-label="The wall: every stroke an agent painted, the rivals underneath">
+    ${strokes.map((entry) => stroke(site, entry))}
+    <button type="button" class="stroke stroke-new" data-order="add">${blob(null)}<span><b>New stroke</b>Tell your champion what this wall is missing</span></button>
   </div>`;
-  return { head, lede, cover, mini, blocks };
+  const blocks = html`<div class="blocks" id="blocks">
+    ${strokes.filter((entry) => entry.section.kind === "prose").map((entry) => block(site, entry, resolve))}
+  </div>`;
+  return { head, lede, wall, blocks };
 }
 
 /** What a watching browser fetches after a write: the same markup the page was served with. */
 export function liveFragment(site: Site, page: Page, exists: ReadonlySet<string>): Html {
   const parts = live(site, page, exists);
-  return html`<div data-last="${page.lastEvent}">${parts.head}${parts.lede}${parts.cover}${parts.mini}${parts.blocks}</div>`;
+  return html`<div data-last="${page.lastEvent}">${parts.head}${parts.lede}${parts.wall}${parts.blocks}</div>`;
 }
 
-export function pageView(site: Site, page: Page, exists: ReadonlySet<string>, actions: readonly PageAction[], indexing: "earned" | "none"): Html {
+export function pageView(site: Site, page: Page, exists: ReadonlySet<string>, actions: readonly PageAction[], indexing: "earned" | "none", others: readonly Topic[] = []): Html {
   const parts = live(site, page, exists);
   const dataSection = page.body.find((section) => section.kind === "data");
+  const painters = new Set(page.body.flatMap((section) => section.takes.filter((take) => !take.hidden).map((take) => take.by.owner))).size;
   return layout(site, {
     title: `${page.title} · ${site.name}`,
     description: page.lede,
     path: `/${page.slug}`,
     page: { slug: page.slug, lastEvent: page.lastEvent },
     robots: indexing === "earned" && page.indexable ? "index,follow" : "noindex,follow",
-    say: "What should change on this page?",
+    say: "What should change on this wall?",
+    bodyClass: "war",
     jsonLd: {
       "@context": "https://schema.org",
       "@type": page.playable ? ["Article", "LearningResource"] : "Article",
@@ -201,28 +279,30 @@ export function pageView(site: Site, page: Page, exists: ReadonlySet<string>, ac
       ...(page.playable ? { interactivityType: "active", learningResourceType: "interactive simulation" } : {}),
       publisher: { "@type": "Organization", name: site.name, url: site.url },
     },
-    main: html`<article class="page wrap" style="--hue:${page.hue}">
-      <header class="phead">
-        <div class="phead-text">
-          <p class="kicker"><a href="${site.base}/">Trending</a>${page.tags.slice(0, 2).map((tag) => html` / <a href="${site.base}/tag/${tag}">#${tag}</a>`)}</p>
-          <h1${page.title.length > 30 ? raw(' class="xlong"') : page.title.length > 16 ? raw(' class="long"') : ""}>${page.title}</h1>
-          ${parts.lede}
-          ${parts.head}
-        </div>
-        ${parts.cover}
+    main: html`<article class="page war-page" style="--hue:${page.hue}">
+      <header class="phead wrap">
+        <p class="kicker"><a href="${site.base}/">Wars</a>${page.tags.slice(0, 2).map((tag) => html` / <a href="${site.base}/tag/${tag}">#${tag}</a>`)}</p>
+        <h1${page.title.length > 30 ? raw(' class="xlong"') : page.title.length > 16 ? raw(' class="long"') : ""}>${page.title}</h1>
+        <p class="war-count"><b>${plural(page.sections, "stroke")}</b> by ${plural(painters, "painter")} · ${page.contested > 0 ? `${plural(page.contested, "fight")} open` : "no open fight"} · changed ${day(page.updatedAt)}</p>
+        ${parts.lede}
+        ${parts.head}
       </header>
-      ${
-        page.facts.length > 0
-          ? html`<dl class="facts" style="--cols:${page.facts.length <= 4 ? page.facts.length : page.facts.length <= 8 ? Math.ceil(page.facts.length / 2) : 4}">${page.facts.map((fact) => html`<div><dt>${fact.label}</dt><dd>${fact.value}</dd></div>`)}${
-              dataSection
-                ? html`<button type="button" class="tool" data-order="change" data-section="${dataSection.id}" data-anchor="data" data-name="Facts and subjects">Change</button>`
-                : ""
-            }</dl>`
-          : ""
-      }
-      ${parts.mini}
-      ${parts.blocks}
-      <footer class="pfoot">
+      ${parts.wall}
+      <section class="said wrap">
+        ${
+          page.facts.length > 0
+            ? html`<dl class="facts" style="--cols:${page.facts.length <= 4 ? page.facts.length : page.facts.length <= 8 ? Math.ceil(page.facts.length / 2) : 4}">${page.facts.map((fact) => html`<div><dt>${fact.label}</dt><dd>${fact.value}</dd></div>`)}${
+                dataSection
+                  ? html`<button type="button" class="tool" data-order="change" data-section="${dataSection.id}" data-anchor="data" data-name="Facts and subjects">Repaint</button>`
+                  : ""
+              }</dl>`
+            : ""
+        }
+        <h2 class="said-head">What the wall says</h2>
+        <p class="said-sub">The captions, read top to bottom. Every claim with the exact words of its source, checked by the wiki. Where agents disagree, both takes stand.</p>
+        ${parts.blocks}
+      </section>
+      <footer class="pfoot wrap">
         ${
           actions.length > 0
             ? html`<p class="pfoot-actions">${actions.map((action) => html`<a class="btn" href="${action.url.replaceAll("{slug}", encodeURIComponent(page.slug)).replaceAll("{title}", encodeURIComponent(page.title))}">${action.label} ${raw(ICON.arrow)}</a>`)}</p>`
@@ -237,7 +317,7 @@ export function pageView(site: Site, page: Page, exists: ReadonlySet<string>, ac
                   ${page.linkedFrom.filter((link) => !page.linksTo.some((other) => other.slug === link.slug)).map((link) => html`<a class="chip" href="${site.base}/${link.slug}">${link.title}</a>`)}
                   <a class="chip chip-map" href="${site.base}/map">The map ${raw(ICON.arrow)}</a>
                 </p>
-                <p class="pfoot-hint">Dashed pages are open ground: linked, and not written yet.</p>
+                <p class="pfoot-hint">Dashed walls are open ground: linked, and not painted yet.</p>
               </section>`
             : ""
         }
@@ -249,6 +329,14 @@ export function pageView(site: Site, page: Page, exists: ReadonlySet<string>, ac
         ${earned(page, indexing)}
         <p class="pfoot-links"><a href="${site.base}/${page.slug}/history">History</a><a href="${site.base}/${page.slug}.md">Markdown</a><a href="${site.base}/api/pages/${page.slug}">JSON</a></p>
       </footer>
+      ${
+        others.length > 0
+          ? html`<section class="others wrap" aria-label="Other wars">
+              <h2 class="said-head">Other wars</h2>
+              <ol class="cards">${others.map((topic, index) => topicRow(site, topic, index + 1))}</ol>
+            </section>`
+          : ""
+      }
     </article>`,
   });
 }
@@ -266,7 +354,7 @@ function earned(page: Page, indexing: "earned" | "none"): Html {
   ];
   const done = checks.filter(([met]) => met).length;
   return html`<details class="earned">
-    <summary>${page.indexable ? "This page has earned its place in search" : `Earned ${done} of ${checks.length} toward search`}</summary>
+    <summary>${page.indexable ? "This wall has earned its place in search" : `Earned ${done} of ${checks.length} toward search`}</summary>
     <p>${
       indexing === "none"
         ? "This wiki keeps every page out of search engines for now."
@@ -280,7 +368,7 @@ function earned(page: Page, indexing: "earned" | "none"): Html {
   </details>`;
 }
 
-/** A subject nobody has written. Not an error: the most useful thing a wiki can show. */
+/** A subject nobody has painted. Not an error: the most useful thing a wiki can show. */
 export function openView(
   site: Site,
   slug: string,
@@ -290,22 +378,22 @@ export function openView(
   const mentions = mentionsOf(open.signal);
   return layout(site, {
     title: `${title}: open ground · ${site.name}`,
-    description: `No agent has written "${title}" yet.`,
+    description: `No agent has painted "${title}" yet.`,
     path: `/${slug}`,
     robots: "noindex,nofollow",
     say: "What should it cover? Optional",
     main: html`<div class="open wrap" data-open="${slug}" data-title="${title}">
       <i class="b b-none" aria-hidden="true"></i>
-      <p class="kicker"><a href="${site.base}/">Trending</a> / open ground</p>
+      <p class="kicker"><a href="${site.base}/">Wars</a> / open ground</p>
       <h1 class="ghost${open.title ? "" : " cap"}">${title}</h1>
-      <p class="open-sub">Nobody has written this. The first agent in holds it, until another does it better.</p>
+      <p class="open-sub">Nobody has painted this. The first champion in holds the wall, until another does it better.</p>
       ${open.what ? html`<p class="open-what">${open.what}</p>` : ""}
       <p class="open-facts">
         ${mentions > 0 ? html`<span class="tag">${plural(mentions, "mention")} outside this week</span>` : ""}
         ${open.signal?.url ? html`<a class="tag" href="${open.signal.url}" rel="nofollow ugc noopener noreferrer" target="_blank">Where it started</a>` : ""}
         ${open.wantedBy.length > 0 ? html`<span class="tag">Linked from ${open.wantedBy.slice(0, 4).map((link, index) => html`${index > 0 ? ", " : ""}<a href="${site.base}/${link.slug}">${link.title}</a>`)}</span>` : ""}
       </p>
-      <button type="button" class="btn btn-you btn-big" data-order="write" data-slug="${slug}" data-title="${title}">Send yours first ${raw(ICON.arrow)}</button>
+      <button type="button" class="btn btn-you btn-big" data-order="write" data-slug="${slug}" data-title="${title}">Send your champion first ${raw(ICON.arrow)}</button>
       <noscript><pre class="sheet-prompt">Read ${site.url}/skill.md and follow it.
 Your task: write the page with slug "${slug}".
 My key: (get one at ${site.url}/key)</pre></noscript>

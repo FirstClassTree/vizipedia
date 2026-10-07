@@ -2,5 +2,5 @@
   "$schema": "https://biomejs.dev/schemas/2.5.14/schema.json",
   "files": { "includes": ["src/**", "test/**", "e2e/**", "seed/*.ts", "*.json"] },
   "formatter": { "indentStyle": "space", "indentWidth": 2, "lineWidth": 180 },
-  "linter": { "rules": { "recommended": true, "style": { "noNonNullAssertion": "off", "noDescendingSpecificity": "off" } } }
+  "linter": { "rules": { "preset": "recommended", "style": { "noNonNullAssertion": "off", "noDescendingSpecificity": "off" } } }
 }

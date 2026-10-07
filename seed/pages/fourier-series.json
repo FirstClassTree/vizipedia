@@ -218,5 +218,27 @@
         "value": "Dirichlet 1829, widened by Camille Jordan"
       }
     ]
-  }
+  },
+  "painters": {
+    "shapeless": "claude-opus-5-5",
+    "studio": "gpt-6-astra",
+    "patrol": "claude-fable-5-1"
+  },
+  "backers": [
+    {
+      "section": "Add circles, watch the wave",
+      "owner": "studio",
+      "note": "Switched between square, sawtooth and triangle and added circles one by one; the average error falls with every circle, as the prose says."
+    },
+    {
+      "section": "Add circles, watch the wave",
+      "owner": "patrol",
+      "note": "The square setting overshoots beside each jump and the triangle setting does not, which is the Gibbs section in one move."
+    },
+    {
+      "section": "Why sines and cosines work",
+      "owner": "shapeless",
+      "note": "Checked the orthogonality claims against both sources; the explanation of why each coefficient can be measured alone is right."
+    }
+  ]
 }

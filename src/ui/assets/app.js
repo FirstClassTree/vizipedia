@@ -193,15 +193,18 @@ function promptFor(order, key) {
 /** A key as it is shown: enough to recognise, not enough to use. The copy carries the whole key. */
 const masked = (key) => (key ? `${key.slice(0, 8)}${"•".repeat(10)}` : key);
 
-const ORDER_NAME = { change: "Change", side: "Pick a side", add: "New section", page: "This page", write: "Write", free: "Order" };
+const ORDER_NAME = { change: "Repaint", side: "Join the fight", add: "New stroke", page: "This wall", write: "Paint", free: "Order" };
 const ORDER_ASK = {
   change: "What should change?",
-  side: "Anything your agent should know? Optional",
-  add: "What is this page missing?",
-  page: "What should change on this page?",
+  side: "Anything your champion should know? Optional",
+  add: "What is this wall missing?",
+  page: "What should change on this wall?",
   write: "What should it cover? Optional",
-  free: "What should your agent do?",
+  free: "What should your champion do?",
 };
+
+/** A section lives on the page as a stroke on the wall and, for prose, as a block in the article under it. */
+const ownBlocks = (sectionId) => document.querySelectorAll(`[data-block="${CSS.escape(sectionId)}"]`);
 
 const say = $("say");
 const sheet = $("sheet");
@@ -210,12 +213,12 @@ const state = { order: null, copiedAt: 0, hit: 0, found: [] };
 
 function paintOrder() {
   const order = state.order;
-  for (const block of document.querySelectorAll(".block.is-target")) block.classList.remove("is-target");
+  for (const block of document.querySelectorAll(".is-target")) block.classList.remove("is-target");
   $("target").hidden = !order;
   sheet.hidden = !order;
   say.placeholder = order ? ORDER_ASK[order.kind] : say.dataset.say;
   if (!order) return;
-  if (order.section) document.querySelector(`[data-block="${order.section}"]`)?.classList.add("is-target");
+  if (order.section) for (const node of ownBlocks(order.section)) node.classList.add("is-target");
   const subject =
     order.kind === "write"
       ? order.title
@@ -244,7 +247,7 @@ function openOrder(order) {
 }
 
 function closeOrder() {
-  for (const block of document.querySelectorAll(".block.is-waiting")) block.classList.remove("is-waiting");
+  for (const block of document.querySelectorAll(".is-waiting")) block.classList.remove("is-waiting");
   state.order = null;
   paintOrder();
 }
@@ -282,7 +285,7 @@ async function copyOrder() {
       if (state.copiedAt) sheet.dataset.slim = "";
     }, 1400);
   }
-  if (order.section) document.querySelector(`[data-block="${order.section}"]`)?.classList.add("is-waiting");
+  if (order.section) for (const node of ownBlocks(order.section)) node.classList.add("is-waiting");
   const entry = keys.get();
   if (entry && !entry.active) watchKey(settleOrder);
   listen();
@@ -318,7 +321,7 @@ function landedOrder(change) {
     ` ${took} after you copied.`,
     ...(change.page && change.page.slug !== slug ? [el("a", { className: "btn", href: `${base}/${change.page.slug}`, textContent: "Open the page" })] : []),
   );
-  for (const block of document.querySelectorAll(".block.is-waiting")) block.classList.remove("is-waiting");
+  for (const block of document.querySelectorAll(".is-waiting")) block.classList.remove("is-waiting");
   state.copiedAt = 0;
 }
 
@@ -512,7 +515,7 @@ document.addEventListener("keydown", (event) => {
     return;
   }
   if (field) return;
-  const blocks = [...document.querySelectorAll(".block")];
+  const blocks = [...document.querySelectorAll(".stroke[data-block], .block")];
   if (blocks.length === 0) return;
   const at = blocks.indexOf(document.activeElement?.closest?.(".block") ?? null);
   if (event.key === "j" || event.key === "k") {
@@ -532,9 +535,47 @@ addEventListener("message", (event) => {
   if (data?.ow !== "height" || typeof data.height !== "number") return;
   for (const frame of document.querySelectorAll("iframe.xp")) {
     if (frame.contentWindow !== event.source) continue;
-    frame.style.height = `${Math.max(120, Math.min(960, Math.round(data.height)))}px`;
+    // On the wall a frame fills its stroke; in the article it grows to its content.
+    if (!frame.closest(".stroke")) frame.style.height = `${Math.max(120, Math.min(960, Math.round(data.height)))}px`;
     return;
   }
+});
+
+// ---- the wall ---------------------------------------------------------------------------
+// A fought-over stroke carries its rival underneath. Hovering (a mouse), tapping (a finger)
+// or pressing Enter lifts the top stroke so the one underneath shows. The rival's frame is
+// only loaded the first time it is looked at.
+function lift(stroke, on) {
+  stroke.classList.toggle("on", on);
+  const ghost = stroke.querySelector("[data-ghost]");
+  if (!on || !ghost) return;
+  const frame = el("iframe", { className: "xp xp-experience", title: ghost.dataset.ghostTitle ?? "", src: ghost.dataset.ghost });
+  frame.setAttribute("sandbox", "allow-scripts");
+  frame.setAttribute("referrerpolicy", "no-referrer");
+  ghost.replaceChildren(frame);
+  delete ghost.dataset.ghost;
+}
+const fought = (node) => (node instanceof Element ? node.closest(".stroke.is-fight") : null);
+let lastPointer = "mouse";
+document.addEventListener("pointerdown", (event) => (lastPointer = event.pointerType));
+document.addEventListener("pointerover", (event) => {
+  const stroke = fought(event.target);
+  if (stroke && event.pointerType === "mouse" && !stroke.contains(event.relatedTarget)) lift(stroke, true);
+});
+document.addEventListener("pointerout", (event) => {
+  const stroke = fought(event.target);
+  if (stroke && event.pointerType === "mouse" && !stroke.contains(event.relatedTarget)) lift(stroke, false);
+});
+document.addEventListener("click", (event) => {
+  const stroke = fought(event.target);
+  if (stroke && lastPointer !== "mouse" && !event.target.closest("a, button")) lift(stroke, !stroke.classList.contains("on"));
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" && event.key !== " ") return;
+  const stroke = fought(event.target);
+  if (!stroke || event.target !== stroke) return;
+  event.preventDefault();
+  lift(stroke, !stroke.classList.contains("on"));
 });
 
 // ---- time -----------------------------------------------------------------------------
@@ -558,22 +599,6 @@ retime();
 setInterval(retime, 30_000);
 
 if (slug) navigator.sendBeacon?.(`${base}/api/views/${slug}`);
-
-// ---- which section is on screen -------------------------------------------------------
-const onScreen = new IntersectionObserver(
-  (entries) => {
-    for (const entry of entries) {
-      if (!entry.isIntersecting) continue;
-      for (const link of document.querySelectorAll("#mini a")) link.toggleAttribute("aria-current", link.getAttribute("href") === `#${entry.target.id}`);
-    }
-  },
-  { rootMargin: "-15% 0px -65% 0px" },
-);
-const watchBlocks = () => {
-  onScreen.disconnect();
-  for (const block of document.querySelectorAll(".block[id]")) onScreen.observe(block);
-};
-watchBlocks();
 
 // ---- live -----------------------------------------------------------------------------
 const liveDot = $("live");
@@ -610,46 +635,49 @@ function markLanded(block, changes) {
   setTimeout(() => block.classList.remove("is-landed"), 4200);
 }
 
-/** Swap in what changed and nothing else, so a frame someone is playing with keeps running. */
+/** One list of sections (the wall, the article): swap in what changed and nothing else, so a frame someone is playing with keeps running. */
+function syncSections(id, fresh, changes) {
+  const list = $(id);
+  const next = fresh.getElementById(id);
+  if (!list || !next) return;
+  const old = new Map([...list.querySelectorAll(":scope > [data-block]")].map((node) => [node.dataset.block, node]));
+  let before = null;
+  for (const node of [...next.querySelectorAll(":scope > [data-block]")]) {
+    const have = old.get(node.dataset.block);
+    old.delete(node.dataset.block);
+    if (have && have.dataset.sig === node.dataset.sig) {
+      before = have;
+      continue;
+    }
+    if (have) have.replaceWith(node);
+    else if (before) before.after(node);
+    else list.prepend(node);
+    before = node;
+    markLanded(node, changes);
+  }
+  for (const gone of old.values()) gone.remove();
+}
+
 async function refreshPage(changes) {
   const response = await fetch(`${base}/_/page/${slug}`, { cache: "no-store" }).catch(() => null);
   if (!response?.ok) return;
   const fresh = new DOMParser().parseFromString(await response.text(), "text/html");
-  for (const id of ["phead-live", "mini"]) {
-    const next = fresh.getElementById(id);
-    if (next) $(id)?.replaceWith(next);
-  }
-  // The summary and the picture on top each have one place. What sits there changes only when it is a different thing.
+  const next = fresh.getElementById("phead-live");
+  if (next) $("phead-live")?.replaceWith(next);
+  // The summary on top has one place. What sits there changes only when it is a different thing.
   const held = (slot) => slot.querySelector("[data-block]");
   const mark = (slot) => `${held(slot)?.dataset.block ?? ""}:${held(slot)?.dataset.sig ?? slot.textContent}`;
-  for (const id of ["slot-lede", "slot-cover"]) {
-    const now = $(id);
-    const next = fresh.getElementById(id);
-    if (!now || !next || mark(now) === mark(next)) continue;
-    now.replaceChildren(...next.children);
+  const now = $("slot-lede");
+  const lede = fresh.getElementById("slot-lede");
+  if (now && lede && mark(now) !== mark(lede)) {
+    now.replaceChildren(...lede.children);
     if (held(now)) markLanded(held(now), changes);
   }
-  const blocks = $("blocks");
-  const old = new Map([...blocks.querySelectorAll(":scope > [data-block]")].map((node) => [node.dataset.block, node]));
-  let before = null;
-  for (const next of [...fresh.querySelectorAll("#blocks > [data-block]")]) {
-    const have = old.get(next.dataset.block);
-    old.delete(next.dataset.block);
-    if (have && have.dataset.sig === next.dataset.sig) {
-      before = have;
-      continue;
-    }
-    if (have) have.replaceWith(next);
-    else if (before) before.after(next);
-    else blocks.prepend(next);
-    before = next;
-    markLanded(next, changes);
-  }
-  for (const gone of old.values()) gone.remove();
+  syncSections("wall", fresh, changes);
+  syncSections("blocks", fresh, changes);
   retime();
-  watchBlocks();
   if (state.order) paintOrder();
-  if (state.order?.section && state.copiedAt) document.querySelector(`[data-block="${state.order.section}"]`)?.classList.add("is-waiting");
+  if (state.order?.section && state.copiedAt) for (const node of ownBlocks(state.order.section)) node.classList.add("is-waiting");
 }
 
 async function refreshLists(from) {

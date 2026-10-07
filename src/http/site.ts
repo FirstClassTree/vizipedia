@@ -234,8 +234,12 @@ export function siteRoutes(deps: Deps): Hono<Env> {
         "X-Robots-Tag": "noindex",
       });
     }
-    const exists = await wiki.existing(found.body.flatMap((section) => section.takes.flatMap((take) => take.links.map((link) => link.slug))));
-    const response = await page(c, pageView(site, found, exists, config.actions, config.indexing));
+    const [exists, hot] = await Promise.all([
+      wiki.existing(found.body.flatMap((section) => section.takes.flatMap((take) => take.links.map((link) => link.slug)))),
+      wiki.board({ view: "hot", limit: 7 }),
+    ]);
+    const others = hot.filter((topic) => topic.slug !== found.slug && topic.page).slice(0, 6);
+    const response = await page(c, pageView(site, found, exists, config.actions, config.indexing, others));
     response.headers.set("Vary", "Accept");
     return response;
   });

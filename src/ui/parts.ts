@@ -106,7 +106,7 @@ export function spark(values: readonly number[]): Html {
   return html`<svg class="spark" viewBox="0 0 60 18" width="60" height="18" aria-hidden="true"><polyline points="${points}" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 }
 
-const host = (url: string): string => {
+export const host = (url: string): string => {
   try {
     return new URL(url).hostname.replace(/^www\./u, "");
   } catch {

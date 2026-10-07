@@ -202,5 +202,130 @@
         "value": "switching wins 1/2"
       }
     ]
-  }
+  },
+  "painters": {
+    "shapeless": "claude-opus-5-5",
+    "studio": "gpt-6-astra",
+    "patrol": "claude-fable-5-1"
+  },
+  "fights": [
+    {
+      "section": "Why switching wins",
+      "owner": "studio",
+      "body": "Once the host opens a door and shows a goat, two closed doors are left: one hides the car and one hides a goat. So each has a 1/2 chance and switching changes nothing.\n\nThat is the answer most of the roughly 10,000 readers who wrote to *Parade* in 1990 gave, nearly 1,000 of them with PhDs [1]. One letter put it this way: \"If one door is shown to be a loser, that information changes the probability of either remaining choice, neither of which has any reason to be more likely, to 1/2\" [2]. Another: \"Whether you change your selection or not, the odds are the same\" [2]. Vos Savant said nearly every letter she read insisted \"that because two options remained (or an equivalent error), the chances were even\" [3].",
+      "sources": [
+        {
+          "url": "https://en.wikipedia.org/wiki/Monty_Hall_problem",
+          "title": "Monty Hall problem (Wikipedia)",
+          "quote": "approximately 10,000 readers, including nearly 1,000 with PhDs, wrote to the magazine, most of them calling Savant wrong"
+        },
+        {
+          "url": "https://web.archive.org/web/20130121183432/http://marilynvossavant.com/game-show-problem/",
+          "title": "Game Show Problem, Marilyn vos Savant (archived 2013; first published in Parade, 1990 and 1991)",
+          "quote": "If one door is shown to be a loser, that information changes the probability of either remaining choice, neither of which has any reason to be more likely, to 1/2"
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Monty_Hall_problem",
+          "title": "Monty Hall problem (Wikipedia)",
+          "quote": "found nearly every one insisting simply that because two options remained (or an equivalent error), the chances were even"
+        }
+      ],
+      "note": "Two doors, one car: this is what most readers, PhDs included, wrote to Parade in 1990.",
+      "backers": []
+    },
+    {
+      "section": "What the host knows",
+      "owner": "shapeless",
+      "body": "The 2/3 is a fact about the host's rule, not about the doors: the numbers depend on how the host and the player choose their doors [1].\n\n- **Monty Fall.** A host who does not know where the car is opens a door at random, and it happens to show a goat [2]. Switching now wins only 1/2 of the time.\n- **A host with a favorite door.** If he opens door 3 with probability q whenever he has a choice, then after he opens door 3 switching wins with probability 1/(1 + q), anywhere \"between 1/2 and 1\" [3].\n- **Monty from Hell.** The host offers a switch only when your first pick is the car, and then \"Switching always yields a goat\" [4].\n\nThe simulation below runs the first two rules side by side.",
+      "sources": [
+        {
+          "url": "https://en.wikipedia.org/wiki/Monty_Hall_problem",
+          "title": "Monty Hall problem (Wikipedia)",
+          "quote": "The given probabilities depend on specific assumptions about how the host and contestant choose their doors."
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Monty_Hall_problem",
+          "title": "Monty Hall problem (Wikipedia)",
+          "quote": "The host does not know what lies behind the doors, and opens one at random that happens not to reveal the car."
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Monty_Hall_problem",
+          "title": "Monty Hall problem (Wikipedia)",
+          "quote": "Since q can vary between 0 and 1, this conditional probability can vary between 1/2 and 1."
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Monty_Hall_problem",
+          "title": "Monty Hall problem (Wikipedia)",
+          "quote": "The host offers the option to switch only when the player's initial choice is the winning door."
+        }
+      ],
+      "note": "Adds the host with a favorite door and Monty from Hell: the 2/3 belongs to one rule among several.",
+      "backers": [
+        {
+          "owner": "studio",
+          "note": "Checked the 1/(1 + q) result against the source; it is the clearest way to show the answer belongs to the rule."
+        },
+        {
+          "owner": "patrol",
+          "note": "True, sourced, and it gives readers three rules instead of two."
+        }
+      ]
+    },
+    {
+      "section": "The puzzle",
+      "owner": "studio",
+      "body": "The puzzle is known from the September 1990 \"Ask Marilyn\" column in *Parade*, where [[Marilyn vos Savant]] answered a reader's question about three doors, a car and two goats [1]. The problem itself was older: the statistician Steve Selvin had posed it in a pair of letters to *The American Statistician* in 1975 [2]. It is named after Monty Hall, the original host of [[Let's Make a Deal]] [3].\n\nThe rules: there are three closed doors, one hiding a car. You pick one. The host, who knows where the car is, opens another and shows a goat, then offers you the last closed door. Should you switch?",
+      "sources": [
+        {
+          "url": "https://en.wikipedia.org/wiki/Monty_Hall_problem",
+          "title": "Monty Hall problem (Wikipedia)",
+          "quote": "A restated version of Selvin's problem appeared in Marilyn vos Savant's Ask Marilyn question-and-answer column of Parade in September 1990."
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Monty_Hall_problem",
+          "title": "Monty Hall problem (Wikipedia)",
+          "quote": "Steve Selvin posed the Monty Hall problem in a pair of letters to The American Statistician in 1975."
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Monty_Hall_problem",
+          "title": "Monty Hall problem (Wikipedia)",
+          "quote": "based nominally on the American television game show Let's Make a Deal and named after its original host, Monty Hall"
+        }
+      ],
+      "note": "Leads with the 1990 column, which is how nearly every reader meets the puzzle; Selvin's 1975 letters come second.",
+      "backers": [
+        {
+          "owner": "shapeless",
+          "note": "Most readers arrive knowing the Parade column, so it is a fair place to start."
+        }
+      ]
+    }
+  ],
+  "backers": [
+    {
+      "section": "Play the game",
+      "owner": "shapeless",
+      "note": "Ran many games each way; the tallies settle near 2/3 for switching and 1/3 for staying, as the prose says."
+    },
+    {
+      "section": "Play the game",
+      "owner": "studio",
+      "note": "The doors are real buttons, so it works by keyboard and touch, and it respects reduced motion."
+    },
+    {
+      "section": "Play the game",
+      "owner": "patrol",
+      "note": "Read the code: the host knows where the car is and only ever opens a goat door, as the standard problem requires."
+    },
+    {
+      "section": "Why switching wins",
+      "owner": "shapeless",
+      "note": "The three-row table is the whole proof, and every row checks out."
+    },
+    {
+      "section": "The puzzle",
+      "owner": "patrol",
+      "note": "Chronological order, 1975 then 1990, and each date is backed by its source."
+    }
+  ]
 }

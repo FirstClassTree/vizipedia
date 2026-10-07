@@ -2,11 +2,12 @@
 // changes while they watch. Experiences run inside their locked frames, nothing on a page
 // talks to another origin, and nothing overflows a phone.
 import assert from "node:assert/strict";
-import { readdirSync, readFileSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import type { AddressInfo } from "node:net";
 import { after, before, test } from "node:test";
 import { serve } from "@hono/node-server";
 import { type Browser, chromium, type Page } from "playwright";
+import { seedDir } from "../seed/seed.ts";
 import { build } from "../src/server.ts";
 import { SOURCE } from "../test/helpers.ts";
 
@@ -26,14 +27,18 @@ before(async () => {
   origin = `http://localhost:${port}`;
   const { app, db } = await build({ DATA_DIR: ":memory:", VERIFY_SOURCES: "off", PORT: String(port), TRUSTED_OWNERS: "openwiki" });
   const server = serve({ fetch: app.fetch, port });
-  const made = await fetch(`${origin}/api/keys`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ handle: "openwiki" }) });
-  seedKey = ((await made.json()) as { key: string }).key;
-  const dir = new URL("../seed/pages/", import.meta.url);
-  for (const file of readdirSync(dir).filter((name) => name.endsWith(".json"))) {
-    const page = JSON.parse(readFileSync(new URL(file, dir), "utf8"));
-    const response = await write(seedKey, "/api/pages", { model: "claude-opus-5-5", ...page });
-    assert.equal(response.status, 201, `${file}: ${await response.clone().text()}`);
-  }
+  // The demo wars go in the way they do anywhere: through the API, fights and backers included.
+  const keys = new Map<string, string>();
+  const keyFor = async (handle: string): Promise<string> => {
+    const known = keys.get(handle);
+    if (known) return known;
+    const made = await fetch(`${origin}/api/keys`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ handle }) });
+    const key = ((await made.json()) as { key: string }).key;
+    keys.set(handle, key);
+    return key;
+  };
+  await seedDir({ url: origin, owner: "openwiki", model: "claude-opus-5-5", keyFor }, new URL("../seed/pages/", import.meta.url).pathname);
+  seedKey = await keyFor("openwiki");
   browser = await chromium.launch();
   close = async () => {
     await browser.close();
@@ -60,7 +65,7 @@ test("a person orders a change, their agent writes it, and the page changes whil
   const { page, errors } = await watched(1440, 900);
   await page.goto(`${origin}/monty-hall-problem`);
   await page.locator("#live[data-state=on]").waitFor();
-  const block = page.locator("#the-puzzle");
+  const block = page.locator("#why-it-fools-people");
   const sectionId = await block.getAttribute("data-block");
 
   // The order: one click on the section, a few words, one click to copy. The key comes with it.
@@ -68,7 +73,7 @@ test("a person orders a change, their agent writes it, and the page changes whil
   await page.locator("#say").fill("say who first posed it");
   const prompt = page.locator("#sheet-prompt");
   assert.match((await prompt.textContent()) ?? "", new RegExp(`Read ${origin}/skill.md and follow it`, "u"));
-  assert.match((await prompt.textContent()) ?? "", new RegExp(`section "the-puzzle" \\(section id ${sectionId}\\)\\. What to change: say who first posed it`, "u"));
+  assert.match((await prompt.textContent()) ?? "", new RegExp(`section "why-it-fools-people" \\(section id ${sectionId}\\)\\. What to change: say who first posed it`, "u"));
   await page.locator("#sheet-copy").click();
   await page.locator('#sheet-state[data-state="waiting"]').waitFor();
   const copied = await page.evaluate(() => navigator.clipboard.readText());
@@ -93,7 +98,7 @@ test("a person orders a change, their agent writes it, and the page changes whil
   assert.ok(await block.getByText("Steve Selvin posed it in 1975").isVisible(), "the take that just landed is the one on screen");
   assert.equal(await block.locator(".side-who").count(), 2, "two takes face each other");
   assert.match((await block.locator(".score").getAttribute("aria-label")) ?? "", /^1 against 1$/u);
-  assert.equal(await page.locator("#mini a.is-fight").count(), 1, "the ground shows the section is now fought over");
+  assert.ok(await page.locator("#wall .stroke.is-fight[data-anchor=why-it-fools-people]").isVisible(), "the stroke on the wall shows the section is now fought over");
   assert.deepEqual(errors, []);
   await page.close();
 });
@@ -161,7 +166,7 @@ test("the board lists every page, searches from the line, and its wire moves whe
   await page.close();
 });
 
-test("on a page, every experience runs in a frame with no origin, sized to its content, and nothing leaves this origin", async () => {
+test("on a page, every experience runs in a frame with no origin, fills its stroke with its content inside, and nothing leaves this origin", async () => {
   const { page, errors, requests } = await watched(1440, 900);
   await page.goto(`${origin}/monty-hall-problem`);
   const frames = page.locator("iframe.xp");
@@ -175,11 +180,12 @@ test("on a page, every experience runs in a frame with no origin, sized to its c
     assert.ok(inner);
     await inner.waitForFunction(() => document.body.innerText.trim().length > 0);
     assert.equal(await inner.evaluate(() => self.origin), "null", "the frame has an opaque origin");
+    // On the wall a frame is the whole paint of its stroke, and what the agent built fits in it without scrolling.
     const inside = await inner.evaluate(() => Math.ceil(document.documentElement.getBoundingClientRect().height));
-    await page.waitForFunction(([node, wanted]) => Math.abs((node as HTMLElement).getBoundingClientRect().height - Math.max(120, Math.min(960, wanted as number))) <= 2, [
-      await element.elementHandle(),
-      inside,
-    ] as const);
+    const frame = await element.boundingBox();
+    const paint = await element.locator("xpath=..").boundingBox();
+    assert.ok(frame && paint && Math.abs(frame.height - paint.height) <= 2, `frame ${index} fills its stroke`);
+    assert.ok(frame && inside <= frame.height, `frame ${index}: content ${inside}px fits in ${frame.height}px`);
   }
   const foreign = requests.filter((url) => !url.startsWith(origin) && !url.startsWith("data:") && !url.startsWith("blob:"));
   assert.deepEqual(foreign, [], "no request to any other origin");

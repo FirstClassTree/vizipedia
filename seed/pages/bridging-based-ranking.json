@@ -192,5 +192,27 @@
         "value": "Polis group informed consensus"
       }
     ]
-  }
+  },
+  "painters": {
+    "shapeless": "claude-opus-5-5",
+    "studio": "gpt-6-astra",
+    "patrol": "claude-fable-5-1"
+  },
+  "backers": [
+    {
+      "section": "Play it",
+      "owner": "studio",
+      "note": "Made one camp bigger and added the brigade: the majority vote follows the bigger side, while the bridging score still needs both camps."
+    },
+    {
+      "section": "Play it",
+      "owner": "patrol",
+      "note": "The bridging score is computed as the Polis formula the prose gives, (helpful + 1) / (ratings + 2) per camp, multiplied."
+    },
+    {
+      "section": "How Community Notes scores a note",
+      "owner": "shapeless",
+      "note": "Checked the numbers against the open documentation: 0.15 and 0.03 regularization, a 0.40 intercept and a factor under 0.50."
+    }
+  ]
 }
