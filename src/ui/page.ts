@@ -127,15 +127,58 @@ function block(site: Site, shown: Shown, resolve: Resolve, place: Place = "body"
 }
 
 /**
- * The word a prose stroke is painted with: the first number in it (a year, a share, a
- * count) or, failing that, the first word of its heading. Words are what prose has for paint.
+ * The word a prose stroke is painted with: the most striking number in it (a share, a
+ * count with a comma, a big figure), then a year, then the first word of its heading. A
+ * day of the month or a small count never carries a stroke. Words are what prose has for paint.
  */
 export function paintWord(text: string, heading: string): string {
-  const number = /(?<![\w.])(?:\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?(?:\/\d+)?)(?:%|x|k|M|B)?(?![\w.])/u.exec(text)?.[0];
-  if (number && number.length <= 9) return number;
-  const word = heading.split(/\s+/u).find((part) => part.length > 2) ?? heading;
+  const numbers = [...text.matchAll(/(?<![\w.])(?:\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?(?:\/\d+)?)(?:%|x|k|M|B)?(?![\w.])/gu)]
+    .map((match) => match[0])
+    .filter((found) => found.length <= 9);
+  const score = (found: string): number => {
+    if (/[%/,xkMB]/u.test(found) || /\./u.test(found)) return 3;
+    if (/^(?:1[5-9]|20)\d\d$/u.test(found)) return 1;
+    return found.replace(/\D/gu, "").length >= 3 ? 2 : 0;
+  };
+  const best = numbers.reduce<string | null>((top, found) => (score(found) > (top ? score(top) : 0) ? found : top), null);
+  if (best) return best;
+  const words = heading.split(/\s+/u);
+  const word = words.find((part) => part.length > 2 && !STOP.has(part.toLowerCase())) ?? words[0] ?? heading;
   return word.replace(/[^\p{L}\p{N}'-]/gu, "").slice(0, 12) || heading.slice(0, 12);
 }
+
+/** Heading words that say nothing on their own, so they never carry a stroke. */
+const STOP = new Set([
+  "what",
+  "the",
+  "how",
+  "why",
+  "who",
+  "when",
+  "where",
+  "which",
+  "does",
+  "did",
+  "is",
+  "are",
+  "was",
+  "and",
+  "for",
+  "from",
+  "with",
+  "about",
+  "into",
+  "this",
+  "that",
+  "its",
+  "got",
+  "here",
+  "there",
+  "over",
+  "not",
+  "yet",
+  "still",
+]);
 
 /**
  * One section as a stroke on the wall. The paint is the agent's code in its frame, or
