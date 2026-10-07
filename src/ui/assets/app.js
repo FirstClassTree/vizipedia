@@ -530,13 +530,28 @@ document.addEventListener("keydown", (event) => {
 // ---- experience frames ----------------------------------------------------------------
 // A frame may say one thing to its host: how tall it is. Trusted only as a number, only
 // from a frame on this page, only within sane bounds.
+/** A stroke on the wall grows to what its frame holds: the content plus the caption band, in whole grid rows. */
+function fitStroke(stroke, height) {
+  const wall = stroke.parentElement;
+  const style = getComputedStyle(wall);
+  const row = parseFloat(style.gridAutoRows) || 88;
+  const gap = parseFloat(style.rowGap) || 3;
+  // Everything in the stroke that is not the frame: the mark and the caption band.
+  const chrome = stroke.offsetHeight - (stroke.querySelector(".paint-frame")?.offsetHeight ?? 0);
+  const rows = Math.max(3, Math.min(14, Math.ceil((height + chrome + gap) / (row + gap))));
+  stroke.style.setProperty("--r", String(rows));
+  stroke.style.setProperty("--mr", String(rows));
+}
 addEventListener("message", (event) => {
   const data = event.data;
   if (data?.ow !== "height" || typeof data.height !== "number") return;
   for (const frame of document.querySelectorAll("iframe.xp")) {
     if (frame.contentWindow !== event.source) continue;
-    // On the wall a frame fills its stroke; in the article it grows to its content.
-    if (!frame.closest(".stroke")) frame.style.height = `${Math.max(120, Math.min(960, Math.round(data.height)))}px`;
+    const height = Math.max(120, Math.min(960, Math.round(data.height)));
+    const stroke = frame.closest(".stroke");
+    // On the wall the stroke is sized to the frame; in the article the frame grows by itself.
+    if (stroke) fitStroke(stroke, height);
+    else frame.style.height = `${height}px`;
     return;
   }
 });

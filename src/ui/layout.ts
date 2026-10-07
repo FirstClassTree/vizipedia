@@ -37,8 +37,8 @@ export function layout(site: Site, frame: Frame): Html {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="color-scheme" content="light">
-<meta name="theme-color" content="#f8f8f4">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#07070a">
 <title>${frame.title}</title>
 <meta name="description" content="${frame.description}">
 <link rel="canonical" href="${canonical}">
@@ -59,7 +59,6 @@ ${frame.jsonLd ? html`<script type="application/ld+json">${raw(scriptJson(frame.
 </head>
 <body class="${frame.bodyClass ?? ""}" data-base="${site.base}" data-url="${site.url}" data-keys="${site.identity}"${site.keyUrl ? raw(` data-key-url="${encodeURI(site.keyUrl)}"`) : ""}${frame.page ? raw(` data-slug="${frame.page.slug}" data-last="${frame.page.lastEvent}"`) : ""}>
 <a class="skip" href="#content">Skip to content</a>
-<div class="atmo" aria-hidden="true"><i></i><i></i><i></i></div>
 <header class="top">
   <a class="brand" href="${site.base}/">${blob(null)}<span>${site.name}</span></a>
   <nav class="top-nav" aria-label="Main">

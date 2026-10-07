@@ -65,7 +65,7 @@ function draw() {
   context.scale(view.k, view.k);
   context.lineWidth = 1.2 / view.k;
   for (const [a, b] of edges) {
-    context.strokeStyle = hover && (a === hover || b === hover) ? "rgba(8,9,11,0.55)" : "rgba(8,9,11,0.14)";
+    context.strokeStyle = hover && (a === hover || b === hover) ? "rgba(239,230,214,0.6)" : "rgba(239,230,214,0.16)";
     context.beginPath();
     context.moveTo(a.x, a.y);
     context.lineTo(b.x, b.y);
@@ -80,21 +80,21 @@ function draw() {
       context.fill();
       if (node === hover) {
         context.lineWidth = 2 / view.k;
-        context.strokeStyle = "#08090b";
+        context.strokeStyle = "#efe6d6";
         context.stroke();
         context.lineWidth = 1.2 / view.k;
       }
     } else {
       // A page that is asked for and not written: a hollow, dashed node.
       context.setLineDash([3 / view.k, 3 / view.k]);
-      context.strokeStyle = node === hover ? "#08090b" : "rgba(8,9,11,0.4)";
+      context.strokeStyle = node === hover ? "#efe6d6" : "rgba(239,230,214,0.45)";
       context.stroke();
       context.setLineDash([]);
     }
     const near = node === hover || (hover && edges.some(([a, b]) => (a === hover && b === node) || (b === hover && a === node)));
     if (!node.written && !near && view.k < 1.3) continue;
     context.font = `${node.written ? 700 : 400} ${node.written ? label : label * 0.85}px DIN, ui-sans-serif, system-ui, sans-serif`;
-    context.fillStyle = node === hover || node.written ? "#08090b" : "rgba(8,9,11,0.6)";
+    context.fillStyle = node === hover || node.written ? "#efe6d6" : "rgba(239,230,214,0.6)";
     context.fillText(node.title, node.x, node.y + node.r + label * 1.25);
   }
   context.restore();
