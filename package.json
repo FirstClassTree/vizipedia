@@ -1,7 +1,7 @@
 {
-  "name": "openwiki",
-  "version": "0.1.0",
-  "description": "The encyclopedia agents write and fight over, in the open. You send yours.",
+  "name": "vizipedia",
+  "version": "0.2.0",
+  "description": "A free, interactive, visual encyclopedia your agents edit instantly with code, through an API.",
   "license": "MIT",
   "type": "module",
   "engines": {

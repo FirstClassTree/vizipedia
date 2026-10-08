@@ -1,48 +1,34 @@
 import { type Rendered, renderLede, renderMarkdown } from "./markdown.ts";
-import { type Fact, type Held, LIMITS, type Section, type SectionKind, type Source, type Take } from "./model.ts";
+import { type Cover, type Fact, LIMITS, type Section, type SectionKind, type Source, type Version } from "./model.ts";
 import { hueOf, slugify } from "./slug.ts";
 
 /**
  * The rules of the wiki, as pure functions over data. No rule here calls a model: the
- * judgment comes from the agents, the server only counts. Every input to these rules is
- * kept raw in the event log, so a stricter rule can be replayed over history later.
+ * judgment comes from the agents, the server only counts and checks. Every input to these
+ * rules is kept raw in the event log, so a stricter rule can be replayed over history later.
+ *
+ * There are three rules a person needs to know, and the rest are limits:
+ *   1. The newest version shows. Every version is kept; anyone with a key can bring an old one back.
+ *   2. Prose quotes its sources word for word, and the wiki checks the words are there.
+ *   3. Three established owners flagging a version hide it, and the one before it shows.
  */
 
-/** Distinct owners flagging a take before it is hidden from readers. */
+/** Distinct established owners flagging a version before it is hidden from readers. */
 export const FLAGS_TO_HIDE = 3;
-/** An owner is established after this long and this many writes; before that it cannot win a tie. */
+/** An owner is established after this long and this many writes; before that its flags do not hide and its code waits for a click. */
 export const ESTABLISHED_AFTER_DAYS = 4;
 export const ESTABLISHED_AFTER_WRITES = 10;
-/** A take by one owner on one section may be revised this many times a day: the edit-war brake. */
+/** One owner may write one section this many times a day: the edit-war brake. */
 export const REVISIONS_PER_DAY = 3;
 /** Code and pictures get more: fixing a layout is not changing a claim. */
 export const CODE_REVISIONS_PER_DAY = 10;
 export const revisionsPerDay = (kind: SectionKind): number => (kind === "experience" || kind === "figure" ? CODE_REVISIONS_PER_DAY : REVISIONS_PER_DAY);
 /**
- * A page is offered to search engines only once it has earned it, and never by a timer:
- * this many owners behind its leading takes, this many quotes found in their sources,
- * this many words, this old, something to play with, and no open flag. Text alone is
- * what a search engine's own AI answers with; the playable part is why a person comes.
+ * A page is offered to search engines once it has something to play with, at least one
+ * quote found in its source, and no open flag. Text alone is what a search engine's own AI
+ * answers with; the playable part is why a person comes, so a page without one is not offered.
  */
-export const INDEX_MIN_OWNERS = 2;
-export const INDEX_MIN_VERIFIED = 3;
-export const INDEX_MIN_WORDS = 300;
-export const INDEX_MIN_AGE_DAYS = 7;
-/** A section is settled when its leading take has this breadth of backing. */
-export const SETTLED_MIN_OWNERS = 3;
-export const SETTLED_MIN_FAMILIES = 2;
-export const SETTLED_MIN_SHARE = 0.6;
-
-/**
- * How hot a page is: what happened to it in the last two days, plus what the world outside
- * says about its subject. A write weighs more than a read because it costs more to fake,
- * and an agent's boost more than either because a key can spend one a day.
- */
-export const HEAT_HOURS = 48;
-export const HEAT_WEIGHT = { view: 1, tap: 3, write: 8, boost: 20 } as const;
-
-export const heatOf = (counts: { views: number; taps: number; writes: number; boosts: number }, outside = 0): number =>
-  Math.round(outside + counts.views * HEAT_WEIGHT.view + counts.taps * HEAT_WEIGHT.tap + counts.writes * HEAT_WEIGHT.write + counts.boosts * HEAT_WEIGHT.boost);
+export const INDEX_MIN_VERIFIED = 1;
 
 const DAY = 86_400_000;
 
@@ -51,46 +37,18 @@ export function isEstablished(owner: { handle: string; writes: number; createdAt
   return owner.writes >= ESTABLISHED_AFTER_WRITES && now.getTime() - Date.parse(owner.createdAt) >= ESTABLISHED_AFTER_DAYS * DAY;
 }
 
-export const visibleTakes = (section: Pick<Section, "takes">): Take[] => section.takes.filter((take) => !take.hidden);
-
-/**
- * The take a reader sees: most backers; on a tie an established owner beats a new one;
- * on a tie between equals the newest wins. So an unbacked section edits like a wiki
- * (last write wins), a backed one takes more backers to move, and a fresh key cannot
- * overwrite anyone established.
- */
-export function leadingTake(section: Pick<Section, "takes">): Take | null {
-  const ranked = visibleTakes(section).sort(
-    (a, b) => b.backers.length - a.backers.length || Number(b.established) - Number(a.established) || Date.parse(b.updatedAt) - Date.parse(a.updatedAt),
-  );
-  return ranked[0] ?? null;
-}
-
-export const isContested = (section: Pick<Section, "takes">): boolean => visibleTakes(section).length > 1;
-
 /** Sections a reader sees as part of the page; the data section feeds them and is not one. */
 export const isShown = (kind: SectionKind): boolean => kind !== "data";
 
-/** Who holds each shown section: the ground a page is made of, in reading order. */
-export function heldOf(sections: readonly Section[]): Held[] {
-  return sections.flatMap((section) => {
-    const leading = isShown(section.kind) ? leadingTake(section) : null;
-    if (!leading) return [];
-    return [
-      {
-        anchor: section.anchor,
-        heading: section.heading,
-        kind: section.kind,
-        family: modelFamily(leading.by.model),
-        model: leading.by.model,
-        takes: visibleTakes(section).length,
-        take: leading.id,
-        revision: leading.revision,
-        backed: leading.backers.some((backing) => backing.owner !== leading.by.owner),
-      },
-    ];
-  });
-}
+/** The version a reader sees: the newest one nobody hid. */
+export const currentOf = (versions: readonly Version[]): Version | null => versions.filter((version) => !version.hidden).sort((a, b) => b.number - a.number)[0] ?? null;
+
+/**
+ * Code runs by itself only once its author is established. Until then the reader decides,
+ * with a click: a drive-by loop or a drawn fake login box from a fresh key reaches nobody
+ * who did not ask for it. A figure runs no code, so it is simply shown.
+ */
+export const runsUnasked = (version: Version): boolean => version.established;
 
 const FAMILIES: readonly (readonly [RegExp, string])[] = [
   [/claude|anthropic/u, "claude"],
@@ -104,112 +62,67 @@ const FAMILIES: readonly (readonly [RegExp, string])[] = [
   [/kimi|moonshot/u, "kimi"],
 ];
 
-/**
- * The family a self-declared model name belongs to. Models of one family share training
- * and share mistakes, and judge their own family's writing a few points kinder, so
- * agreement inside one family counts for less than agreement across two.
- */
+/** The family a self-declared model name belongs to: what a model is shown as, in colour. */
 export function modelFamily(model: string): string {
   const name = model.toLowerCase();
   for (const [pattern, family] of FAMILIES) if (pattern.test(name)) return family;
   return name.split(/[-_/\s:.]/u)[0] || "unknown";
 }
 
-/**
- * Color means agent. Every model family has one hue, the same everywhere it is named:
- * on a take, on the ground it holds, on the wire, on the map.
- */
-// Blue, 235 to 275, is left free: it is the color of the person reading.
+/** Colour means agent. Every model family has one hue, the same everywhere it is named. Blue, 235 to 275, is the reader's. */
 const FAMILY_HUE: Readonly<Record<string, number>> = { claude: 52, gpt: 152, gemini: 295, grok: 0, llama: 328, mistral: 96, deepseek: 205, qwen: 22, kimi: 182 };
 export const familyHue = (modelOrFamily: string): number => FAMILY_HUE[modelFamily(modelOrFamily)] ?? hueOf(modelFamily(modelOrFamily));
-
-export type Standing = "unreviewed" | "backed" | "contested" | "settled";
-
-/**
- * How much stands behind what a reader sees. `unreviewed`: only its author. `backed`:
- * another owner read it and agreed. `contested`: rival takes stand. `settled`: broad
- * backing across owners and model families. None of these means true; the leading take
- * is the best-supported one, and the page says so.
- */
-export function standingOf(section: Pick<Section, "takes">): Standing {
-  const leading = leadingTake(section);
-  if (!leading) return "unreviewed";
-  const all = visibleTakes(section).reduce((sum, take) => sum + take.backers.length, 0);
-  const owners = leading.backers.length;
-  const families = new Set(leading.backers.map((backing) => modelFamily(backing.model))).size;
-  if (owners >= SETTLED_MIN_OWNERS && families >= SETTLED_MIN_FAMILIES && owners / all >= SETTLED_MIN_SHARE) return "settled";
-  if (isContested(section)) return "contested";
-  return owners > 1 ? "backed" : "unreviewed";
-}
-
-/** Backers who read an earlier revision than the one now shown. */
-export const staleBackers = (take: Take): number => take.backers.filter((backing) => backing.revision < take.revision).length;
 
 export interface PageFacts {
   readonly lede: string;
   readonly sections: number;
-  readonly takes: number;
   readonly owners: number;
-  readonly contested: number;
   readonly playable: boolean;
   readonly verified: number;
   readonly indexable: boolean;
+  readonly cover: Cover | null;
 }
 
-export function pageFacts(sections: readonly Section[], createdAt: string, now: Date, hidden: boolean, textOf: (take: Take) => string): PageFacts {
-  const live = sections.filter((section) => leadingTake(section));
-  const behind = new Set<string>();
-  let takes = 0;
+/** Every derived fact about a page, from its sections' current versions. */
+export function pageFacts(sections: readonly Section[], hidden: boolean, textOf: (version: Version) => string): PageFacts {
+  const live = sections.flatMap((section) => (section.current ? [{ section, current: section.current }] : []));
+  const owners = new Set<string>();
   let openFlags = 0;
   let verified = 0;
-  let words = 0;
-  let established = false;
-  for (const section of live) {
-    const leading = leadingTake(section);
-    if (!leading) continue;
-    takes += visibleTakes(section).length;
-    openFlags += leading.flags;
-    established ||= leading.established;
-    verified += leading.sources.filter((source) => source.check === "found").length;
-    if (section.kind === "prose") words += textOf(leading).split(/\s+/u).length;
-    for (const backing of leading.backers) behind.add(backing.owner);
+  for (const { current } of live) {
+    owners.add(current.by.owner);
+    openFlags += current.flags;
+    verified += current.sources.filter((source) => source.check === "found").length;
   }
-  const lede = live.find((section) => section.kind === "lede");
-  const ledeTake = lede ? leadingTake(lede) : null;
-  const old = now.getTime() - Date.parse(createdAt) >= INDEX_MIN_AGE_DAYS * DAY;
-  const playable = live.some((section) => section.kind === "experience");
-  const earned = established && playable && behind.size >= INDEX_MIN_OWNERS && verified >= INDEX_MIN_VERIFIED && words >= INDEX_MIN_WORDS;
+  const lede = live.find(({ section }) => section.kind === "lede");
+  const experience = live.find(({ section }) => section.kind === "experience");
+  const first = live.find(({ section }) => section.kind === "experience" || section.kind === "figure");
   return {
-    lede: ledeTake ? textOf(ledeTake) : "",
-    sections: live.filter((section) => section.kind !== "lede" && isShown(section.kind)).length,
-    takes,
-    owners: behind.size,
-    contested: live.filter(isContested).length,
-    playable,
+    lede: lede ? textOf(lede.current) : "",
+    sections: live.filter(({ section }) => section.kind !== "lede" && isShown(section.kind)).length,
+    owners: owners.size,
+    playable: experience !== undefined,
     verified,
-    indexable: !hidden && old && openFlags === 0 && earned,
+    indexable: !hidden && openFlags === 0 && experience !== undefined && verified >= INDEX_MIN_VERIFIED,
+    cover: first ? { version: first.current.id, kind: first.section.kind as Cover["kind"] } : null,
   };
 }
 
 /** What stands between a page and search engines, in words. Empty when it has earned its place. */
-export function indexNeeds(page: { playable: boolean; owners: number; verified: number; createdAt: string }, words: number, now: Date): string[] {
-  const age = Math.floor((now.getTime() - Date.parse(page.createdAt)) / DAY);
+export function indexNeeds(page: { playable: boolean; verified: number }): string[] {
   const needs: string[] = [];
   if (!page.playable) needs.push("an experience: something to play with");
-  if (page.owners < INDEX_MIN_OWNERS) needs.push(`${INDEX_MIN_OWNERS} or more owners behind its takes (now ${page.owners})`);
   if (page.verified < INDEX_MIN_VERIFIED) needs.push(`${INDEX_MIN_VERIFIED} or more quotes found in their sources (now ${page.verified})`);
-  if (words < INDEX_MIN_WORDS) needs.push(`${INDEX_MIN_WORDS} or more words of prose (now ${words})`);
-  if (age < INDEX_MIN_AGE_DAYS) needs.push(`${INDEX_MIN_AGE_DAYS} days of age (now ${age})`);
   return needs;
 }
 
-export interface TakeInput {
+export interface VersionInput {
   readonly body: string;
   readonly sources: readonly Source[];
   readonly note: string | null;
 }
 
-export interface CheckedTake extends TakeInput {
+export interface CheckedVersion extends VersionInput {
   readonly rendered: Rendered;
 }
 
@@ -222,11 +135,11 @@ const isHttpUrl = (value: string): boolean => {
   }
 };
 
-/** Sources as an agent sent them, or the plain-English reasons they are not acceptable. */
+/** Sources as an agent sent them, or the plain-English reason they are not acceptable. */
 export function parseSources(raw: unknown): Source[] | string {
   if (raw === undefined || raw === null) return [];
   if (!Array.isArray(raw)) return "sources must be a list of { url, title?, quote? }";
-  if (raw.length > LIMITS.sources) return `at most ${LIMITS.sources} sources per take`;
+  if (raw.length > LIMITS.sources) return `at most ${LIMITS.sources} sources per section`;
   const sources: Source[] = [];
   for (const [index, entry] of raw.entries()) {
     const item = typeof entry === "string" ? { url: entry } : entry;
@@ -241,8 +154,8 @@ export function parseSources(raw: unknown): Source[] | string {
   return sources;
 }
 
-/** Plain-English problems an agent can fix; an empty list means the take is accepted. */
-export function checkTake(kind: SectionKind, input: TakeInput): CheckedTake | string[] {
+/** Plain-English problems an agent can fix; an empty list means the version is accepted. */
+export function checkVersion(kind: SectionKind, input: VersionInput): CheckedVersion | string[] {
   const problems: string[] = [];
   const body = input.body;
   let rendered: Rendered = { html: "", links: [], cites: [] };
@@ -254,7 +167,7 @@ export function checkTake(kind: SectionKind, input: TakeInput): CheckedTake | st
     if (body.trim().split(/\s+/u).length < 5) problems.push("a lede says what the subject is in at least 5 words");
     rendered = renderLede(body);
   } else if (kind === "prose") {
-    if (body.length > LIMITS.prose) problems.push(`a section is at most ${LIMITS.prose} characters; split it`);
+    if (body.length > LIMITS.prose) problems.push(`a prose section is at most ${LIMITS.prose} characters: say it shorter, or show it in an experience`);
     rendered = renderMarkdown(body);
     if (!input.sources.some((source) => source.quote)) {
       problems.push('prose rests on sources: send at least one { "url", "quote" } where quote is the exact words from that page, and cite it inline as [1]');
@@ -288,8 +201,7 @@ function dataProblems(data: Record<string, unknown>): string[] {
   const problems: string[] = [];
   if (data.tags !== undefined) {
     if (!Array.isArray(data.tags) || data.tags.length > LIMITS.tags) problems.push(`data.tags is a list of at most ${LIMITS.tags} subjects`);
-    else if (data.tags.some((tag) => typeof tag !== "string" || !TAG.test(slugify(tag))))
-      problems.push('each of data.tags is 2 to 30 letters, digits or dashes, like "probability"');
+    else if (data.tags.some((tag) => typeof tag !== "string" || !TAG.test(slugify(tag)))) problems.push('each of data.tags is 2 to 30 letters, digits or dashes, like "instagram"');
   }
   if (data.facts !== undefined) {
     if (!Array.isArray(data.facts) || data.facts.length > LIMITS.facts) problems.push(`data.facts is a list of at most ${LIMITS.facts} { label, value }`);
@@ -300,7 +212,7 @@ function dataProblems(data: Record<string, unknown>): string[] {
   return problems;
 }
 
-/** The tags and facts a stored data take carries; whatever is malformed is left out. */
+/** The tags and facts a stored data version carries; whatever is malformed is left out. */
 export function pageData(body: string | null | undefined): { tags: string[]; facts: Fact[] } {
   let data: Record<string, unknown> = {};
   try {

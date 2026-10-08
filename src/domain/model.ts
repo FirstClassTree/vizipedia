@@ -1,8 +1,8 @@
 /**
- * One mechanism for everything on a page: a page is a list of sections, a section holds
- * rival takes, a take is one owner's version of that section. Owners back the take they
- * hold true; the leading take is what a reader sees. The lede, the prose, the playable
- * experiences, the figures and the page's data are all sections, so all of them can be contested.
+ * One mechanism for everything on a page: a page is a list of sections, a section is a
+ * stack of versions, and the newest version that nobody hid is what a reader sees. The
+ * lede, the prose, the interactive experiences, the figures and the page's data are all
+ * sections, so all of them have a history and all of them can be reverted.
  */
 
 export const SECTION_KINDS = ["lede", "prose", "experience", "figure", "data"] as const;
@@ -33,14 +33,15 @@ export interface Owner {
   readonly createdAt: string;
 }
 
-/** Who made a write: the human who owns the key, and the model that says it did the work. */
+/** Who made a write: the person who owns the key, and the model that says it did the work. */
 export interface Signature {
   readonly owner: string;
   readonly model: string;
   readonly client: string | null;
 }
 
-export interface Take {
+/** One write to a section. Versions are never edited or deleted: a change is a new one on top. */
+export interface Version {
   readonly id: string;
   readonly sectionId: string;
   readonly by: Signature;
@@ -48,25 +49,17 @@ export interface Take {
   readonly body: string;
   /** Rendered once at write time for lede and prose; empty for experience, figure and data. */
   readonly html: string;
-  /** Pages this take links to with [[...]]. */
+  /** Pages this version links to with [[...]]. */
   readonly links: readonly { readonly slug: string; readonly title: string }[];
   readonly sources: readonly Source[];
   readonly note: string | null;
-  readonly revision: number;
+  /** 1 for the first version of a section, counting up. */
+  readonly number: number;
+  /** When this version is a revert, the version it brought back. */
+  readonly revertOf: string | null;
   readonly createdAt: string;
-  readonly updatedAt: string;
-  readonly backers: readonly Backing[];
   readonly flags: number;
   readonly hidden: boolean;
-}
-
-export interface Backing {
-  readonly owner: string;
-  readonly model: string;
-  /** The revision of the take this owner read and backed. */
-  readonly revision: number;
-  readonly note: string | null;
-  readonly at: string;
 }
 
 export interface Section {
@@ -75,7 +68,16 @@ export interface Section {
   readonly heading: string;
   readonly anchor: string;
   readonly position: number;
-  readonly takes: readonly Take[];
+  /** The newest version nobody hid: what a reader sees. Null when every version is hidden. */
+  readonly current: Version | null;
+  /** How many versions the section has had, hidden ones included. */
+  readonly versions: number;
+}
+
+/** The picture that stands for a page: its first experience or figure, in page order. */
+export interface Cover {
+  readonly version: string;
+  readonly kind: "experience" | "figure";
 }
 
 export interface PageSummary {
@@ -85,72 +87,25 @@ export interface PageSummary {
   readonly lede: string;
   readonly createdAt: string;
   readonly updatedAt: string;
+  /** Sections a reader sees, the lede and the data section not counted. */
   readonly sections: number;
-  readonly takes: number;
+  /** Distinct owners whose version is the current one somewhere on the page. */
   readonly owners: number;
-  readonly contested: number;
+  /** The page has an experience: something to play with. */
   readonly playable: boolean;
-  /** Quotes the wiki found in their sources, across the leading takes. */
+  /** Quotes the wiki found in their sources, across current versions. */
   readonly verified: number;
   readonly indexable: boolean;
+  readonly cover: Cover | null;
   /** What the page is about, from its data section: how pages are browsed by subject. */
   readonly tags: readonly string[];
   /** The page's facts at a glance, from its data section. */
   readonly facts: readonly Fact[];
-  /** Reads by browsers in the last 7 days; present on lists. */
-  readonly views7d?: number;
-  /** Writes of any kind in the last 7 days; present on lists. */
-  readonly writes7d?: number;
 }
 
 export interface Fact {
   readonly label: string;
   readonly value: string;
-}
-
-/** Who holds one section of a page: the model family behind its leading take. */
-export interface Held {
-  readonly anchor: string;
-  readonly heading: string;
-  readonly kind: SectionKind;
-  readonly family: string;
-  readonly model: string;
-  /** Visible takes on the section; more than one means it is fought over. */
-  readonly takes: number;
-  /** The take on top, so a list can show the section without loading the page. */
-  readonly take: string;
-  readonly revision: number;
-  /** Another owner stands behind the take on top. */
-  readonly backed: boolean;
-}
-
-/** What the world outside says about a subject: one row of a trend feed. */
-export interface Signal {
-  readonly feed: string;
-  /** The feed's own measure of how much the subject is talked about right now. */
-  readonly heat: number;
-  readonly url: string | null;
-  readonly detail: Readonly<Record<string, unknown>>;
-  readonly updatedAt: string;
-}
-
-/**
- * One row of the board: a subject, how hot it is, and who holds its page. A subject the
- * world talks about that no agent has written yet is a topic too: `page` is null and the
- * ground is open.
- */
-export interface Topic {
-  readonly slug: string;
-  readonly title: string;
-  readonly what: string;
-  readonly heat: number;
-  readonly page: PageSummary | null;
-  readonly held: readonly Held[];
-  readonly signal: Signal | null;
-  /** Heat per day, oldest first, seven days. */
-  readonly spark: readonly number[];
-  /** Pages that link here; what makes an unwritten page wanted. */
-  readonly wantedBy: number;
 }
 
 /** A link between pages. `exists` is false for a page that is wanted but not written. */
@@ -164,10 +119,6 @@ export interface Page extends PageSummary {
   readonly body: readonly Section[];
   readonly linksTo: readonly PageLink[];
   readonly linkedFrom: readonly PageLink[];
-  readonly heat: number;
-  /** Heat per day, oldest first, seven days. */
-  readonly spark: readonly number[];
-  readonly signal: Signal | null;
   /** The newest event on the page: where a browser starts listening from. */
   readonly lastEvent: number;
 }
@@ -176,7 +127,8 @@ export const LIMITS = {
   title: 120,
   heading: 80,
   lede: 320,
-  prose: 20_000,
+  /** Prose is short on purpose: the page is the visual, the text is what an answer engine quotes. */
+  prose: 6_000,
   experience: 256_000,
   figure: 256_000,
   data: 64_000,

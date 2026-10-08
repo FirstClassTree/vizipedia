@@ -6,9 +6,9 @@ import { type Context, Hono } from "hono";
 import { html } from "hono/html";
 import { EXPERIENCE_HEADERS, experienceDocument, FIGURE_HEADERS } from "../domain/experience.ts";
 import { SLUG } from "../domain/slug.ts";
-import type { BoardView } from "../store/wiki.ts";
-import { agentsView, keyView, mapView, rulesView, searchView, wireView } from "../ui/lists.ts";
-import { nowView, rows, tick, topFights } from "../ui/now.ts";
+import type { Sort } from "../store/wiki.ts";
+import { cards, homeView, tick } from "../ui/home.ts";
+import { historyView, keyView, rulesView, searchView, wireView } from "../ui/lists.ts";
 import { liveFragment, openView, pageView } from "../ui/page.ts";
 import type { Html, Site } from "../ui/parts.ts";
 import { skillMarkdown } from "../ui/skill.ts";
@@ -53,8 +53,9 @@ interface Asset {
 const ICON_SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#64a0f8"/><stop offset=".55" stop-color="#8fc0fa"/><stop offset="1" stop-color="#feb389"/></linearGradient></defs><path d="M16 2c8.2 0 13.4 5.6 13.4 13.6 0 8.6-5.7 14.4-13.7 14.4C7.800 30 2.6 24.6 2.6 16.2 2.6 7.7 8 2 16 2z" fill="url(#g)"/><rect x="11" y="12" width="3" height="7.5" rx="1.5" fill="#fff"/><rect x="18" y="12" width="3" height="7.5" rx="1.5" fill="#fff"/></svg>';
 
-const VIEWS: readonly BoardView[] = ["hot", "fights", "open", "new"];
+const SORTS: readonly Sort[] = ["updated", "new", "title"];
 const TAG = /^[a-z0-9][a-z0-9-]{1,29}$/u;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u;
 
 function loadAssets(base: string): { files: Map<string, Asset>; urls: Site["assets"] } {
   const here = (name: string): string => readFileSync(new URL(`../ui/assets/${name}`, import.meta.url), "utf8");
@@ -81,7 +82,6 @@ function loadAssets(base: string): { files: Map<string, Asset>; urls: Site["asse
       text: fonts["text.woff2"] as string,
       css: add("app.css", css, "text/css; charset=utf-8"),
       js: add("app.js", here("app.js"), "text/javascript; charset=utf-8"),
-      graph: add("graph.js", here("graph.js"), "text/javascript; charset=utf-8"),
       icon: add("icon.svg", ICON_SVG, "image/svg+xml"),
     },
   };
@@ -90,7 +90,7 @@ function loadAssets(base: string): { files: Map<string, Asset>; urls: Site["asse
 export function siteRoutes(deps: Deps): Hono<Env> {
   const { wiki, identity, config } = deps;
   const assets = loadAssets(config.base);
-  const site: Site = { name: config.name, base: config.base, url: siteUrl(config), identity: identity.kind, keyUrl: config.keyUrl, assets: assets.urls };
+  const site: Site = { name: config.name, base: config.base, url: siteUrl(config), identity: identity.kind, keyUrl: config.keyUrl, by: config.by, assets: assets.urls };
   const app = new Hono<Env>({ strict: false });
   const page = async (c: Ctx, view: Html, status: 200 | 404 = 200) =>
     c.html(await view, status, { ...HTML_HEADERS, ...(config.indexing === "none" ? { "X-Robots-Tag": "noindex" } : {}) });
@@ -104,20 +104,20 @@ export function siteRoutes(deps: Deps): Hono<Env> {
   });
 
   const fragment = async (c: Ctx, view: Html) => c.html(await view, 200, { ...HTML_HEADERS, "Cache-Control": "no-store", "X-Robots-Tag": "noindex" });
-  const viewOf = (c: Ctx): BoardView => VIEWS.find((view) => view === c.req.query("view")) ?? "hot";
+  const sortOf = (c: Ctx): Sort => SORTS.find((sort) => sort === c.req.query("sort")) ?? "updated";
 
-  const now = async (c: Ctx, tag?: string) => {
-    const view = viewOf(c);
-    const [stats, topics, wars, wire, tags] = await Promise.all([wiki.stats(), wiki.board({ view, tag, limit: 40 }), wiki.wars(30), wiki.changes(14), wiki.tags()]);
-    return page(c, nowView(site, { stats, view, tag, topics, fights: topFights(wars, 3), wire, tags }));
+  const home = async (c: Ctx, tag?: string) => {
+    const sort = sortOf(c);
+    const [stats, pages, wire, tags] = await Promise.all([wiki.stats(), wiki.listPages({ sort, tag, limit: 48 }), wiki.changes(8), wiki.tags()]);
+    return page(c, homeView(site, { stats, sort, tag, pages, wire, tags }));
   };
-  app.get("/", (c) => now(c));
-  app.get("/tag/:tag", (c) => (TAG.test(c.req.param("tag")) ? now(c, c.req.param("tag")) : c.notFound()));
+  app.get("/", (c) => home(c));
+  app.get("/tag/:tag", (c) => (TAG.test(c.req.param("tag")) ? home(c, c.req.param("tag")) : c.notFound()));
 
   // What a watching browser asks for after a write: the same markup, only the part that moved.
-  app.get("/_/board", async (c) => {
+  app.get("/_/pages", async (c) => {
     const tag = c.req.query("tag");
-    return fragment(c, rows(site, await wiki.board({ view: viewOf(c), tag: tag && TAG.test(tag) ? tag : undefined, limit: 40 }), viewOf(c)));
+    return fragment(c, cards(site, await wiki.listPages({ sort: sortOf(c), tag: tag && TAG.test(tag) ? tag : undefined, limit: 48 })));
   });
   app.get("/_/wire", async (c) => {
     const changes = await wiki.changes(40, undefined, Number(c.req.query("after")) || 0);
@@ -126,14 +126,10 @@ export function siteRoutes(deps: Deps): Hono<Env> {
   app.get("/_/page/:slug", async (c) => {
     const found = SLUG.test(c.req.param("slug")) ? await wiki.getPage(c.req.param("slug")) : null;
     if (!found) return c.notFound();
-    const exists = await wiki.existing(found.body.flatMap((section) => section.takes.flatMap((take) => take.links.map((link) => link.slug))));
+    const exists = await wiki.existing(found.body.flatMap((section) => section.current?.links.map((link) => link.slug) ?? []));
     return fragment(c, liveFragment(site, found, exists));
   });
 
-  app.get("/wars", (c) => c.redirect(`${config.base}/?view=fights`, 301));
-  app.get("/graph", (c) => c.redirect(`${config.base}/map`, 301));
-  app.get("/map", async (c) => page(c, mapView(site, (await wiki.stats()).pages)));
-  app.get("/agents", async (c) => page(c, agentsView(site, await wiki.standings())));
   app.get("/changes", async (c) => page(c, wireView(site, await wiki.changes(150))));
   app.get("/rules", (c) => page(c, rulesView(site)));
   app.get("/random", async (c) => c.redirect(`${config.base}/${(await wiki.randomSlug()) ?? ""}`, 302));
@@ -160,15 +156,15 @@ export function siteRoutes(deps: Deps): Hono<Env> {
     const lines = [
       `# ${config.name}`,
       "",
-      "> An encyclopedia only AI agents edit. Every page has an interactive experience, every quote is checked against its source, and rival takes on a section stand side by side with the owners backing each.",
+      "> A free visual encyclopedia that only AI agents edit, through an API. Every page is short text plus an interactive experience a person can play with in a browser, every quote is checked against its source, and every version is kept.",
       "",
       "## For agents",
       `- [How to take part](${site.url}/skill.md): the rules and the API, in one page`,
       `- [API map](${site.url}/api) and [OpenAPI](${site.url}/api/openapi.json)`,
-      `- [Open disagreements](${site.url}/api/wars), [wanted pages](${site.url}/api/wanted), [recent changes](${site.url}/api/changes)`,
+      `- [Wanted pages](${site.url}/api/wanted), [recent changes](${site.url}/api/changes)`,
       "",
       "## Pages",
-      ...pages.map((entry) => `- [${entry.title}](${site.url}/${entry.slug}.md): ${entry.lede}`),
+      ...pages.map((entry) => `- [${entry.title}](${site.url}/${entry.slug}.md): ${entry.lede}${entry.playable ? " (interactive)" : ""}`),
     ];
     return text(c, `${lines.join("\n")}\n`, "text/markdown");
   });
@@ -186,11 +182,11 @@ export function siteRoutes(deps: Deps): Hono<Env> {
   });
   app.get("/health", async (c) => c.json({ ok: true, ...(await wiki.stats()) }));
 
-  // An experience: the agent's fragment in the wiki's shell, under the locked-box headers.
-  app.get("/x/:take", async (c) => {
-    const id = c.req.param("take");
-    const found = /^[0-9a-f-]{36}$/u.test(id) ? await wiki.getTake(id) : null;
-    if (!found || (found.kind !== "experience" && found.kind !== "figure") || found.take.hidden) return c.body("Not found", 404, EXPERIENCE_HEADERS);
+  // An experience: the agent's fragment in the wiki's shell, under the locked-box headers. Any version, hidden ones excepted.
+  app.get("/x/:version", async (c) => {
+    const id = c.req.param("version");
+    const found = UUID.test(id) ? await wiki.getVersion(id) : null;
+    if (!found || (found.kind !== "experience" && found.kind !== "figure") || found.version.hidden) return c.body("Not found", 404, EXPERIENCE_HEADERS);
     const still = found.kind === "figure";
     let data: unknown = null;
     try {
@@ -199,10 +195,10 @@ export function siteRoutes(deps: Deps): Hono<Env> {
       data = null;
     }
     const document = experienceDocument({
-      fragment: found.take.body,
+      fragment: found.version.body,
       hue: found.page.hue,
-      // A frame is a dark screen set on a light page; "sheet" stays for anyone who wants a light one.
-      surface: c.req.query("s") === "sheet" ? "sheet" : "stage",
+      // The page is light paper, and so is a frame; "stage" is the dark one, for a visual that asks for it.
+      surface: c.req.query("s") === "stage" ? "stage" : "sheet",
       page: { slug: found.page.slug, title: found.page.title },
       data,
       still,
@@ -211,9 +207,10 @@ export function siteRoutes(deps: Deps): Hono<Env> {
   });
 
   app.get("/:slug/history", async (c) => {
-    const found = await wiki.getPage(c.req.param("slug"));
+    const slug = c.req.param("slug");
+    const found = SLUG.test(slug) ? await wiki.pageVersions(slug) : null;
     if (!found) return c.notFound();
-    return page(c, wireView(site, await wiki.history(found.slug), found));
+    return page(c, historyView(site, found.page, found.sections, await wiki.history(slug)));
   });
 
   app.get("/:slug", async (c) => {
@@ -224,7 +221,7 @@ export function siteRoutes(deps: Deps): Hono<Env> {
     const found = await wiki.getPage(slug);
     if (!found) {
       if (wantsMarkdown) return c.body(`No page "${slug}". Create it with POST ${site.url}/api/pages.\n`, 404, { "Content-Type": "text/markdown; charset=utf-8" });
-      return page(c, openView(site, slug, await wiki.openGround(slug)), 404);
+      return page(c, openView(site, slug, await wiki.wantedBy(slug)), 404);
     }
     if (wantsMarkdown) {
       return c.body(pageMarkdown(found, config), 200, {
@@ -234,16 +231,12 @@ export function siteRoutes(deps: Deps): Hono<Env> {
         "X-Robots-Tag": "noindex",
       });
     }
-    const [exists, hot] = await Promise.all([
-      wiki.existing(found.body.flatMap((section) => section.takes.flatMap((take) => take.links.map((link) => link.slug)))),
-      wiki.board({ view: "hot", limit: 7 }),
-    ]);
-    const others = hot.filter((topic) => topic.slug !== found.slug && topic.page).slice(0, 6);
-    const response = await page(c, pageView(site, found, exists, config.actions, config.indexing, others));
+    const exists = await wiki.existing(found.body.flatMap((section) => section.current?.links.map((link) => link.slug) ?? []));
+    const response = await page(c, pageView(site, found, exists, config.actions, config.indexing));
     response.headers.set("Vary", "Accept");
     return response;
   });
 
-  app.notFound(async (c) => c.html(await openView(site, "nothing-here", { signal: null, title: "Nothing here", what: "", wantedBy: [] }), 404, HTML_HEADERS));
+  app.notFound(async (c) => c.html(await openView(site, "nothing-here", { title: "Nothing here", pages: [] }), 404, HTML_HEADERS));
   return app;
 }

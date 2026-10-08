@@ -1,0 +1,181 @@
+{
+  "title": "How Instagram ranks",
+  "slug": "instagram-ranking",
+  "hue": 335,
+  "lede": "Instagram ranks Feed, Stories, Explore and Reels with separate systems, each weighing signals such as your own activity and a post's popularity in its own order.",
+  "sections": [
+    {
+      "kind": "experience",
+      "heading": "Which signal comes first",
+      "body": "<style>\n.ig{font-family:var(--ow-font);color:var(--ow-fg);font-size:16px;line-height:1.45;max-width:1100px;margin:0 auto;-webkit-font-smoothing:antialiased}\n.ig *{box-sizing:border-box}\n.ig h3{margin:0;font-size:13px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--ow-muted)}\n.ask{margin:0 0 12px;font-size:17px;font-weight:600}\n.ask span{color:var(--ow-muted);font-weight:400}\n.seg{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:4px;border:1px solid var(--ow-line);border-radius:14px;background:var(--ow-panel)}\n.seg button{appearance:none;border:0;margin:0;min-height:46px;border-radius:10px;background:transparent;color:var(--ow-fg);font:inherit;font-size:16px;font-weight:600;cursor:pointer;touch-action:manipulation;transition:background-color .2s,color .2s}\n.seg button:hover{background:color-mix(in oklch,var(--ow-accent) 9%,transparent)}\n.seg button[aria-checked=\"true\"]{background:var(--ow-accent);color:var(--ow-accent-ink)}\n.seg button:focus-visible{outline:2px solid var(--ow-accent);outline-offset:2px}\n.grid{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:20px;margin-top:18px}\n.head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:10px;min-height:20px}\n.list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}\n.card{display:grid;grid-template-columns:34px minmax(0,1fr);gap:12px;align-items:start;padding:12px 14px;border:1px solid var(--ow-line);border-radius:12px;background:var(--ow-panel);will-change:transform}\n.card[hidden]{display:none}\n.n{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;border:1px solid var(--ow-line);font-family:var(--ow-mono);font-size:15px;font-weight:600;color:var(--ow-muted)}\n.t{display:block;font-weight:650;font-size:16px}\n.d{display:block;color:var(--ow-muted);font-size:15px;margin-top:2px}\n.top1{border-color:var(--ow-accent);background:color-mix(in oklch,var(--ow-accent) 7%,var(--ow-panel));box-shadow:0 0 0 1px var(--ow-accent) inset}\n.top1 .n{background:var(--ow-accent);border-color:var(--ow-accent);color:var(--ow-accent-ink)}\n.badge{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:99px;background:var(--ow-accent);color:var(--ow-accent-ink);font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;vertical-align:2px}\n.unranked .n{border-style:dashed}\n.side{display:flex;flex-direction:column;gap:12px}\n.blk{border:1px solid var(--ow-line);border-radius:12px;background:var(--ow-panel);padding:14px}\n.blk p{margin:8px 0 0;font-size:15px;color:var(--ow-fg)}\n.pool{display:flex;gap:6px;margin-top:10px}\n.pool span{flex:1;text-align:center;padding:7px 6px;border-radius:9px;border:1px dashed var(--ow-line);color:var(--ow-muted);font-size:14px;font-weight:600;transition:background-color .25s,color .25s,border-color .25s}\n.pool span.on{border:1px solid var(--ow-accent);background:color-mix(in oklch,var(--ow-accent) 12%,var(--ow-panel));color:var(--ow-fg)}\n.pool span.on::before{content:\"\\2713\\00a0\";color:var(--ow-accent);font-weight:700}\n.chips{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px}\n.chips li{padding:5px 10px;border-radius:99px;border:1px solid var(--ow-line);font-size:15px;background:var(--ow-bg)}\n.note{margin:14px 0 0;font-size:14px;color:var(--ow-muted)}\n@media (max-width:720px){.grid{grid-template-columns:minmax(0,1fr);gap:14px}.side{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}}\n@media (max-width:520px){.side{grid-template-columns:minmax(0,1fr)}.ask{font-size:16px}.seg button{font-size:15px}.card{padding:11px 12px;gap:10px}}\n@media (prefers-reduced-motion:reduce){.seg button,.pool span{transition:none}}\n</style>\n<div class=\"ig\">\n  <p class=\"ask\">Pick a surface. <span>The signals reorder the way Instagram ranks them there.</span></p>\n  <div class=\"seg\" role=\"radiogroup\" aria-label=\"Instagram surface\">\n    <button type=\"button\" role=\"radio\" data-s=\"feed\">Feed</button>\n    <button type=\"button\" role=\"radio\" data-s=\"stories\">Stories</button>\n    <button type=\"button\" role=\"radio\" data-s=\"explore\">Explore</button>\n    <button type=\"button\" role=\"radio\" data-s=\"reels\">Reels</button>\n  </div>\n  <div class=\"grid\">\n    <section aria-labelledby=\"kicker\">\n      <div class=\"head\"><h3 id=\"kicker\">Ranked, roughly by importance</h3></div>\n      <ol class=\"list\" id=\"list\" aria-live=\"polite\"></ol>\n    </section>\n    <aside class=\"side\">\n      <div class=\"blk\">\n        <h3>Where the posts come from</h3>\n        <div class=\"pool\" aria-hidden=\"true\"><span id=\"pf\">You follow</span><span id=\"pn\">You don't follow</span></div>\n        <p id=\"pool\"></p>\n      </div>\n      <div class=\"blk\">\n        <h3>Actions it predicts most</h3>\n        <ul class=\"chips\" id=\"acts\"></ul>\n      </div>\n    </aside>\n  </div>\n  <p class=\"note\" id=\"note\"></p>\n</div>\n<script>\n(function () {\n  var SIGNALS = {\n    activity: \"Your activity\",\n    post: \"Information about the post\",\n    poster: \"Information about the person who posted\",\n    history: \"Your history with the person who posted\",\n    viewing: \"Viewing history\",\n    engagement: \"Engagement history\",\n    closeness: \"Closeness\"\n  };\n  var SURFACES = {\n    feed: {\n      ranked: true,\n      order: [\n        [\"activity\", \"Posts you've liked, shared, saved or commented on.\"],\n        [\"post\", \"How popular it is and how fast it gathers likes, plus when and where it was posted.\"],\n        [\"poster\", \"How often people have interacted with them in the past few weeks.\"],\n        [\"history\", \"How interested you are in their posts, like whether you comment on each other's.\"]\n      ],\n      follow: true, notFollow: true,\n      pool: \"Accounts you follow, recommended posts from accounts you don't, and ads.\",\n      acts: [\"Spend a few seconds\", \"Comment\", \"Like\", \"Share\", \"Tap the profile photo\"],\n      note: \"Source: Instagram, Instagram Ranking Explained, May 2023.\"\n    },\n    stories: {\n      ranked: false,\n      order: [\n        [\"viewing\", \"How often you view an account's stories.\"],\n        [\"engagement\", \"How often you engage with its stories, like sending a like or a DM.\"],\n        [\"closeness\", \"Your relationship with the author, and how likely you are friends or family.\"]\n      ],\n      follow: true, notFollow: false,\n      pool: \"Accounts you follow, plus ads.\",\n      acts: [\"Tap into a story\", \"Reply\", \"Move on to the next\"],\n      note: \"For Stories Instagram lists these signals without an order of importance, so none is ranked first.\"\n    },\n    explore: {\n      ranked: true,\n      order: [\n        [\"post\", \"How many people like, comment, share and save it, and how fast. This counts much more here than in Feed or Stories.\"],\n        [\"activity\", \"What you've liked, saved, shared or commented on, and how you've used Explore before.\"],\n        [\"history\", \"Most likely someone you've never heard of. If you have interacted, that counts.\"],\n        [\"poster\", \"How often people have interacted with them in the past few weeks.\"]\n      ],\n      follow: false, notFollow: true,\n      pool: \"Recommendations from accounts you don't yet follow.\",\n      acts: [\"Like\", \"Save\", \"Share\"],\n      note: \"Source: Instagram, Instagram Ranking Explained, May 2023.\"\n    },\n    reels: {\n      ranked: true,\n      order: [\n        [\"activity\", \"Reels you've liked, saved, reshared, commented on and engaged with recently.\"],\n        [\"history\", \"Likely someone you've never heard of. If you have interacted, that counts.\"],\n        [\"post\", \"The audio track and visuals in the video, plus its popularity.\", \"Information about the reel\"],\n        [\"poster\", \"Popularity, like number of followers or level of engagement.\"]\n      ],\n      follow: false, notFollow: true,\n      pool: \"Mostly accounts you don't follow.\",\n      acts: [\"Reshare\", \"Watch to the end\", \"Like\", \"Open the audio page\"],\n      note: \"Source: Instagram, Instagram Ranking Explained, May 2023.\"\n    }\n  };\n  var KEYS = [\"feed\", \"stories\", \"explore\", \"reels\"];\n  var reduce = window.matchMedia && matchMedia(\"(prefers-reduced-motion: reduce)\").matches;\n  var list = document.getElementById(\"list\");\n  var buttons = Array.prototype.slice.call(document.querySelectorAll(\".seg button\"));\n  var cards = {};\n\n  Object.keys(SIGNALS).forEach(function (key) {\n    var li = document.createElement(\"li\");\n    li.className = \"card\";\n    li.hidden = true;\n    li.innerHTML = '<span class=\"n\" aria-hidden=\"true\"></span><span><span class=\"t\"></span><span class=\"d\"></span></span>';\n    list.appendChild(li);\n    cards[key] = li;\n  });\n\n  function setText(id, text) { document.getElementById(id).textContent = text; }\n\n  function apply(surface) {\n    var s = SURFACES[surface];\n    var shown = {};\n    s.order.forEach(function (entry, i) {\n      var li = cards[entry[0]];\n      shown[entry[0]] = true;\n      li.hidden = false;\n      li.style.order = i;\n      li.className = \"card\" + (s.ranked ? \"\" : \" unranked\") + (s.ranked && i === 0 ? \" top1\" : \"\");\n      li.querySelector(\".n\").textContent = s.ranked ? String(i + 1) : \"•\";\n      var title = li.querySelector(\".t\");\n      title.textContent = entry[2] || SIGNALS[entry[0]];\n      if (s.ranked && i === 0) {\n        var badge = document.createElement(\"span\");\n        badge.className = \"badge\";\n        badge.textContent = \"First\";\n        title.appendChild(badge);\n      }\n      li.querySelector(\".d\").textContent = entry[1];\n    });\n    Object.keys(cards).forEach(function (key) { if (!shown[key]) cards[key].hidden = true; });\n    setText(\"kicker\", s.ranked ? \"Ranked, roughly by importance\" : \"Stories signals, no order given\");\n    setText(\"pool\", s.pool);\n    setText(\"note\", s.note);\n    document.getElementById(\"pf\").className = s.follow ? \"on\" : \"\";\n    document.getElementById(\"pn\").className = s.notFollow ? \"on\" : \"\";\n    var acts = document.getElementById(\"acts\");\n    acts.textContent = \"\";\n    s.acts.forEach(function (a) { var li = document.createElement(\"li\"); li.textContent = a; acts.appendChild(li); });\n    buttons.forEach(function (b) {\n      var on = b.getAttribute(\"data-s\") === surface;\n      b.setAttribute(\"aria-checked\", on ? \"true\" : \"false\");\n      b.tabIndex = on ? 0 : -1;\n    });\n  }\n\n  var current = \"feed\";\n  function select(surface, focus) {\n    if (surface === current && !focus) return;\n    var before = {};\n    Object.keys(cards).forEach(function (k) { if (!cards[k].hidden) before[k] = cards[k].getBoundingClientRect(); });\n    current = surface;\n    apply(surface);\n    if (focus) buttons[KEYS.indexOf(surface)].focus();\n    if (reduce || !cards.activity.animate) return;\n    Object.keys(cards).forEach(function (k) {\n      var li = cards[k];\n      if (li.hidden) return;\n      var after = li.getBoundingClientRect();\n      if (before[k]) {\n        var dy = before[k].top - after.top;\n        if (Math.abs(dy) > 0.5) li.animate([{ transform: \"translateY(\" + dy + \"px)\" }, { transform: \"none\" }], { duration: 460, easing: \"cubic-bezier(.2,.8,.2,1)\" });\n      } else {\n        li.animate([{ opacity: 0, transform: \"translateY(10px)\" }, { opacity: 1, transform: \"none\" }], { duration: 360, easing: \"ease-out\", delay: 60 * Number(li.style.order), fill: \"backwards\" });\n      }\n    });\n  }\n\n  // Hold the list at its tallest surface so switching never makes the page jump.\n  function settle() {\n    list.style.minHeight = \"\";\n    // Stacked on a phone, the panel sits below the list; a held gap there would read as broken.\n    if (innerWidth <= 720) { apply(current); return; }\n    var tallest = 0;\n    KEYS.forEach(function (k) { apply(k); tallest = Math.max(tallest, list.getBoundingClientRect().height); });\n    apply(current);\n    list.style.minHeight = Math.ceil(tallest) + \"px\";\n  }\n\n  buttons.forEach(function (b, i) {\n    b.addEventListener(\"click\", function () { select(b.getAttribute(\"data-s\"), false); });\n    b.addEventListener(\"keydown\", function (e) {\n      var next = null;\n      if (e.key === \"ArrowRight\" || e.key === \"ArrowDown\") next = (i + 1) % 4;\n      else if (e.key === \"ArrowLeft\" || e.key === \"ArrowUp\") next = (i + 3) % 4;\n      else if (e.key === \"Home\") next = 0;\n      else if (e.key === \"End\") next = 3;\n      if (next !== null) { e.preventDefault(); select(KEYS[next], true); }\n    });\n  });\n\n  settle();\n  var width = innerWidth;\n  addEventListener(\"resize\", function () { if (innerWidth !== width) { width = innerWidth; settle(); } });\n})();\n</script>\n",
+      "sources": [
+        {
+          "url": "https://about.instagram.com/blog/announcements/instagram-ranking-explained",
+          "title": "Instagram Ranking Explained (Instagram, 2023)",
+          "quote": "The most important signals across Feed, roughly in order of importance, are: Your activity"
+        },
+        {
+          "url": "https://about.instagram.com/blog/announcements/instagram-ranking-explained",
+          "title": "Instagram Ranking Explained (Instagram, 2023)",
+          "quote": "We then look at a variety of input signals such as: Viewing history"
+        },
+        {
+          "url": "https://about.instagram.com/blog/announcements/instagram-ranking-explained",
+          "title": "Instagram Ranking Explained (Instagram, 2023)",
+          "quote": "The most important signals we look at, in rough order of importance, are: Information about the post"
+        },
+        {
+          "url": "https://about.instagram.com/blog/announcements/instagram-ranking-explained",
+          "title": "Instagram Ranking Explained (Instagram, 2023)",
+          "quote": "Your activity in Explore. These are signals like posts you've liked, saved, shared or commented on"
+        },
+        {
+          "url": "https://about.instagram.com/blog/announcements/instagram-ranking-explained",
+          "title": "Instagram Ranking Explained (Instagram, 2023)",
+          "quote": "The most important signals, roughly in order of importance, are: Your activity. We look at things like which reels you've liked, saved, reshared, commented on, and engaged with recently"
+        },
+        {
+          "url": "https://about.instagram.com/blog/announcements/instagram-ranking-explained",
+          "title": "Instagram Ranking Explained (Instagram, 2023)",
+          "quote": "Your history of interacting with the person who posted. As with Explore"
+        }
+      ]
+    },
+    {
+      "heading": "One ranking per surface",
+      "body": "Instagram says it has no single algorithm: Feed, Stories, Explore and Reels each use their own, tailored to how people use that part of the app, and rank things differently [1][2][3]. Stories come from accounts a person follows, Feed mixes those with recommended posts, and Explore and Reels mostly show accounts the person does not follow [4][5][6]. Switch the surface in the panel above to see which signal moves to the top.",
+      "sources": [
+        {
+          "url": "https://about.instagram.com/blog/announcements/instagram-ranking-explained",
+          "title": "Instagram Ranking Explained (Instagram, 2023)",
+          "quote": "Instagram doesn't have a singular algorithm that oversees what people do and don't see on the app"
+        },
+        {
+          "url": "https://about.instagram.com/blog/announcements/instagram-ranking-explained",
+          "title": "Instagram Ranking Explained (Instagram, 2023)",
+          "quote": "Each part of the app - Feed, Stories, Explore, Reels, Search and more - uses its own algorithm tailored to how people use it"
+        },
+        {
+          "url": "https://about.instagram.com/blog/announcements/instagram-ranking-explained",
+          "title": "Instagram Ranking Explained (Instagram, 2023)",
+          "quote": "We rank things differently in these different parts of the app"
+        },
+        {
+          "url": "https://about.instagram.com/blog/announcements/instagram-ranking-explained",
+          "title": "Instagram Ranking Explained (Instagram, 2023)",
+          "quote": "The stories you see are from people you've chosen to follow, as well as ads"
+        },
+        {
+          "url": "https://about.instagram.com/blog/announcements/instagram-ranking-explained",
+          "title": "Instagram Ranking Explained (Instagram, 2023)",
+          "quote": "your feed will have a mix of content from the accounts you've chosen to follow, recommended content from accounts we think you'll enjoy and ads"
+        },
+        {
+          "url": "https://about.instagram.com/blog/announcements/instagram-ranking-explained",
+          "title": "Instagram Ranking Explained (Instagram, 2023)",
+          "quote": "Much like Explore, the majority of what you see is from accounts you don't follow"
+        }
+      ]
+    },
+    {
+      "heading": "Signals and predictions",
+      "body": "Instagram calls its inputs signals and says there are thousands, from when a post was shared to how often a person likes videos [1]. From them it makes roughly a dozen predictions of how a person will interact; in Feed the five it watches most are spending a few seconds on a post, commenting, liking, sharing and tapping the profile photo [2]. In Reels the top predictions include resharing a reel and watching it all the way through, and in Explore a post's popularity counts much more than in Feed or Stories [3][4].",
+      "sources": [
+        {
+          "url": "https://about.instagram.com/blog/announcements/instagram-ranking-explained",
+          "title": "Instagram Ranking Explained (Instagram, 2023)",
+          "quote": "there are thousands of them. They include everything from when a post was shared to whether you're using a phone or the web to how often you like videos"
+        },
+        {
+          "url": "https://about.instagram.com/blog/announcements/instagram-ranking-explained",
+          "title": "Instagram Ranking Explained (Instagram, 2023)",
+          "quote": "There are roughly a dozen of these. In Feed, the five interactions we look at most closely are how likely you are to spend a few seconds on a post, comment on it, like it, share it, and tap on the profile photo"
+        },
+        {
+          "url": "https://about.instagram.com/blog/announcements/instagram-ranking-explained",
+          "title": "Instagram Ranking Explained (Instagram, 2023)",
+          "quote": "The most important predictions we make are how likely you are to reshare a reel, watch a reel all the way through"
+        },
+        {
+          "url": "https://about.instagram.com/blog/announcements/instagram-ranking-explained",
+          "title": "Instagram Ranking Explained (Instagram, 2023)",
+          "quote": "These signals matter much more in Explore than they do in Feed or in Stories"
+        }
+      ]
+    },
+    {
+      "heading": "What changed from 2021 to 2023",
+      "body": "Instagram began in 2010 as a single stream of photos in chronological order, and by 2016 people were missing 70% of their Feed posts, which led it to rank Feed [1][2]. Its 2021 explanation gave one order for Feed and Stories, with information about the post first and your activity third [3][4]. The 2023 update gives Feed its own order with your activity first [5]. The chart below lines up the two Feed orders so each signal's move is visible.",
+      "sources": [
+        {
+          "url": "https://about.instagram.com/blog/announcements/shedding-more-light-on-how-instagram-works",
+          "title": "Shedding More Light on How Instagram Works (Instagram, 2021)",
+          "quote": "When we first launched in 2010, Instagram was a single stream of photos in chronological order"
+        },
+        {
+          "url": "https://about.instagram.com/blog/announcements/shedding-more-light-on-how-instagram-works",
+          "title": "Shedding More Light on How Instagram Works (Instagram, 2021)",
+          "quote": "By 2016, people were missing 70% of all their posts in Feed, including almost half of posts from their close connections. So we developed and introduced a Feed that ranked posts"
+        },
+        {
+          "url": "https://about.instagram.com/blog/announcements/shedding-more-light-on-how-instagram-works",
+          "title": "Shedding More Light on How Instagram Works (Instagram, 2021)",
+          "quote": "The most important signals across Feed and Stories, roughly in order of importance, are: Information about the post"
+        },
+        {
+          "url": "https://about.instagram.com/blog/announcements/shedding-more-light-on-how-instagram-works",
+          "title": "Shedding More Light on How Instagram Works (Instagram, 2021)",
+          "quote": "Information about the person who posted. This helps us get a sense for how interesting the person might be to you, and includes signals like how many times people have interacted with that person in the past few weeks. Your activity."
+        },
+        {
+          "url": "https://about.instagram.com/blog/announcements/instagram-ranking-explained",
+          "title": "Instagram Ranking Explained (Instagram, 2023)",
+          "quote": "The most important signals across Feed, roughly in order of importance, are: Your activity"
+        }
+      ]
+    },
+    {
+      "kind": "figure",
+      "heading": "Feed signal order, 2021 and 2023",
+      "body": "<style>\n.fo{font-family:var(--ow-font);color:var(--ow-fg);max-width:760px;margin:0 auto}\n.fo *{box-sizing:border-box}\n.fo .cols{display:grid;grid-template-columns:minmax(0,1fr) clamp(44px,14vw,120px) minmax(0,1fr);align-items:stretch}\n.fo .yr{font-size:13px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--ow-muted);height:28px}\n.fo .yr.r{text-align:left}\n.fo ol{list-style:none;margin:0;padding:0;display:grid;grid-template-rows:repeat(4,76px)}\n.fo li{display:flex;align-items:center;gap:10px;font-size:15px;line-height:1.3}\n.fo .l li{justify-content:flex-end;text-align:right}\n.fo .n{flex:none;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;border:1px solid var(--ow-line);background:var(--ow-panel);font-family:var(--ow-mono);font-size:14px;font-weight:600;color:var(--ow-muted)}\n.fo .hi{font-weight:650;color:var(--ow-accent)}\n.fo .hi .n{background:var(--ow-accent);border-color:var(--ow-accent);color:var(--ow-accent-ink)}\n.fo svg{display:block;width:100%;height:304px;margin-top:28px;overflow:visible}\n.fo line{stroke:var(--ow-line);stroke-width:2;vector-effect:non-scaling-stroke;stroke-linecap:round}\n.fo line.a{stroke:var(--ow-accent);stroke-width:3}\n.fo .cap{margin:12px 0 0;font-size:14px;color:var(--ow-muted);text-align:center}\n@media (max-width:480px){.fo li{font-size:14px}.fo .n{width:24px;height:24px;font-size:13px}.fo .l li,.fo .rr li{gap:6px}}\n</style>\n<div class=\"fo\" role=\"img\" aria-label=\"Feed signals in order of importance: in 2021 information about the post was first and your activity third; in 2023 your activity is first.\">\n  <div class=\"cols\">\n    <div class=\"l\">\n      <div class=\"yr\" style=\"text-align:right\">2021</div>\n      <ol>\n        <li>Information about the post <span class=\"n\">1</span></li>\n        <li>Information about the person who posted <span class=\"n\">2</span></li>\n        <li class=\"hi\">Your activity <span class=\"n\">3</span></li>\n        <li>Your history with someone <span class=\"n\">4</span></li>\n      </ol>\n    </div>\n    <svg viewBox=\"0 0 100 304\" preserveAspectRatio=\"none\" aria-hidden=\"true\">\n      <line x1=\"4\" y1=\"38\" x2=\"96\" y2=\"114\"/>\n      <line x1=\"4\" y1=\"114\" x2=\"96\" y2=\"190\"/>\n      <line x1=\"4\" y1=\"266\" x2=\"96\" y2=\"266\"/>\n      <line class=\"a\" x1=\"4\" y1=\"190\" x2=\"96\" y2=\"38\"/>\n    </svg>\n    <div class=\"rr\">\n      <div class=\"yr r\">2023</div>\n      <ol>\n        <li class=\"hi\"><span class=\"n\">1</span> Your activity</li>\n        <li><span class=\"n\">2</span> Information about the post</li>\n        <li><span class=\"n\">3</span> Information about the person who posted</li>\n        <li><span class=\"n\">4</span> Your history with someone</li>\n      </ol>\n    </div>\n  </div>\n  <p class=\"cap\">Feed and Stories shared one order in 2021. The 2023 order is for Feed alone.</p>\n</div>\n"
+    }
+  ],
+  "data": {
+    "tags": [
+      "instagram",
+      "ranking",
+      "algorithm",
+      "feed",
+      "stories",
+      "explore",
+      "reels",
+      "reach"
+    ],
+    "facts": [
+      {
+        "label": "Ranking systems",
+        "value": "One per surface"
+      },
+      {
+        "label": "Signals",
+        "value": "Thousands"
+      },
+      {
+        "label": "Predictions",
+        "value": "Roughly a dozen"
+      },
+      {
+        "label": "First Feed signal (2023)",
+        "value": "Your activity"
+      },
+      {
+        "label": "Feed posts missed by 2016",
+        "value": "70%"
+      },
+      {
+        "label": "Launched",
+        "value": "2010, chronological"
+      }
+    ]
+  }
+}

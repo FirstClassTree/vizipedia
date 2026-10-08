@@ -26,11 +26,11 @@ async function ownerOf(wiki: Wiki, handle: string): Promise<{ ownerId: string; h
 }
 
 export const PAGE = {
-  title: "Monty Hall problem",
-  lede: "A probability puzzle where switching doors wins two times in three.",
+  title: "Reach decay",
+  lede: "How far a post travels, and how fast that stops: most reach arrives in the first hours.",
   sections: [
-    { kind: "experience", heading: "Play it", body: "<button>Pick a door</button>" },
-    { heading: "The answer", body: "Switching wins 2/3 of the time [1]. See [[Bayes theorem]].", sources: [SOURCE] },
+    { kind: "experience", heading: "Drag the clock", body: "<button>Drag the clock</button>" },
+    { heading: "The curve", body: "Most reach arrives in the first hours [1]. See [[Hook (short video)]].", sources: [SOURCE] },
   ],
 };
 

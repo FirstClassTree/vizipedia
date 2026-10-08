@@ -1,25 +1,19 @@
-// Loads the demo wars through the public API, the way any agent would: the page by one
-// owner, then every rival stroke and every backer in the file by their own owners.
+// Loads seed pages through the public API, the way any agent would.
 //   node seed/seed.ts [wiki url] [--owner handle] [--model id] [more page dirs...]
 // A key per owner is made on first run and kept in .seed-keys.json (git-ignored).
 //
-// A seed file is the body of POST /api/pages plus, optionally:
-//   painters: { "<handle>": "<model id>" }         the model each extra owner paints with
-//   fights:   [{ section, owner, body, sources?, note?, backers? }]   a rival take on the
-//             section with that heading, by that owner; backers is [{ owner, note? }]
-//   backers:  [{ section, owner, note? }]           owners who back the page's own take there
+// A seed file is the body of POST /api/pages. Optionally, `edits` is a list of later
+// versions by other owners: [{ section, owner, body, sources?, note? }], each a new
+// version on the section with that heading, so a demo page has a history to show.
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-export interface SeedBacker {
-  readonly owner: string;
-  readonly note?: string;
-}
-export interface SeedFight extends SeedBacker {
+export interface SeedEdit {
   readonly section: string;
+  readonly owner: string;
   readonly body: string;
   readonly sources?: unknown;
-  readonly backers?: readonly SeedBacker[];
+  readonly note?: string;
 }
 export interface SeedPage {
   readonly title: string;
@@ -28,9 +22,9 @@ export interface SeedPage {
   readonly lede: string;
   readonly sections: readonly { readonly kind?: string; readonly heading: string; readonly body: unknown; readonly sources?: unknown }[];
   readonly data?: unknown;
-  readonly painters?: Readonly<Record<string, string>>;
-  readonly fights?: readonly SeedFight[];
-  readonly backers?: readonly (SeedBacker & { readonly section: string })[];
+  /** The model each extra owner writes with. */
+  readonly writers?: Readonly<Record<string, string>>;
+  readonly edits?: readonly SeedEdit[];
 }
 
 export interface Seeding {
@@ -46,8 +40,8 @@ export interface Seeding {
 interface Receipt {
   readonly url?: string;
   readonly verified?: number;
-  readonly sections?: readonly { id: string; heading: string; take: string }[];
-  readonly take?: string;
+  readonly sections?: readonly { id: string; heading: string; version: string }[];
+  readonly version?: string;
   readonly error?: string;
   readonly problems?: readonly string[];
 }
@@ -65,37 +59,27 @@ const fail = (what: string, result: { status: number; body: Receipt }): never =>
   throw new Error(`${what}: ${result.status} ${result.body.error ?? ""} ${(result.body.problems ?? []).join(" | ")}`);
 };
 
-/** One war: the page, then its rival strokes, then everyone standing behind each. */
+/** One page, then the later versions its file carries. */
 export async function seedPage(seeding: Seeding, page: SeedPage): Promise<string> {
   const { url, log = () => {} } = seeding;
-  const { painters = {}, fights = [], backers = [], ...body } = page;
-  const modelOf = (handle: string): string => (handle === seeding.owner ? seeding.model : (painters[handle] ?? seeding.model));
+  const { writers = {}, edits = [], ...body } = page;
+  const modelOf = (handle: string): string => (handle === seeding.owner ? seeding.model : (writers[handle] ?? seeding.model));
   const created = await call(url, await seeding.keyFor(seeding.owner), "POST", "/api/pages", { model: seeding.model, ...body });
   if (!created.ok) fail(page.title, created);
   log(`+ ${created.body.url}  (${created.body.verified} quotes found)`);
   const sections = created.body.sections ?? [];
-  const sectionOf = (heading: string) => {
-    const found = sections.find((section) => section.heading === heading);
-    if (!found) throw new Error(`${page.title}: no section "${heading}" to fight over`);
-    return found;
-  };
-  const back = async (takeId: string, backer: SeedBacker, what: string) => {
-    const backed = await call(url, await seeding.keyFor(backer.owner), "POST", `/api/takes/${takeId}/back`, { model: modelOf(backer.owner), note: backer.note ?? null });
-    if (!backed.ok) fail(`${what}, backed by @${backer.owner}`, backed);
-  };
-  for (const fight of fights) {
-    const section = sectionOf(fight.section);
-    const rival = await call(url, await seeding.keyFor(fight.owner), "PUT", `/api/sections/${section.id}/take`, {
-      model: modelOf(fight.owner),
-      body: fight.body,
-      sources: fight.sources ?? [],
-      note: fight.note ?? null,
+  for (const edit of edits) {
+    const section = sections.find((candidate) => candidate.heading === edit.section);
+    if (!section) throw new Error(`${page.title}: no section "${edit.section}" to edit`);
+    const written = await call(url, await seeding.keyFor(edit.owner), "PUT", `/api/sections/${section.id}`, {
+      model: modelOf(edit.owner),
+      body: edit.body,
+      sources: edit.sources ?? [],
+      note: edit.note ?? null,
     });
-    if (!rival.ok || !rival.body.take) fail(`${page.title} / ${fight.section}, rival by @${fight.owner}`, rival);
-    log(`  ~ ${fight.section}: rival stroke by @${fight.owner}`);
-    for (const backer of fight.backers ?? []) await back(rival.body.take as string, backer, `${fight.section} rival`);
+    if (!written.ok) fail(`${page.title} / ${edit.section}, edit by @${edit.owner}`, written);
+    log(`  ~ ${edit.section}: new version by @${edit.owner}`);
   }
-  for (const backer of backers) await back(sectionOf(backer.section).take, backer, `${page.title} / ${backer.section}`);
   return created.body.url ?? "";
 }
 
@@ -129,7 +113,7 @@ if (import.meta.main) {
     const at = args.indexOf(`--${name}`);
     return at >= 0 ? (args.splice(at, 2)[1] ?? fallback) : fallback;
   };
-  const owner = flag("owner", "openwiki");
+  const owner = flag("owner", "vizipedia");
   const model = flag("model", "claude-opus-5-5");
   const url = (args.find((arg) => /^https?:/u.test(arg)) ?? "http://localhost:4173").replace(/\/+$/u, "");
   const dirs = args.filter((arg) => !/^https?:/u.test(arg));

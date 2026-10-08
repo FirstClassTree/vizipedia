@@ -5,7 +5,7 @@ import { remoteIdentity } from "../src/identity/identity.ts";
 import { build } from "../src/server.ts";
 import { PAGE, SOURCE } from "./helpers.ts";
 
-const boot = (env: Record<string, string> = {}) => build({ DATA_DIR: ":memory:", VERIFY_SOURCES: "off", PUBLIC_ORIGIN: "https://wiki.test", ...env });
+const boot = (env: Record<string, string> = {}) => build({ DATA_DIR: ":memory:", VERIFY_SOURCES: "off", VERIFY_RENDER: "off", PUBLIC_ORIGIN: "https://wiki.test", ...env });
 
 async function keyFor(app: Awaited<ReturnType<typeof boot>>["app"], handle: string, base = ""): Promise<string> {
   const response = await app.request(`${base}/api/keys`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ handle }) });
@@ -18,7 +18,9 @@ const send = (key: string, body: unknown, method = "POST") => ({
   body: JSON.stringify(body),
 });
 
-test("an agent's whole path: key, create, read as JSON and markdown, rival take, back, patrol", async () => {
+type Receipt = { url: string; sections: { id: string; kind: string; version: string; anchor: string }[]; warnings: string[] };
+
+test("an agent's whole path: key, create, read as JSON and markdown, write a version, history, revert, flag", async () => {
   const { app, db } = await boot({ TRUSTED_OWNERS: "ada,lin" });
   const ada = await keyFor(app, "ada");
   const lin = await keyFor(app, "lin");
@@ -30,71 +32,69 @@ test("an agent's whole path: key, create, read as JSON and markdown, rival take,
 
   const created = await app.request("/api/pages", send(ada, { ...PAGE, model: "claude-opus-5-5" }));
   assert.equal(created.status, 201);
-  const page = (await created.json()) as { url: string; sections: { id: string; kind: string; take: string }[]; warnings: string[] };
-  assert.equal(page.url, "https://wiki.test/monty-hall-problem");
+  const page = (await created.json()) as Receipt;
+  assert.equal(page.url, "https://wiki.test/reach-decay");
   assert.deepEqual(page.warnings, []);
-  const answer = page.sections.find((section) => section.kind === "prose");
-  const read = (await (await app.request("/api/pages/monty-hall-problem")).json()) as {
-    sections: { kind: string; leading: { by: { owner: string }; body?: string; chars?: number; source?: string } }[];
+  const curve = page.sections.find((section) => section.kind === "prose");
+  const read = (await (await app.request("/api/pages/reach-decay")).json()) as {
+    sections: { kind: string; current: { by: { owner: string }; body?: string; chars?: number; source?: string }; write: string }[];
   };
-  assert.equal(read.sections.find((section) => section.kind === "prose")?.leading.by.owner, "ada");
-  const experienceTake = read.sections.find((section) => section.kind === "experience")?.leading;
-  assert.equal(experienceTake?.body, undefined, "a page read names experience code, it does not inline it");
-  assert.match(experienceTake?.source ?? "", /\/api\/takes\//u);
+  assert.equal(read.sections.find((section) => section.kind === "prose")?.current.by.owner, "ada");
+  const experience = read.sections.find((section) => section.kind === "experience")?.current;
+  assert.equal(experience?.body, undefined, "a page read names experience code, it does not inline it");
+  assert.match(experience?.source ?? "", /\/api\/versions\//u);
+  assert.match(read.sections[0]?.write ?? "", /^PUT https:\/\/wiki.test\/api\/sections\//u);
 
-  const rival = await app.request(`/api/sections/${answer?.id}/take`, send(lin, { model: "gpt-6", body: "Only if the host knows [1].", sources: [SOURCE] }, "PUT"));
-  assert.equal(rival.status, 200);
-  const receipt = (await rival.json()) as { take: string; leads: boolean; rivals: number; page: string; sources: { check: string }[] };
-  assert.equal(receipt.rivals, 1);
-  assert.equal(receipt.leads, true);
-  assert.equal(receipt.page, "https://wiki.test/monty-hall-problem#the-answer");
+  const written = await app.request(
+    `/api/sections/${curve?.id}`,
+    send(lin, { model: "gpt-6", body: "Most reach arrives in six hours [1].", sources: [SOURCE], note: "six" }, "PUT"),
+  );
+  assert.equal(written.status, 200);
+  const receipt = (await written.json()) as { version: string; number: number; shown: boolean; page: string; sources: { check: string }[] };
+  assert.equal(receipt.number, 2);
+  assert.equal(receipt.shown, true);
+  assert.equal(receipt.page, "https://wiki.test/reach-decay#the-curve");
 
-  const sol = await keyFor(app, "sol");
-  const backed = (await (await app.request(`/api/takes/${receipt.take}/back`, send(sol, { model: "gemini-3" }))).json()) as Record<string, unknown>;
-  assert.deepEqual(Object.keys(backed).sort(), ["backed", "page"], "backing answers with no tally and no names");
+  const history = (await (await app.request(`/api/sections/${curve?.id}/versions`)).json()) as { versions: { id: string; number: number; by: { owner: string } }[] };
+  assert.deepEqual(
+    history.versions.map((version) => [version.number, version.by.owner]),
+    [
+      [2, "lin"],
+      [1, "ada"],
+    ],
+  );
+  const reverted = await app.request(`/api/sections/${curve?.id}/revert`, send(ada, { model: "claude-opus-5-5", to: history.versions[1]?.id, note: "hours, not six" }));
+  assert.equal(reverted.status, 200);
+  assert.equal(((await reverted.json()) as { number: number }).number, 3);
+
+  const flagged = await app.request(`/api/versions/${receipt.version}/flag`, send(ada, { model: "claude-opus-5-5", reason: "false", note: "the source says hours" }));
+  assert.deepEqual(await flagged.json(), { hidden: false, flags: 1 });
+
   const added = await app.request(
-    "/api/pages/monty-hall-problem/sections",
-    send(lin, { model: "gpt-6", heading: "History", body: "First posed in 1975 [1].", sources: [SOURCE], after: "the-answer" }),
+    "/api/pages/reach-decay/sections",
+    send(lin, { model: "gpt-6", heading: "History", body: "First measured in 2019 [1].", sources: [SOURCE], after: "the-curve" }),
   );
   assert.equal(added.status, 201);
   assert.equal(((await added.json()) as { section: { anchor: string } }).section.anchor, "history");
   const checked = (await (await app.request("/api/check", send(lin, { sources: [SOURCE] }))).json()) as { sources: { check: string }[] };
   assert.equal(checked.sources[0]?.check, "unchecked");
 
-  const patrol = await app.request("/api/patrol?limit=20", { headers: { authorization: `Bearer ${await keyFor(app, "kim")}` } });
-  const items = ((await patrol.json()) as { patrol: { why: string; takes: Record<string, unknown>[] }[] }).patrol;
-  const contested = items.find((item) => item.why === "contested");
-  assert.equal(contested?.takes.length, 2);
-  for (const take of contested?.takes ?? []) {
-    assert.deepEqual(Object.keys(take).sort(), ["back", "body", "flag", "id", "revision", "sources"], "patrol is blind: no author, no model, no tally");
-  }
-
-  const markdown = await app.request("/monty-hall-problem.md");
+  const markdown = await app.request("/reach-decay.md");
   assert.equal(markdown.headers.get("content-type"), "text/markdown; charset=utf-8");
-  assert.match(await markdown.text(), /^# Monty Hall problem\n\n> A probability puzzle/u);
-  const negotiated = await app.request("/monty-hall-problem", { headers: { accept: "text/markdown" } });
-  assert.match(await negotiated.text(), /^# Monty Hall problem/u);
+  assert.match(await markdown.text(), /^# Reach decay\n\n> How far a post travels/u);
+  const negotiated = await app.request("/reach-decay", { headers: { accept: "text/markdown" } });
+  assert.match(await negotiated.text(), /Interactive, play it in a browser: https:\/\/wiki.test\/reach-decay#drag-the-clock/u);
 
-  const wars = (await (await app.request("/api/wars")).json()) as { wars: unknown[] };
-  assert.equal(wars.wars.length, 1);
+  const html = await (await app.request("/reach-decay/history")).text();
+  assert.match(html, /Every version, kept/u);
+  assert.match(html, /data-revert="[0-9a-f-]{36}"/u, "the history page offers the way back");
   await db.close();
 });
 
-test("reads are counted once per network per page, and an oversized body is refused", async () => {
-  const { app, db, wiki } = await boot({ TRUSTED_OWNERS: "ada" });
-  await app.request("/api/pages", send(await keyFor(app, "ada"), { ...PAGE, model: "claude-opus-5-5" }));
-  const view = () => app.request("/api/views/monty-hall-problem", { method: "POST", headers: { "user-agent": "Mozilla/5.0", "x-forwarded-for": "198.51.100.7" } });
-  await view();
-  await view();
-  await app.request("/api/views/monty-hall-problem", { method: "POST", headers: { "user-agent": "Googlebot" } });
-  assert.equal((await wiki.listPages())[0]?.views7d, 1);
+test("an oversized body is refused, and a wrong or missing key is refused with where to get one", async () => {
+  const { app, db } = await boot();
   const huge = await app.request("/api/pages", { method: "POST", headers: { "content-type": "application/json", "content-length": "5000000" }, body: "x".repeat(5_000_000) });
   assert.equal(huge.status, 413);
-  await db.close();
-});
-
-test("a wrong or missing key is refused with where to get one", async () => {
-  const { app, db } = await boot();
   const none = await app.request("/api/pages", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
   assert.equal(none.status, 401);
   assert.match(((await none.json()) as { error: string }).error, /Get a key at https:\/\/wiki.test\/key/u);
@@ -109,11 +109,11 @@ test("an experience is served as a locked box, and only as one", async () => {
   const { app, db } = await boot({ TRUSTED_OWNERS: "ada" });
   const ada = await keyFor(app, "ada");
   const created = await app.request("/api/pages", send(ada, { ...PAGE, model: "claude-opus-5-5", data: { n: 3 } }));
-  const page = (await created.json()) as { sections: { kind: string; take: string }[] };
+  const page = (await created.json()) as Receipt;
   const experience = page.sections.find((section) => section.kind === "experience");
   const prose = page.sections.find((section) => section.kind === "prose");
 
-  const framed = await app.request(`/x/${experience?.take}?s=sheet`);
+  const framed = await app.request(`/x/${experience?.version}`);
   assert.equal(framed.status, 200);
   assert.equal(framed.headers.get("content-security-policy"), EXPERIENCE_CSP);
   assert.match(EXPERIENCE_CSP, /^sandbox allow-scripts; default-src 'none';/u);
@@ -122,72 +122,22 @@ test("an experience is served as a locked box, and only as one", async () => {
   assert.equal(framed.headers.get("connection-allowlist"), "()");
   assert.equal(framed.headers.get("x-content-type-options"), "nosniff");
   const document = await framed.text();
-  assert.match(document, /<button>Pick a door<\/button>/u);
+  assert.match(document, /<button>Drag the clock<\/button>/u);
   assert.match(document, /window\.OW = Object\.freeze\(\{"data":\{"n":3\}/u);
+  assert.match(document, /color-scheme:light/u, "a frame is light paper, like the page");
 
-  assert.equal((await app.request(`/x/${prose?.take}`)).status, 404, "prose is never served as a document");
-  assert.equal((await app.request("/x/not-a-take")).status, 404);
+  assert.equal((await app.request(`/x/${prose?.version}`)).status, 404, "prose is never served as a document");
+  assert.equal((await app.request("/x/not-a-version")).status, 404);
 
-  const html = await app.request("/monty-hall-problem");
+  const html = await app.request("/reach-decay");
   const policy = html.headers.get("content-security-policy") ?? "";
   assert.match(policy, /script-src 'self'/u);
   assert.doesNotMatch(policy, /script-src[^;]*unsafe-inline/u, "the reading page runs no inline script");
-  assert.match(await html.text(), /<iframe class="xp xp-experience" src="\/x\/[0-9a-f-]+\?r=1" sandbox="allow-scripts"/u);
+  assert.match(await html.text(), /<iframe class="xp xp-experience" src="\/x\/[0-9a-f-]+" sandbox="allow-scripts"/u);
   await db.close();
 });
 
-test("a new owner's experience waits for a click until someone backs it", async () => {
-  const { app, db } = await boot();
-  const newcomer = await keyFor(app, "newcomer");
-  await app.request("/api/pages", send(newcomer, { ...PAGE, model: "some-model" }));
-  const before = await (await app.request("/monty-hall-problem")).text();
-  assert.doesNotMatch(before, /<iframe/u);
-  assert.match(before, /data-run="\/x\//u);
-  await db.close();
-});
-
-test("mounted under a path, every address carries it", async () => {
-  const { app, db } = await boot({ BASE_PATH: "/wiki", PUBLIC_ORIGIN: "https://example.com", TRUSTED_OWNERS: "ada" });
-  const ada = await keyFor(app, "ada", "/wiki");
-  const created = await app.request("/wiki/api/pages", send(ada, { ...PAGE, model: "claude-opus-5-5" }));
-  assert.equal(((await created.json()) as { url: string }).url, "https://example.com/wiki/monty-hall-problem");
-  const home = await (await app.request("/wiki/")).text();
-  assert.match(home, /href="\/wiki\/monty-hall-problem"/u);
-  assert.match(home, /https:\/\/example.com\/wiki\/skill.md/u);
-  assert.doesNotMatch(home, /(?:href|src|action)="\/(?!wiki\/)[a-z]/u, "no link escapes the mount");
-  assert.equal((await app.request("/monty-hall-problem")).status, 404);
-  const skill = await (await app.request("/wiki/skill.md")).text();
-  assert.match(skill, /Base URL: https:\/\/example.com\/wiki/u);
-  await db.close();
-});
-
-test("search engines are offered nothing a page has not earned", async () => {
-  const { app, db } = await boot({ TRUSTED_OWNERS: "ada" });
-  await app.request("/api/pages", send(await keyFor(app, "ada"), { ...PAGE, model: "claude-opus-5-5" }));
-  assert.match(await (await app.request("/monty-hall-problem")).text(), /<meta name="robots" content="noindex,follow">/u);
-  assert.doesNotMatch(await (await app.request("/sitemap.xml")).text(), /monty-hall-problem/u);
-  assert.match(await (await app.request("/llms.txt")).text(), /\[Monty Hall problem\]\(https:\/\/wiki.test\/monty-hall-problem.md\)/u);
-  const missing = await app.request("/bayes-theorem");
-  assert.equal(missing.status, 404);
-  const open = await missing.text();
-  assert.match(open, /open ground/u);
-  assert.match(open, /Linked from <a href="\/monty-hall-problem">Monty Hall problem<\/a>/u);
-  assert.match(open, /data-order="write" data-slug="bayes-theorem"/u, "a missing page is an order waiting to be given");
-  await db.close();
-});
-
-test("the operator can take a page down and it is gone everywhere", async () => {
-  const { app, db } = await boot({ ADMIN_TOKEN: "op-secret", TRUSTED_OWNERS: "ada" });
-  await app.request("/api/pages", send(await keyFor(app, "ada"), { ...PAGE, model: "claude-opus-5-5" }));
-  assert.equal((await app.request("/api/admin/moderate", send("wrong", { slug: "monty-hall-problem", reason: "x" }))).status, 401);
-  assert.equal((await app.request("/api/admin/moderate", send("op-secret", { slug: "monty-hall-problem", reason: "unlawful" }))).status, 200);
-  assert.equal((await app.request("/monty-hall-problem")).status, 404);
-  assert.equal((await app.request("/api/pages/monty-hall-problem")).status, 404);
-  assert.equal(((await (await app.request("/api/pages")).json()) as { pages: unknown[] }).pages.length, 0);
-  await db.close();
-});
-
-test("a figure is shown at once because none of its code can run", async () => {
+test("a new owner's experience waits for a click; a figure is shown at once because none of its code can run", async () => {
   const { app, db } = await boot();
   const newcomer = await keyFor(app, "newcomer");
   const scripted = await app.request(
@@ -206,76 +156,90 @@ test("a figure is shown at once because none of its code can run", async () => {
     }),
   );
   assert.equal(created.status, 201);
-  const figure = ((await created.json()) as { sections: { kind: string; take: string }[] }).sections.find((section) => section.kind === "figure");
-  const framed = await app.request(`/x/${figure?.take}`);
+  const figure = ((await created.json()) as Receipt).sections.find((section) => section.kind === "figure");
+  const framed = await app.request(`/x/${figure?.version}`);
   assert.equal(framed.headers.get("content-security-policy"), FIGURE_CSP);
   assert.match(FIGURE_CSP, /script-src 'sha256-[A-Za-z0-9+/=]+'/u);
   assert.doesNotMatch(FIGURE_CSP, /unsafe-inline'; style|script-src[^;]*unsafe-inline/u, "only the wiki's own height script may run in a figure");
-  const document = await framed.text();
-  assert.doesNotMatch(document, /window\.OW/u);
-  const html = await (await app.request("/monty-hall-problem")).text();
+  assert.doesNotMatch(await framed.text(), /window\.OW/u);
+  const html = await (await app.request("/reach-decay")).text();
   assert.match(html, /<iframe class="xp xp-figure"/u, "a new owner's figure needs no click");
-  assert.match(html, /data-run="\/x\//u, "its experience still does");
+  assert.match(html, /class="gate" data-owner="newcomer" data-run="\/x\//u, "its experience waits, except in its owner's own browser");
   await db.close();
 });
 
-test("the board ranks what is hot, written or not, and a feed's subject is open ground until claimed", async () => {
+test("mounted under a path, every address carries it", async () => {
+  const { app, db } = await boot({ BASE_PATH: "/wiki", PUBLIC_ORIGIN: "https://example.com", TRUSTED_OWNERS: "ada" });
+  const ada = await keyFor(app, "ada", "/wiki");
+  const created = await app.request("/wiki/api/pages", send(ada, { ...PAGE, model: "claude-opus-5-5" }));
+  assert.equal(((await created.json()) as { url: string }).url, "https://example.com/wiki/reach-decay");
+  const home = await (await app.request("/wiki/")).text();
+  assert.match(home, /href="\/wiki\/reach-decay"/u);
+  assert.match(home, /https:\/\/example.com\/wiki\/skill.md/u);
+  assert.doesNotMatch(home, /(?:href|src|action)="\/(?!wiki\/)[a-z]/u, "no link escapes the mount");
+  assert.equal((await app.request("/reach-decay")).status, 404);
+  const skill = await (await app.request("/wiki/skill.md")).text();
+  assert.match(skill, /Base URL: https:\/\/example.com\/wiki/u);
+  await db.close();
+});
+
+test("search engines are offered what earned it; a missing page is a task waiting to be given", async () => {
+  const { app, db } = await boot({ TRUSTED_OWNERS: "ada" });
+  const ada = await keyFor(app, "ada");
+  await app.request("/api/pages", send(ada, { ...PAGE, model: "claude-opus-5-5", title: "Text only", sections: [PAGE.sections[1]!] }));
+  assert.match(await (await app.request("/text-only")).text(), /<meta name="robots" content="noindex,follow">/u);
+  await app.request("/api/pages", send(ada, { ...PAGE, model: "claude-opus-5-5" }));
+  // Quotes go unchecked here (VERIFY_SOURCES=off), so even the playable page has not earned it yet.
+  assert.match(await (await app.request("/reach-decay")).text(), /<meta name="robots" content="noindex,follow">[\s\S]*still needs 1 or more quotes found/u);
+  assert.doesNotMatch(await (await app.request("/sitemap.xml")).text(), /reach-decay|text-only/u);
+  assert.match(await (await app.request("/llms.txt")).text(), /\[Reach decay\]\(https:\/\/wiki.test\/reach-decay.md\): .* \(interactive\)/u);
+  const missing = await app.request("/hook-short-video");
+  assert.equal(missing.status, 404);
+  const open = await missing.text();
+  assert.match(open, /not written yet/u);
+  assert.match(open, /Linked from <a href="\/reach-decay">Reach decay<\/a>/u);
+  assert.match(open, /data-order="write" data-slug="hook-short-video"/u);
+  await db.close();
+});
+
+test("the operator can take a page or a version down, and it is gone everywhere", async () => {
   const { app, db } = await boot({ ADMIN_TOKEN: "op-secret", TRUSTED_OWNERS: "ada" });
   const ada = await keyFor(app, "ada");
-  await app.request("/api/pages", send(ada, { ...PAGE, model: "claude-opus-5-5", data: { tags: ["Probability", "paradox"], facts: [{ label: "Posed", value: "1975" }] } }));
-  const feed = { feed: "phoenix", topics: [{ title: "Jev Decision Model", what: "A model that picks.", heat: 900, detail: { mentions: 39 }, url: "https://example.org/jev" }] };
-  assert.equal((await app.request("/api/signals", send("wrong", feed, "PUT"))).status, 401);
-  assert.equal((await app.request("/api/signals", send("op-secret", feed, "PUT"))).status, 200);
+  const created = (await (await app.request("/api/pages", send(ada, { ...PAGE, model: "claude-opus-5-5" }))).json()) as Receipt;
+  const curve = created.sections.find((section) => section.kind === "prose");
+  const second = (await (await app.request(`/api/sections/${curve?.id}`, send(ada, { model: "claude-opus-5-5", body: "Wrong [1].", sources: [SOURCE] }, "PUT"))).json()) as {
+    version: string;
+  };
+  assert.equal((await app.request("/api/admin/moderate", send("wrong", { slug: "reach-decay", reason: "x" }))).status, 401);
+  assert.equal((await app.request("/api/admin/moderate", send("op-secret", { version: second.version, reason: "unlawful" }))).status, 200);
+  const read = (await (await app.request("/api/pages/reach-decay")).json()) as { sections: { kind: string; current: { number: number } }[] };
+  assert.equal(read.sections.find((section) => section.kind === "prose")?.current.number, 1, "the version before shows");
+  assert.equal((await app.request(`/x/${curve?.version}`)).status, 404, "prose is never a document");
+  assert.equal((await app.request("/api/admin/moderate", send("op-secret", { slug: "reach-decay", reason: "unlawful" }))).status, 200);
+  assert.equal((await app.request("/reach-decay")).status, 404);
+  assert.equal((await app.request("/api/pages/reach-decay")).status, 404);
+  assert.equal(((await (await app.request("/api/pages")).json()) as { pages: unknown[] }).pages.length, 0);
+  await db.close();
+});
 
-  type Row = { slug: string; written: boolean; heat: number; claim?: string; tags?: string[]; outside: { mentions?: number } | null };
-  const board = async (query = ""): Promise<Row[]> => ((await (await app.request(`/api/board${query}`)).json()) as { topics: Row[] }).topics;
-  const hot = await board();
-  assert.deepEqual(
-    hot.map((row) => [row.slug, row.written]),
-    [
-      ["jev-decision-model", false],
-      ["monty-hall-problem", true],
-      ["bayes-theorem", false],
-    ],
-    "the feed's subject leads, then the written page, then the page that is only linked to",
-  );
-  assert.match(hot[0]?.claim ?? "", /"slug": "jev-decision-model"/u);
-  assert.equal(hot[0]?.outside?.mentions, 39);
-  assert.deepEqual(hot[1]?.tags, ["probability", "paradox"]);
-  assert.deepEqual(
-    (await board("?view=open")).map((row) => row.slug),
-    ["jev-decision-model", "bayes-theorem"],
-  );
-  assert.deepEqual(
-    (await board("?tag=paradox")).map((row) => row.slug),
-    ["monty-hall-problem"],
-  );
-
-  const open = await (await app.request("/jev-decision-model")).text();
-  assert.match(open, /39 mentions outside this week/u);
+test("the home page lists pages by subject and order, with facts on the page", async () => {
+  const { app, db } = await boot({ TRUSTED_OWNERS: "ada" });
+  const ada = await keyFor(app, "ada");
+  await app.request("/api/pages", send(ada, { ...PAGE, model: "claude-opus-5-5", data: { tags: ["Instagram", "reach"], facts: [{ label: "Most reach by", value: "hour 6" }] } }));
   const home = await (await app.request("/")).text();
-  assert.match(home, /row-open[^>]*data-topic="jev-decision-model"/u);
-  assert.match(home, /href="\/tag\/probability"/u);
-  assert.match(await (await app.request("/tag/probability")).text(), /Monty Hall problem/u);
-  const page = await (await app.request("/monty-hall-problem")).text();
-  assert.match(page, /<dt>Posed<\/dt><dd>1975<\/dd>/u);
-
-  // A boost is one a day per owner; a person's tap is one a day per network.
-  const before = hot[1]?.heat ?? 0;
-  assert.equal((await app.request("/api/pages/monty-hall-problem/boost", send(ada, { model: "claude-opus-5-5" }))).status, 200);
-  assert.equal((await app.request("/api/pages/monty-hall-problem/boost", send(ada, { model: "claude-opus-5-5" }))).status, 429);
-  const tap = () => app.request("/api/heat/monty-hall-problem", { method: "POST", headers: { "user-agent": "Mozilla/5.0", "x-forwarded-for": "198.51.100.9" } });
-  assert.deepEqual(await (await tap()).json(), { counted: true });
-  assert.deepEqual(await (await tap()).json(), { counted: false });
-  const after = (await board()).find((row) => row.slug === "monty-hall-problem")?.heat ?? 0;
-  assert.equal(after - before, 20 + 3);
-
-  // Claiming the ground: the subject is now a page and keeps what the feed says about it.
-  const claimed = await app.request("/api/pages", send(ada, { ...PAGE, model: "claude-opus-5-5", title: "Jev Decision Model" }));
-  assert.equal(claimed.status, 201);
-  const now = (await board())[0];
-  assert.equal(now?.slug, "jev-decision-model");
-  assert.equal(now?.written, true);
+  assert.match(home, /Free · open source/u);
+  assert.match(home, /data-page="reach-decay"/u);
+  assert.match(home, /href="\/tag\/instagram"/u);
+  assert.match(await (await app.request("/tag/reach")).text(), /Reach decay/u);
+  assert.match(await (await app.request("/?sort=title")).text(), /aria-current="true">A to Z/u);
+  const page = await (await app.request("/reach-decay")).text();
+  assert.match(page, /<dt>Most reach by<\/dt><dd>hour 6<\/dd>/u);
+  assert.match(page, /Made by Shapeless AI/u);
+  const tags = (await (await app.request("/api/tags")).json()) as { tags: { tag: string }[] };
+  assert.deepEqual(
+    tags.tags.map((entry) => entry.tag),
+    ["instagram", "reach"],
+  );
   await db.close();
 });
 
@@ -283,9 +247,9 @@ test("a browser that is watching hears a write as it lands, and can ask for what
   const { app, db, live } = await boot({ TRUSTED_OWNERS: "ada,lin" });
   const ada = await keyFor(app, "ada");
   const created = await app.request("/api/pages", send(ada, { ...PAGE, model: "claude-opus-5-5" }));
-  const prose = ((await created.json()) as { sections: { id: string; kind: string }[] }).sections.find((section) => section.kind === "prose");
+  const prose = ((await created.json()) as Receipt).sections.find((section) => section.kind === "prose");
 
-  const stream = await app.request("/api/live?page=monty-hall-problem");
+  const stream = await app.request("/api/live?page=reach-decay");
   assert.equal(stream.status, 200);
   assert.match(stream.headers.get("content-type") ?? "", /text\/event-stream/u);
   assert.match(stream.headers.get("cache-control") ?? "", /no-transform/u, "a proxy in front must not compress the stream into silence");
@@ -301,36 +265,33 @@ test("a browser that is watching hears a write as it lands, and can ask for what
   };
   await until(/event: ready/u);
 
-  const rival = await app.request(
-    `/api/sections/${prose?.id}/take`,
-    send(await keyFor(app, "lin"), { model: "gpt-6", body: "Only if the host knows [1].", sources: [SOURCE] }, "PUT"),
-  );
-  assert.equal(rival.status, 200);
+  const written = await app.request(`/api/sections/${prose?.id}`, send(await keyFor(app, "lin"), { model: "gpt-6", body: "Six hours [1].", sources: [SOURCE] }, "PUT"));
+  assert.equal(written.status, 200);
   await until(/event: change\ndata: (.+)\n/u);
   const change = JSON.parse(/event: change\ndata: (.+)\n/u.exec(heard)?.[1] ?? "{}") as {
     kind: string;
     by: { owner: string; family: string };
     section: { id: string; anchor: string };
   };
-  assert.equal(change.kind, "take.create");
+  assert.equal(change.kind, "version.write");
   assert.deepEqual(change.by, { owner: "lin", model: "gpt-6", family: "gpt", hue: 152 });
   assert.equal(change.section.id, prose?.id);
   await reader.cancel();
   await live.settled();
 
-  const missed = (await (await app.request("/api/changes?after=0&page=monty-hall-problem")).json()) as { changes: { id: number; kind: string }[] };
+  const missed = (await (await app.request("/api/changes?after=0&page=reach-decay")).json()) as { changes: { id: number; kind: string }[] };
   assert.deepEqual(
     missed.changes.map((entry) => entry.kind),
-    ["page.create", "take.create"],
+    ["page.create", "version.write"],
     "oldest first, so a browser can replay them in order",
   );
-  const fragment = await app.request("/_/page/monty-hall-problem");
+  const fragment = await app.request("/_/page/reach-decay");
   assert.equal(fragment.headers.get("cache-control"), "no-store");
   const html = await fragment.text();
-  assert.match(html, /<section class="block block-prose is-fight"/u);
+  assert.match(html, /<section class="block block-prose"[^>]*data-sig="[0-9a-f-]{36}\.2"/u, "the signature says which version a block shows");
   assert.match(html, /gpt-6/u);
   assert.doesNotMatch(html, /<html/u, "only the part of the page that moves");
-  assert.match(await (await app.request(`/_/wire?after=${missed.changes[0]?.id}`)).text(), /challenged/u);
+  assert.match(await (await app.request(`/_/wire?after=${missed.changes[0]?.id}`)).text(), /changed/u);
   await db.close();
 });
 
@@ -339,7 +300,7 @@ test("a key can be handed over before its owner signs in, and says where to clai
   const made = await app.request("/api/keys", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
   assert.equal(made.status, 201);
   const local = (await made.json()) as { key: string; handle: string; activate: null };
-  assert.match(local.handle, /^agent-[0-9a-f]{8}$/u, "no form to fill: the wiki picks a name");
+  assert.match(local.handle, /^agent-[0-9a-f]{8}$/u, "no form to fill: the wiki picks a name until the person does");
   assert.equal(local.activate, null);
 
   const calls: string[] = [];
@@ -370,12 +331,12 @@ test("a page can be tried without being written, and starting one is a single wr
   const dry = await app.request("/api/pages?dry=1", send(ada, { ...PAGE, model: "claude-opus-5-5" }));
   assert.equal(dry.status, 200);
   const tried = (await dry.json()) as { dry: boolean; slug: string; sources: { section: string }[] };
-  assert.equal(tried.slug, "monty-hall-problem");
+  assert.equal(tried.slug, "reach-decay");
   assert.deepEqual(
     tried.sources.map((entry) => entry.section),
-    ["The answer"],
+    ["The curve"],
   );
-  assert.equal((await app.request("/api/pages/monty-hall-problem")).status, 404, "nothing was written");
+  assert.equal((await app.request("/api/pages/reach-decay")).status, 404, "nothing was written");
 
   assert.equal((await app.request("/api/pages", send(ada, { ...PAGE, model: "claude-opus-5-5" }))).status, 201);
   assert.equal((await app.request("/api/pages?dry=1", send(ada, { ...PAGE, model: "claude-opus-5-5" }))).status, 409, "a dry run says the slug is taken");

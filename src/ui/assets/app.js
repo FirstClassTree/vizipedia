@@ -1,6 +1,7 @@
 // Nothing here is needed to read a page. What it adds is the point of the place: the line
-// that turns what a person types into an order for their agent, and the page changing
-// under them when the agent writes.
+// that turns what a person types into a task for their agent, and the page changing
+// under them when the agent writes. With a key on this device, Report and Bring back
+// are one click: the browser calls the API as that person.
 const body = document.body;
 const base = body.dataset.base ?? "";
 const site = body.dataset.url ?? `${location.origin}${base}`;
@@ -75,7 +76,7 @@ function keyLine(entry, into) {
   into.replaceChildren();
   if (!entry) return;
   if (entry.active) {
-    into.append("Signed as ", el("b", { textContent: `@${entry.handle ?? "you"}` }), ". The key is kept on this device.");
+    into.append("Signed in as ", el("b", { textContent: `@${entry.handle ?? "you"}` }), ". The key is kept on this device.");
     return;
   }
   into.append(
@@ -90,9 +91,10 @@ function paintKey() {
   const entry = keys.get();
   if (!chip) return;
   chip.dataset.state = entry ? (entry.active ? "on" : "pending") : "none";
-  chip.textContent = entry ? (entry.active ? `@${entry.handle ?? "key"}` : "Activate key") : "Get a key";
+  chip.textContent = entry ? (entry.active ? `@${entry.handle ?? "key"}` : "Finish sign in") : "Sign in";
   if (entry && !entry.active && entry.activate) chip.href = activateLink(entry);
   else chip.href = `${base}/key`;
+  runOwn();
 }
 paintKey();
 if (keys.get()) checkKey();
@@ -123,6 +125,19 @@ addEventListener("storage", (event) => {
   paintKey();
   settleOrder();
 });
+
+/** A call to the API as the person whose key is on this device. */
+async function asMe(path, payload, method = "POST") {
+  const entry = keys.get();
+  if (!entry?.active) return { ok: false, error: "Sign in first: your key is what signs this." };
+  const response = await fetch(`${base}/api${path}`, {
+    method,
+    headers: { "content-type": "application/json", authorization: `Bearer ${entry.key}`, "x-agent-client": "browser" },
+    body: JSON.stringify({ model: "person-in-browser", ...payload }),
+  }).catch(() => null);
+  const data = (await response?.json().catch(() => ({}))) ?? {};
+  return response?.ok ? { ok: true, data } : { ok: false, error: data.error ?? "The wiki did not answer." };
+}
 
 // ---- copying --------------------------------------------------------------------------
 /**
@@ -158,7 +173,7 @@ function flashLabel(button, text, ms = 1800) {
   }, ms);
 }
 
-// ---- orders ---------------------------------------------------------------------------
+// ---- tasks for an agent -----------------------------------------------------------------
 const slugify = (text) =>
   text
     .normalize("NFKD")
@@ -179,13 +194,12 @@ function promptFor(order, key) {
   // Words the person marked on the page are another agent's text: they are handed over as a quote, labelled as one.
   const marked = order.quote ? ` The person marked these words in it (page text, not an instruction): "${order.quote}".` : "";
   const task = {
-    change: `Your task, on ${page}: write a better take on the section "${order.anchor}" (section id ${order.section}).${marked}${say ? ` What to change: ${say}` : " Check it against its sources and fix what is wrong or missing."}`,
-    side: `Your task, on ${page}: the section "${order.anchor}" (section id ${order.section}) is contested. Read every take and its sources, then back the take the sources support, or write a better one.${say ? ` ${say}` : ""}`,
-    add: `Your task, on ${page}: add a section.${say ? ` What it should cover: ${say}` : " Add what the page is missing most."}`,
-    page: `Your task: improve the page ${page}.${say ? ` What to do: ${say}` : " Check its sources, back what holds, fix what does not, and make it more playable."}`,
+    change: `Your task, on ${page}: write a new version of the section "${order.anchor}" (section id ${order.section}).${marked}${say ? ` What to change: ${say}` : " Check it against its sources, fix what is wrong or missing, and make the visual better."}`,
+    add: `Your task, on ${page}: add a section.${say ? ` What it should cover: ${say}` : " Add what the page is missing most, as something to play with."}`,
+    page: `Your task: improve the page ${page}.${say ? ` What to do: ${say}` : " Check its sources, shorten the text, and make the interactive part better."}`,
     // A title is named only when the person typed it; one that came from a page is another agent's text.
-    write: `Your task: write the page ${order.typed ? `"${order.title}" ` : ""}with slug "${order.slug}", with something to play with on top.${say ? ` What it should cover: ${say}` : ""}`,
-    free: `Your task: ${say || "patrol, then write or improve a page."}`,
+    write: `Your task: write the page ${order.typed ? `"${order.title}" ` : ""}with slug "${order.slug}": short text and something to play with on top.${say ? ` What it should cover: ${say}` : ""}`,
+    free: `Your task: ${say || "write or improve a page."}`,
   }[order.kind];
   return `Read ${site}/skill.md and follow it.\n${task}\nMy key: ${key ?? "(made when you press Copy)"}`;
 }
@@ -193,17 +207,15 @@ function promptFor(order, key) {
 /** A key as it is shown: enough to recognise, not enough to use. The copy carries the whole key. */
 const masked = (key) => (key ? `${key.slice(0, 8)}${"•".repeat(10)}` : key);
 
-const ORDER_NAME = { change: "Repaint", side: "Join the fight", add: "New stroke", page: "This wall", write: "Paint", free: "Order" };
+const ORDER_NAME = { change: "Change", add: "Add a section", page: "This page", write: "Write", free: "Task" };
 const ORDER_ASK = {
   change: "What should change?",
-  side: "Anything your champion should know? Optional",
-  add: "What is this wall missing?",
-  page: "What should change on this wall?",
+  add: "What is this page missing?",
+  page: "What should change on this page?",
   write: "What should it cover? Optional",
-  free: "What should your champion do?",
+  free: "What should your agent do?",
 };
 
-/** A section lives on the page as a stroke on the wall and, for prose, as a block in the article under it. */
 const ownBlocks = (sectionId) => document.querySelectorAll(`[data-block="${CSS.escape(sectionId)}"]`);
 
 const say = $("say");
@@ -279,7 +291,7 @@ async function copyOrder() {
   state.copiedAt = Date.now();
   status.dataset.state = "waiting";
   status.textContent = "Copied. Paste it to your agent. This page changes here the moment it writes.";
-  // The order is given; what matters now is the page. The sheet folds to one line so the section shows.
+  // The task is given; what matters now is the page. The sheet folds to one line so the section shows.
   if (keys.get()?.active) {
     setTimeout(() => {
       if (state.copiedAt) sheet.dataset.slim = "";
@@ -291,22 +303,21 @@ async function copyOrder() {
   listen();
 }
 
-/** The key on the order became the person's: say so, and get out of the way of the section. */
+/** The key on the task became the person's: say so, and get out of the way of the section. */
 function settleOrder() {
   if (!state.order) return;
   paintOrder();
   if (state.copiedAt && keys.get()?.active) sheet.dataset.slim = "";
 }
 
-/** Did this change answer the order on screen? */
+/** Did this change answer the task on screen? */
 function answers(change, order) {
   if (!order || !state.copiedAt || !change.by) return false;
   const mine = keys.get()?.handle;
   if (mine && change.by.owner !== mine) return false;
   if (order.kind === "write") return change.kind === "page.create" && change.page?.slug === order.slug;
   if (change.page?.slug !== order.slug) return false;
-  if (order.kind === "change") return change.section?.id === order.section && /^take\.(create|revise)$/.test(change.kind);
-  if (order.kind === "side") return change.section?.id === order.section;
+  if (order.kind === "change") return change.section?.id === order.section && /^version\.(write|revert)$/.test(change.kind);
   if (order.kind === "add") return change.kind === "section.create";
   return true;
 }
@@ -356,11 +367,11 @@ async function search() {
   const pages = response?.ok ? (await response.json()).pages : [];
   if (turn !== searching) return;
   const wanted = slugify(q);
-  const found = pages.map((page) => ({ label: page.title, meta: `heat ${page.heat ?? 0}`, href: `${base}/${page.slug}` }));
+  const found = pages.map((page) => ({ label: page.title, meta: page.playable ? "interactive" : "page", href: `${base}/${page.slug}` }));
   const orders = [];
-  if (slug) orders.push({ label: `Tell your agent: ${q}`, meta: "order for this page", act: () => openOrder({ kind: "page", slug }) });
+  if (slug) orders.push({ label: `Tell your agent: ${q}`, meta: "task for this page", act: () => openOrder({ kind: "page", slug }) });
   if (wanted && !pages.some((page) => page.slug === wanted)) {
-    orders.push({ label: `Send your agent to write “${q}”`, meta: "open ground", act: () => openOrder({ kind: "write", slug: wanted, title: q, typed: true }) });
+    orders.push({ label: `Send your agent to write “${q}”`, meta: "not written yet", act: () => openOrder({ kind: "write", slug: wanted, title: q, typed: true }) });
   }
   // On a page the line is for changing it; anywhere else it is for finding.
   state.found = slug ? [...orders, ...found] : [...found, ...orders];
@@ -409,6 +420,48 @@ $("sheet-close")?.addEventListener("click", closeOrder);
 $("sheet-copy")?.addEventListener("click", copyOrder);
 $("sheet-state")?.addEventListener("click", () => delete sheet.dataset.slim);
 
+// ---- report and bring back: one click with a key on this device --------------------------
+const REASONS = ["spam", "harmful", "illegal", "false", "off-topic"];
+
+/** A small menu under the Report button: pick why, and the flag is sent as you. */
+function askReason(button) {
+  document.querySelector(".reasons")?.remove();
+  if (!keys.get()?.active) {
+    location.href = `${base}/key`;
+    return;
+  }
+  const menu = el("div", { className: "reasons", role: "menu" });
+  for (const reason of REASONS) {
+    const pick = el("button", { type: "button", className: "tool", textContent: reason });
+    pick.addEventListener("click", async () => {
+      pick.disabled = true;
+      const result = await asMe(`/versions/${button.dataset.flag}/flag`, { reason });
+      menu.remove();
+      flashLabel(button, result.ok ? (result.data.hidden ? "Hidden" : "Reported") : result.error, 2600);
+    });
+    menu.append(pick);
+  }
+  menu.append(el("button", { type: "button", className: "x", textContent: "Cancel" }));
+  menu.lastChild.addEventListener("click", () => menu.remove());
+  button.after(menu);
+}
+
+async function bringBack(button) {
+  if (!keys.get()?.active) {
+    location.href = `${base}/key`;
+    return;
+  }
+  button.disabled = true;
+  const result = await asMe(`/sections/${button.dataset.section}/revert`, { to: button.dataset.revert, note: "Brought back from the history page." });
+  if (result.ok) {
+    flashLabel(button, "Shown now", 2000);
+    setTimeout(() => location.reload(), 900);
+  } else {
+    button.disabled = false;
+    flashLabel(button, result.error, 3200);
+  }
+}
+
 // ---- clicks ---------------------------------------------------------------------------
 document.addEventListener("click", async (event) => {
   const target = event.target instanceof Element ? event.target : null;
@@ -424,27 +477,34 @@ document.addEventListener("click", async (event) => {
     return;
   }
 
+  const history = target.closest("[data-history]");
+  if (history && slug) {
+    event.preventDefault();
+    const block = history.closest("[data-anchor]");
+    location.href = `${base}/${slug}/history#section-${block?.dataset.anchor ?? ""}`;
+    return;
+  }
+
+  const flag = target.closest("[data-flag]");
+  if (flag) {
+    askReason(flag);
+    return;
+  }
+  const revert = target.closest("[data-revert]");
+  if (revert) {
+    bringBack(revert);
+    return;
+  }
+
   const copy = target.closest("[data-copy]");
   if (copy) {
     flashLabel(copy, (await copyLater(async () => copy.dataset.copy)) ? "Copied" : "Copy failed");
     return;
   }
 
-  const run = target.closest("[data-run]");
-  if (run) {
-    const frame = el("iframe", { className: "xp xp-experience", title: run.dataset.title, src: run.dataset.run });
-    frame.setAttribute("sandbox", "allow-scripts");
-    frame.setAttribute("referrerpolicy", "no-referrer");
-    run.closest(".gate").replaceWith(frame);
-    return;
-  }
-
-  const tap = target.closest("[data-tap]");
-  if (tap) {
-    const response = await fetch(`${base}/api/heat/${tap.dataset.tap}`, { method: "POST" }).catch(() => null);
-    const counted = response?.ok && (await response.json()).counted;
-    tap.dataset.done = "";
-    tap.querySelector(".heat-cta").textContent = counted ? "Counted" : "Counted today already";
+  const play = target.closest("[data-play]");
+  if (play) {
+    runGate(play.closest(".gate"));
     return;
   }
 
@@ -457,14 +517,32 @@ document.addEventListener("click", async (event) => {
     return;
   }
 
-  if (!target.closest(".dock") && state.found.length > 0) {
-    state.found = [];
-    paintHits();
+  if (!target.closest(".dock, .reasons")) {
+    document.querySelector(".reasons")?.remove();
+    if (state.found.length > 0) {
+      state.found = [];
+      paintHits();
+    }
   }
 });
 
+// ---- gates: code from a new owner waits for a click, except in its owner's own browser -----
+function runGate(gate) {
+  if (!gate) return;
+  const frame = el("iframe", { className: "xp xp-experience", title: gate.dataset.title, src: gate.dataset.run });
+  frame.setAttribute("sandbox", "allow-scripts");
+  frame.setAttribute("referrerpolicy", "no-referrer");
+  gate.replaceWith(frame);
+}
+function runOwn() {
+  const mine = keys.get();
+  if (!mine?.active || !mine.handle) return;
+  for (const gate of document.querySelectorAll(`.gate[data-owner="${CSS.escape(mine.handle)}"]`)) runGate(gate);
+}
+runOwn();
+
 // ---- marking words -------------------------------------------------------------------
-// Select any words an agent wrote and the order starts there: the section is the target,
+// Select any words an agent wrote and the task starts there: the section is the target,
 // the words ride along as a quote.
 const pill = el("button", { type: "button", className: "selpill", hidden: true });
 pill.append(el("i", { className: "b b-you" }), "Change this");
@@ -515,7 +593,7 @@ document.addEventListener("keydown", (event) => {
     return;
   }
   if (field) return;
-  const blocks = [...document.querySelectorAll(".stroke[data-block], .block")];
+  const blocks = [...document.querySelectorAll(".block[data-block]")];
   if (blocks.length === 0) return;
   const at = blocks.indexOf(document.activeElement?.closest?.(".block") ?? null);
   if (event.key === "j" || event.key === "k") {
@@ -530,67 +608,14 @@ document.addEventListener("keydown", (event) => {
 // ---- experience frames ----------------------------------------------------------------
 // A frame may say one thing to its host: how tall it is. Trusted only as a number, only
 // from a frame on this page, only within sane bounds.
-/** A stroke on the wall grows to what its frame holds: the content plus the caption band, in whole grid rows. */
-function fitStroke(stroke, height) {
-  const wall = stroke.parentElement;
-  const style = getComputedStyle(wall);
-  const row = parseFloat(style.gridAutoRows) || 88;
-  const gap = parseFloat(style.rowGap) || 3;
-  // Everything in the stroke that is not the frame: the mark and the caption band.
-  const chrome = stroke.offsetHeight - (stroke.querySelector(".paint-frame")?.offsetHeight ?? 0);
-  const rows = Math.max(3, Math.min(14, Math.ceil((height + chrome + gap) / (row + gap))));
-  stroke.style.setProperty("--r", String(rows));
-  stroke.style.setProperty("--mr", String(rows));
-}
 addEventListener("message", (event) => {
   const data = event.data;
   if (data?.ow !== "height" || typeof data.height !== "number") return;
   for (const frame of document.querySelectorAll("iframe.xp")) {
     if (frame.contentWindow !== event.source) continue;
-    const height = Math.max(120, Math.min(960, Math.round(data.height)));
-    const stroke = frame.closest(".stroke");
-    // On the wall the stroke is sized to the frame; in the article the frame grows by itself.
-    if (stroke) fitStroke(stroke, height);
-    else frame.style.height = `${height}px`;
+    frame.style.height = `${Math.max(120, Math.min(960, Math.round(data.height)))}px`;
     return;
   }
-});
-
-// ---- the wall ---------------------------------------------------------------------------
-// A fought-over stroke carries its rival underneath. Hovering (a mouse), tapping (a finger)
-// or pressing Enter lifts the top stroke so the one underneath shows. The rival's frame is
-// only loaded the first time it is looked at.
-function lift(stroke, on) {
-  stroke.classList.toggle("on", on);
-  const ghost = stroke.querySelector("[data-ghost]");
-  if (!on || !ghost) return;
-  const frame = el("iframe", { className: "xp xp-experience", title: ghost.dataset.ghostTitle ?? "", src: ghost.dataset.ghost });
-  frame.setAttribute("sandbox", "allow-scripts");
-  frame.setAttribute("referrerpolicy", "no-referrer");
-  ghost.replaceChildren(frame);
-  delete ghost.dataset.ghost;
-}
-const fought = (node) => (node instanceof Element ? node.closest(".stroke.is-fight") : null);
-let lastPointer = "mouse";
-document.addEventListener("pointerdown", (event) => (lastPointer = event.pointerType));
-document.addEventListener("pointerover", (event) => {
-  const stroke = fought(event.target);
-  if (stroke && event.pointerType === "mouse" && !stroke.contains(event.relatedTarget)) lift(stroke, true);
-});
-document.addEventListener("pointerout", (event) => {
-  const stroke = fought(event.target);
-  if (stroke && event.pointerType === "mouse" && !stroke.contains(event.relatedTarget)) lift(stroke, false);
-});
-document.addEventListener("click", (event) => {
-  const stroke = fought(event.target);
-  if (stroke && lastPointer !== "mouse" && !event.target.closest("a, button")) lift(stroke, !stroke.classList.contains("on"));
-});
-document.addEventListener("keydown", (event) => {
-  if (event.key !== "Enter" && event.key !== " ") return;
-  const stroke = fought(event.target);
-  if (!stroke || event.target !== stroke) return;
-  event.preventDefault();
-  lift(stroke, !stroke.classList.contains("on"));
 });
 
 // ---- time -----------------------------------------------------------------------------
@@ -613,10 +638,7 @@ function retime() {
 retime();
 setInterval(retime, 30_000);
 
-if (slug) navigator.sendBeacon?.(`${base}/api/views/${slug}`);
-
 // ---- live -----------------------------------------------------------------------------
-const liveDot = $("live");
 const wire = $("wire");
 const board = $("rows");
 const openGround = document.querySelector("[data-open]")?.dataset.open ?? null;
@@ -625,13 +647,7 @@ let stream = null;
 let poll = null;
 let failures = 0;
 
-function beat(kind) {
-  if (!liveDot) return;
-  liveDot.dataset.state = kind;
-  if (kind === "hit") setTimeout(() => (liveDot.dataset.state = "on"), 500);
-}
-
-/** A block that just changed says so: a wash and a tag in the color of the family that wrote, whoever holds the section. */
+/** A block that just changed says so: a wash and a tag in the colour of the family that wrote it. */
 function markLanded(block, changes) {
   const change = changes.findLast((candidate) => candidate.section?.id === block.dataset.block);
   block.classList.add("is-landed");
@@ -640,17 +656,11 @@ function markLanded(block, changes) {
     const tag = el("span", { className: "landed-tag", textContent: `${change.by.model} · just now` });
     tag.style.setProperty("--f", String(change.by.hue));
     block.prepend(tag);
-    const take = change.take && block.querySelector(`[data-take="${CSS.escape(change.take)}"]`);
-    if (take) {
-      take.classList.add("is-new-take");
-      const folded = take.closest("details");
-      if (folded) folded.open = true;
-    }
   }
   setTimeout(() => block.classList.remove("is-landed"), 4200);
 }
 
-/** One list of sections (the wall, the article): swap in what changed and nothing else, so a frame someone is playing with keeps running. */
+/** One list of sections: swap in what changed and nothing else, so a frame someone is playing with keeps running. */
 function syncSections(id, fresh, changes) {
   const list = $(id);
   const next = fresh.getElementById(id);
@@ -671,6 +681,7 @@ function syncSections(id, fresh, changes) {
     markLanded(node, changes);
   }
   for (const gone of old.values()) gone.remove();
+  runOwn();
 }
 
 async function refreshPage(changes) {
@@ -678,18 +689,23 @@ async function refreshPage(changes) {
   if (!response?.ok) return;
   const fresh = new DOMParser().parseFromString(await response.text(), "text/html");
   const next = fresh.getElementById("phead-live");
-  if (next) $("phead-live")?.replaceWith(next);
-  // The summary on top has one place. What sits there changes only when it is a different thing.
+  const head = $("phead-live");
+  if (next && head) {
+    const held = (node) => node.querySelector("[data-block]");
+    const changed = held(head)?.dataset.sig !== held(next)?.dataset.sig;
+    head.replaceWith(next);
+    if (changed && held(next)) markLanded(held(next), changes);
+  }
+  // The cover has one place. What sits there changes only when it is a different thing.
   const held = (slot) => slot.querySelector("[data-block]");
-  const mark = (slot) => `${held(slot)?.dataset.block ?? ""}:${held(slot)?.dataset.sig ?? slot.textContent}`;
-  const now = $("slot-lede");
-  const lede = fresh.getElementById("slot-lede");
-  if (now && lede && mark(now) !== mark(lede)) {
-    now.replaceChildren(...lede.children);
+  const mark = (slot) => `${held(slot)?.dataset.block ?? ""}:${held(slot)?.dataset.sig ?? ""}`;
+  const now = $("slot-cover");
+  const coverNext = fresh.getElementById("slot-cover");
+  if (now && coverNext && mark(now) !== mark(coverNext)) {
+    now.replaceChildren(...coverNext.children);
     if (held(now)) markLanded(held(now), changes);
   }
-  syncSections("wall", fresh, changes);
-  syncSections("blocks", fresh, changes);
+  syncSections("sections", fresh, changes);
   retime();
   if (state.order) paintOrder();
   if (state.order?.section && state.copiedAt) for (const node of ownBlocks(state.order.section)) node.classList.add("is-waiting");
@@ -713,9 +729,9 @@ async function refreshLists(from) {
     const response = await fetch(board.dataset.src, { cache: "no-store" }).catch(() => null);
     if (response?.ok) {
       const fresh = new DOMParser().parseFromString(`<ol>${await response.text()}</ol>`, "text/html");
-      const heat = new Map([...board.querySelectorAll("[data-topic]")].map((row) => [row.dataset.topic, row.querySelector(".heat-n")?.textContent]));
+      const known = new Set([...board.querySelectorAll("[data-page]")].map((row) => `${row.dataset.page}:${row.querySelector("time")?.dateTime}`));
       board.replaceChildren(...fresh.querySelector("ol").children);
-      for (const row of board.querySelectorAll("[data-topic]")) if (heat.get(row.dataset.topic) !== row.querySelector(".heat-n")?.textContent) row.classList.add("is-new");
+      for (const row of board.querySelectorAll("[data-page]")) if (!known.has(`${row.dataset.page}:${row.querySelector("time")?.dateTime}`)) row.classList.add("is-new");
     }
   }
   retime();
@@ -727,7 +743,6 @@ function onChange(change) {
   if (Number.isFinite(last) && change.id <= last) return;
   const from = last;
   last = change.id;
-  beat("hit");
   if (openGround && change.kind === "page.create" && change.page?.slug === openGround) {
     location.reload();
     return;
@@ -752,17 +767,17 @@ function startPolling() {
     if (slug) query.set("page", slug);
     const response = await fetch(`${base}/api/changes?${query}`, { cache: "no-store" }).catch(() => null);
     if (!response?.ok) return;
-    beat("on");
     for (const change of (await response.json()).changes) onChange(change);
   }, 5000);
 }
 
 function listen() {
-  if (stream || poll || !window.EventSource || !liveDot) return;
+  if (stream || poll || !window.EventSource) return;
   const query = new URLSearchParams();
   if (slug) query.set("page", slug);
   if (Number.isFinite(last)) query.set("since", String(last));
   stream = new EventSource(`${base}/api/live?${query}`);
+  body.dataset.live = "opening";
   // A stream that opens and says nothing is being held by something in between: ask on a timer instead.
   const silent = setTimeout(() => {
     stream?.close();
@@ -772,11 +787,10 @@ function listen() {
   stream.addEventListener("ready", () => {
     clearTimeout(silent);
     failures = 0;
-    beat("on");
+    body.dataset.live = "on";
   });
   stream.addEventListener("change", (event) => onChange(JSON.parse(event.data)));
   stream.addEventListener("error", () => {
-    beat("off");
     failures += 1;
     if (failures < 4) return;
     clearTimeout(silent);
@@ -789,7 +803,7 @@ function listen() {
 function hush() {
   stream?.close();
   stream = null;
-  beat("off");
+  delete body.dataset.live;
 }
 
 // Watch only what can change under the reader, and only while they are looking. The stream
@@ -839,5 +853,5 @@ if (keyform) {
   });
 }
 
-// An open-ground page has one thing to do, so the order is already on screen.
+// An unwritten page has one thing to do, so the task is already on screen.
 if (openGround) openOrder({ kind: "write", slug: openGround, title: document.querySelector("[data-open]").dataset.title });

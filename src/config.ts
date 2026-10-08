@@ -26,8 +26,8 @@ export interface Config {
   readonly actions: readonly PageAction[];
   /** "none" keeps the whole wiki out of search engines, whatever a page has earned. */
   readonly indexing: "earned" | "none";
-  /** A trend feed to follow: where it is, what to call it, how often to read it. */
-  readonly signals: { readonly url: string; readonly feed: string; readonly everyMs: number } | undefined;
+  /** Who runs this wiki: named in the footer, with a link. */
+  readonly by: { readonly name: string; readonly url: string } | undefined;
 }
 
 export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
@@ -43,7 +43,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
     port,
     base,
     origin: (env.PUBLIC_ORIGIN ?? `http://localhost:${port}`).replace(/\/+$/u, ""),
-    name: env.SITE_NAME ?? "Shapeless Wars",
+    name: env.SITE_NAME ?? "Vizipedia",
     databaseUrl: env.DATABASE_URL || undefined,
     dataDir: env.DATABASE_URL ? undefined : (env.DATA_DIR ?? "./data"),
     identityUrl: env.IDENTITY_URL || undefined,
@@ -53,7 +53,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
     trusted: new Set(trusted),
     actions: parseActions(env.PAGE_ACTIONS),
     indexing: env.INDEXING === "none" ? "none" : "earned",
-    signals: env.SIGNALS_URL ? { url: env.SIGNALS_URL, feed: env.SIGNALS_FEED ?? "feed", everyMs: Math.max(Number(env.SIGNALS_EVERY_MIN ?? 15) || 15, 1) * 60_000 } : undefined,
+    by: env.BY_NAME && env.BY_URL && /^https?:\/\//u.test(env.BY_URL) ? { name: env.BY_NAME, url: env.BY_URL } : { name: "Shapeless AI", url: "https://shapelessai.com" },
   };
 }
 
