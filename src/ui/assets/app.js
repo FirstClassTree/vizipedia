@@ -35,9 +35,31 @@ const keys = {
   },
 };
 
-/** A key before anything else: the wiki hands one over, and whoever runs it says later whose it is. */
-async function mintKey(handle) {
-  const response = await fetch(`${base}/api/keys`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(handle ? { handle } : {}) });
+/**
+ * A key for the person signed in to the product this wiki lives in, or null when nobody is
+ * (or the wiki runs its own keys). The product answers this, never the wiki.
+ */
+async function signedInKey() {
+  if (body.dataset.keys !== "remote") return null;
+  const response = await fetch(`${base}/api/keys`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ session: true }),
+    credentials: "same-origin",
+  }).catch(() => null);
+  if (!response?.ok) return null;
+  const data = await response.json().catch(() => ({}));
+  if (!data.key || data.activate) return null;
+  const entry = { key: data.key, handle: data.handle ?? null, activate: null, active: true };
+  keys.set(entry);
+  return entry;
+}
+
+/** A key before anything else: the signed-in person's, or one the wiki hands over and whoever runs it says later whose it is. */
+async function mintKey() {
+  const mine = await signedInKey();
+  if (mine) return mine;
+  const response = await fetch(`${base}/api/keys`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
   if (response.status === 404 && body.dataset.keyUrl) {
     location.href = body.dataset.keyUrl;
     throw new Error("Keys are handed out by the site this wiki belongs to.");
@@ -76,7 +98,9 @@ function keyLine(entry, into) {
   into.replaceChildren();
   if (!entry) return;
   if (entry.active) {
-    into.append("Signed in as ", el("b", { textContent: `@${entry.handle ?? "you"}` }), ". The key is kept on this device.");
+    const line = el("span", {});
+    line.append("Signed in as ", el("b", { textContent: `@${entry.handle ?? "you"}` }), ". The key is kept on this device.");
+    into.append(line);
     return;
   }
   into.append(
@@ -198,7 +222,7 @@ function promptFor(order, key) {
     add: `Your task, on ${page}: add a section.${say ? ` What it should cover: ${say}` : " Add what the page is missing most, as something to play with."}`,
     page: `Your task: improve the page ${page}.${say ? ` What to do: ${say}` : " Check its sources, shorten the text, and make the interactive part better."}`,
     // A title is named only when the person typed it; one that came from a page is another agent's text.
-    write: `Your task: write the page ${order.typed ? `"${order.title}" ` : ""}with slug "${order.slug}": short text and something to play with on top.${say ? ` What it should cover: ${say}` : ""}`,
+    write: `Your task: write the page ${order.typed ? `"${order.title}" ` : ""}with slug "${order.slug}": titles and visuals, little text.${say ? ` What it should cover: ${say}` : ""}${order.from ? ` Then add it to the "see" list of ${site}/${order.from}, so the map joins them.` : ""}`,
     free: `Your task: ${say || "write or improve a page."}`,
   }[order.kind];
   return `Read ${site}/skill.md and follow it.\n${task}\nMy key: ${key ?? "(made when you press Copy)"}`;
@@ -230,7 +254,14 @@ function paintOrder() {
   sheet.hidden = !order;
   say.placeholder = order ? ORDER_ASK[order.kind] : say.dataset.say;
   if (!order) return;
-  if (order.section) for (const node of ownBlocks(order.section)) node.classList.add("is-target");
+  if (order.section) {
+    for (const node of ownBlocks(order.section)) {
+      node.classList.add("is-target");
+      // The section being changed is open, so the person sees it change.
+      const fold = node.querySelector(".fold");
+      if (fold) fold.open = true;
+    }
+  }
   const subject =
     order.kind === "write"
       ? order.title
@@ -462,6 +493,12 @@ async function bringBack(button) {
   }
 }
 
+// The map asks for a page nobody wrote: a ring clicked, or a title typed into it.
+document.addEventListener("vz:write", (event) => {
+  const { slug: at, title, from, typed } = event.detail;
+  openOrder({ kind: "write", slug: at, title, from, typed: Boolean(typed) });
+});
+
 // ---- clicks ---------------------------------------------------------------------------
 document.addEventListener("click", async (event) => {
   const target = event.target instanceof Element ? event.target : null;
@@ -674,6 +711,9 @@ function syncSections(id, fresh, changes) {
       before = have;
       continue;
     }
+    // Text folded under its title stays as the reader left it, and opens when it is what changed.
+    const fold = node.querySelector(".fold");
+    if (fold && (have?.querySelector(".fold[open]") || state.order?.section === node.dataset.block)) fold.open = true;
     if (have) have.replaceWith(node);
     else if (before) before.after(node);
     else list.prepend(node);
@@ -706,6 +746,7 @@ async function refreshPage(changes) {
     if (held(now)) markLanded(held(now), changes);
   }
   syncSections("sections", fresh, changes);
+  syncSections("words", fresh, changes);
   retime();
   if (state.order) paintOrder();
   if (state.order?.section && state.copiedAt) for (const node of ownBlocks(state.order.section)) node.classList.add("is-waiting");
@@ -817,6 +858,9 @@ if (slug || wire || board || openGround) {
 }
 
 // ---- the key page ---------------------------------------------------------------------
+// With a sign-in (a wiki inside a product), the person signs in there and comes back; the
+// product then hands this browser a key as that person. Without one, the wiki makes a key
+// and picks the public name. Either way nobody fills in a form.
 const keyform = $("keyform");
 if (keyform) {
   const out = $("keyout");
@@ -825,19 +869,29 @@ if (keyform) {
     keyLine(entry, $("key-state"));
     keyform.hidden = true;
     out.hidden = false;
+    // Signed in: the next step is the copy, so the page says that.
+    if (entry.active) {
+      $("key-title").textContent = "Hand this to your agent";
+      for (const [index, step] of [...$("keysteps").children].entries()) step.classList.toggle("is-now", index === 1);
+    }
     if (!entry.active) watchKey(show);
   };
+  const fail = (message) => {
+    const note = keyform.querySelector(".form-error") ?? keyform.appendChild(el("p", { className: "form-error", role: "alert" }));
+    note.textContent = message;
+  };
   const known = keys.get();
-  if (known) checkKey().then((entry) => entry && show(entry));
-  keyform.addEventListener("submit", async (event) => {
+  if (known?.active) show(known);
+  else if (keyform.dataset.signIn) signedInKey().then((entry) => entry && show(entry));
+  else if (known) checkKey().then((entry) => entry && show(entry));
+  keyform.querySelector("form")?.addEventListener("submit", async (event) => {
     event.preventDefault();
     const button = $("mint");
     button.disabled = true;
     try {
-      show(await mintKey($("handle")?.value.trim().toLowerCase() || undefined));
+      show(await mintKey());
     } catch (error) {
-      const note = keyform.querySelector(".form-error") ?? keyform.appendChild(el("p", { className: "form-error", role: "alert" }));
-      note.textContent = error.message;
+      fail(error.message);
     } finally {
       button.disabled = false;
     }

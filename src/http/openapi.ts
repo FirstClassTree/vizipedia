@@ -118,6 +118,7 @@ export function openApi(config: Config): object {
         },
       },
       "/tags": { get: { summary: "Subjects pages are filed under" } },
+      "/graph": { get: { summary: "The map: every page a node, every link an edge; an unwritten page is a node with written false" } },
       "/wanted": { get: { summary: "Pages that are linked but not written" } },
       "/live": {
         get: {

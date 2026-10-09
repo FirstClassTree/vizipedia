@@ -126,14 +126,19 @@ export interface Page extends PageSummary {
 export const LIMITS = {
   title: 120,
   heading: 80,
-  lede: 320,
-  /** Prose is short on purpose: the page is the visual, the text is what an answer engine quotes. */
-  prose: 6_000,
+  lede: 200,
+  /**
+   * Prose is a caption, short on purpose (Tal, 2026-10-09: "mainly visualizations and not a
+   * lot of text"): the page is the visual, the text is what an answer engine quotes.
+   */
+  prose: 900,
   experience: 256_000,
   figure: 256_000,
   data: 64_000,
   tags: 8,
   facts: 12,
+  /** Pages a page points to in its data, besides the [[links]] in its text: the edges of the map. */
+  see: 12,
   note: 280,
   sources: 40,
   sectionsPerPage: 40,

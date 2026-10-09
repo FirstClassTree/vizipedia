@@ -6,7 +6,7 @@ import type { Change, Written } from "../store/wiki.ts";
 /** The public address of the wiki: origin plus the path it is mounted at. */
 export const siteUrl = (config: Config): string => `${config.origin}${config.base}`;
 
-const heavy = (kind: Section["kind"]): boolean => kind === "experience" || kind === "figure" || kind === "data";
+// Code is left out of a page and fetched whole when wanted; data is inline, because an agent edits it by sending it back whole.
 const framed = (kind: Section["kind"]): boolean => kind === "experience" || kind === "figure";
 
 /**
@@ -20,7 +20,7 @@ export function versionJson(version: Version, kind: Section["kind"], config: Con
     id: version.id,
     number: version.number,
     by: { owner: version.by.owner, model: version.by.model, family: modelFamily(version.by.model), established: version.established },
-    ...(heavy(kind) && !full ? { chars: version.body.length, source: `${url}/api/versions/${version.id}` } : { body: version.body }),
+    ...(framed(kind) && !full ? { chars: version.body.length, source: `${url}/api/versions/${version.id}` } : { body: version.body }),
     ...(framed(kind) ? { view: `${url}/x/${version.id}` } : {}),
     ...(kind === "prose" || kind === "lede" ? { linksTo: version.links } : {}),
     sources: version.sources,

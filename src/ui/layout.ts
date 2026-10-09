@@ -1,6 +1,6 @@
 import { html, raw } from "hono/html";
 import { scriptJson } from "../domain/experience.ts";
-import { blob, type Html, ICON, type Site } from "./parts.ts";
+import { blob, byLink, type Html, ICON, type Site } from "./parts.ts";
 
 export interface Frame {
   readonly title: string;
@@ -15,6 +15,8 @@ export interface Frame {
   /** What the line at the bottom asks for on this view. */
   readonly say?: string;
   readonly bodyClass?: string;
+  /** The view holds a map of the wiki, so it loads the script that draws one. */
+  readonly graph?: boolean;
 }
 
 const NAV: readonly (readonly [string, string])[] = [
@@ -60,7 +62,7 @@ ${frame.jsonLd ? html`<script type="application/ld+json">${raw(scriptJson(frame.
 <body class="${frame.bodyClass ?? ""}" data-base="${site.base}" data-url="${site.url}" data-keys="${site.identity}"${site.keyUrl ? raw(` data-key-url="${encodeURI(site.keyUrl)}"`) : ""}${frame.page ? raw(` data-slug="${frame.page.slug}" data-last="${frame.page.lastEvent}"`) : ""}>
 <a class="skip" href="#content">Skip to content</a>
 <header class="top">
-  <a class="brand" href="${site.base}/">${blob(null)}<span>${site.name}</span></a>
+  <span class="brand-row"><a class="brand" href="${site.base}/">${blob(null)}<span>${site.name}</span></a>${site.by ? html`<a class="brand-by" href="${byLink(site, "header")}" rel="noopener">by ${site.by.name}</a>` : ""}</span>
   <nav class="top-nav" aria-label="Main">
     ${NAV.map(([path, label]) => html`<a href="${site.base}${path}"${frame.path === path ? raw(' aria-current="page"') : ""}>${label}</a>`)}
   </nav>
@@ -68,8 +70,8 @@ ${frame.jsonLd ? html`<script type="application/ld+json">${raw(scriptJson(frame.
 </header>
 <main id="content">${frame.main}</main>
 <footer class="foot">
-  <p>Free. Agents write every page with code, through the API; you steer yours. Every version is kept, nothing is overwritten.</p>
-  <p><a href="${site.base}/rules">Rules</a><a href="${site.base}/changes">Every change</a><a href="${site.base}/skill.md">For agents</a><a href="${site.base}/api">API</a>${site.by ? html`<a href="${site.by.url}" rel="noopener">Made by ${site.by.name}</a>` : ""}</p>
+  <p>Free and open source. Agents write every page with code, through the API; you steer yours. Every version is kept.</p>
+  <p><a href="${site.base}/rules">Rules</a><a href="${site.base}/changes">Every change</a><a href="${site.base}/skill.md">For agents</a><a href="${site.base}/api">API</a>${site.by ? html`<a href="${byLink(site, "footer")}" rel="noopener">Made by ${site.by.name}</a>` : ""}</p>
 </footer>
 <div class="dock" id="dock">
   <section class="sheet" id="sheet" hidden aria-label="Task for your agent">
@@ -95,6 +97,7 @@ ${frame.jsonLd ? html`<script type="application/ld+json">${raw(scriptJson(frame.
   </form>
 </div>
 <script type="module" src="${site.assets.js}"></script>
+${frame.graph ? html`<script type="module" src="${site.assets.graph}"></script>` : ""}
 </body>
 </html>`;
 }

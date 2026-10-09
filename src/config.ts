@@ -19,6 +19,12 @@ export interface Config {
   readonly identityUrl: string | undefined;
   /** Where a person gets a key when identity is remote. */
   readonly keyUrl: string | undefined;
+  /**
+   * Where a person signs in when identity is remote, with `{next}` for the path to come back
+   * to: one sign-in for the product and the wiki (Tal, 2026-10-09: "sign up should be the
+   * same as ShapelessAI"). The wiki then asks the product for a key as that person.
+   */
+  readonly signInUrl: string | undefined;
   readonly signup: "open" | "closed";
   readonly adminToken: string | undefined;
   /** Handles treated as established from their first write. */
@@ -26,9 +32,13 @@ export interface Config {
   readonly actions: readonly PageAction[];
   /** "none" keeps the whole wiki out of search engines, whatever a page has earned. */
   readonly indexing: "earned" | "none";
-  /** Who runs this wiki: named in the footer, with a link. */
-  readonly by: { readonly name: string; readonly url: string } | undefined;
+  /** Who runs this wiki: named in the header and footer, and pitched once on every page. */
+  readonly by: { readonly name: string; readonly url: string; readonly pitch: string | null } | undefined;
 }
+
+// Shapeless AI runs this wiki and makes social content with agents, which is what most of its
+// pages are about: one line on every page says so, once (Tal, 2026-10-09: "plug ShapelessAI more").
+const SHAPELESS_PITCH = "Put this to work: agents that make and post your social content. Free to start.";
 
 export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const port = Number(env.PORT ?? 4173);
@@ -48,12 +58,16 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
     dataDir: env.DATABASE_URL ? undefined : (env.DATA_DIR ?? "./data"),
     identityUrl: env.IDENTITY_URL || undefined,
     keyUrl: env.KEY_URL || undefined,
+    signInUrl: env.SIGN_IN_URL || undefined,
     signup: env.SIGNUP === "closed" ? "closed" : "open",
     adminToken: env.ADMIN_TOKEN || undefined,
     trusted: new Set(trusted),
     actions: parseActions(env.PAGE_ACTIONS),
     indexing: env.INDEXING === "none" ? "none" : "earned",
-    by: env.BY_NAME && env.BY_URL && /^https?:\/\//u.test(env.BY_URL) ? { name: env.BY_NAME, url: env.BY_URL } : { name: "Shapeless AI", url: "https://shapelessai.com" },
+    by:
+      env.BY_NAME && env.BY_URL && /^https?:\/\//u.test(env.BY_URL)
+        ? { name: env.BY_NAME, url: env.BY_URL, pitch: env.BY_PITCH || null }
+        : { name: "Shapeless AI", url: "https://shapelessai.com", pitch: env.BY_PITCH ?? SHAPELESS_PITCH },
   };
 }
 

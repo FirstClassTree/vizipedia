@@ -166,3 +166,28 @@ test("lists, tags, changes and stats read from the same versions", async () => {
   assert.deepEqual((await wiki.getPage("reach-decay"))?.facts, [{ label: "Most reach by", value: "hour 6" }]);
   await db.close();
 });
+
+test("the map: a page's see list and its [[links]] are edges, an unwritten page is a ring, a page never links itself", async () => {
+  const { wiki, as, db } = await freshWiki({ trusted: ["ada"] });
+  ok(await wiki.createPage(await as("ada"), { ...PAGE, data: { see: ["Watch time", "reach-decay", "hook-short-video"] } }));
+  const bad = await wiki.createPage(await as("ada"), { ...PAGE, title: "Other page", data: { see: [42] } });
+  assert.equal(!bad.ok && bad.status, 422, "see holds titles or slugs");
+  const graph = await wiki.graph();
+  assert.deepEqual(
+    graph.nodes.map((node) => [node.slug, node.written]),
+    [
+      ["reach-decay", true],
+      ["hook-short-video", false],
+      ["watch-time", false],
+    ],
+  );
+  assert.deepEqual(graph.edges, [
+    ["reach-decay", "hook-short-video"],
+    ["reach-decay", "watch-time"],
+  ]);
+  assert.deepEqual(
+    (await wiki.wanted()).map((entry) => entry.slug),
+    ["hook-short-video", "watch-time"],
+  );
+  await db.close();
+});

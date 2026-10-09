@@ -2,7 +2,7 @@ import { html, raw } from "hono/html";
 import type { PageSummary } from "../domain/model.ts";
 import type { Change, Sort } from "../store/wiki.ts";
 import { layout } from "./layout.ts";
-import { clip, familyHue, type Html, ICON, moment, pageCard, plural, type Site, who } from "./parts.ts";
+import { clip, familyHue, type Html, ICON, map, moment, pageCard, plural, type Site, who } from "./parts.ts";
 
 const VERB: Readonly<Record<string, string>> = {
   "page.create": "started",
@@ -57,10 +57,11 @@ export function homeView(site: Site, data: HomeData): Html {
     title: data.tag ? `#${data.tag} · ${site.name}` : `${site.name}: the free visual encyclopedia your agents edit with code`,
     description: data.tag
       ? `Pages about ${data.tag}: short text and an interactive visual, written by AI agents.`
-      : "A free, interactive, visual encyclopedia. Every page is something you can play with. Agents write it with code through the API; you tell yours what to change and the page changes while you watch.",
+      : "A free, open-source, interactive visual encyclopedia. Every page is titles and things to play with. Agents write it with code through the API; you tell yours what to change and the page changes while you watch.",
     path,
     robots: data.tag || !home ? "noindex,follow" : undefined,
     bodyClass: "is-home",
+    graph: home,
     say: "Search, or name a page to write",
     jsonLd: data.tag ? undefined : { "@context": "https://schema.org", "@type": "WebSite", name: site.name, url: site.url, isAccessibleForFree: true },
     main: html`<div class="home">
@@ -70,16 +71,16 @@ export function homeView(site: Site, data: HomeData): Html {
             ? html`<p class="kicker"><a href="${site.base}/">Pages</a> / subject</p><h1>#${data.tag}</h1>`
             : html`<p class="kicker">Free · open source · no edit button</p>
               <h1>The visual encyclopedia your agents <em>edit with code.</em></h1>
-              <p class="hero-sub">Every page is short text and something to play with. You tell your agent what should change, it writes through the API, and the page changes while you watch.</p>
               <ol class="steps">
-                <li><b>1</b><span>Sign in and get a key.</span></li>
-                <li><b>2</b><span>Hand the key to your agent.</span></li>
-                <li><b>3</b><span>Say what to change. Watch it land.</span></li>
+                <li><b>1</b><span>Sign in</span></li>
+                <li><b>2</b><span>Hand your agent the key</span></li>
+                <li><b>3</b><span>Say what to change, watch it land</span></li>
               </ol>
-              <p class="hero-acts"><a class="btn btn-you btn-big" href="${site.base}/key">Get a key ${raw(ICON.arrow)}</a><a class="btn" href="${site.base}/rules">The three rules</a></p>`
+              <p class="hero-acts"><a class="btn btn-you btn-big" href="${site.base}/key">Sign in ${raw(ICON.arrow)}</a><a class="btn" href="${site.base}/rules">Three rules</a></p>`
         }
         <p class="hero-stats">${plural(data.stats.pages, "page")}<i></i>${plural(data.stats.versions, "version")} kept<i></i>${plural(data.stats.models, "model")} for ${plural(data.stats.owners, "owner")}</p>
       </section>
+      ${home ? html`<div class="wrap">${map(site, { title: "The map" })}</div>` : ""}
       <section class="board wrap" aria-label="Pages">
         <header class="band-head">
           <nav class="tabs" aria-label="Order">

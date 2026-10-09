@@ -69,6 +69,21 @@ export interface Change {
 export type Sort = "updated" | "new" | "title";
 
 /** Where a write landed: the page, the section as it now is, and the version just written. */
+export interface GraphNode {
+  readonly slug: string;
+  readonly title: string;
+  readonly hue: number | null;
+  /** False for a page that is linked to and nobody has written yet. */
+  readonly written: boolean;
+  readonly playable: boolean;
+  readonly weight: number;
+}
+
+export interface Graph {
+  readonly nodes: readonly GraphNode[];
+  readonly edges: readonly (readonly [string, string])[];
+}
+
 export interface Written {
   readonly page: string;
   readonly section: Section;
@@ -378,6 +393,34 @@ export class Wiki {
       sectionId: (row.section_id as string | null) ?? null,
       versionId: (row.version_id as string | null) ?? null,
     }));
+  }
+
+  /**
+   * The wiki as a map: every page is a node, every link an edge, and a page that is linked
+   * to and not written is a node too, hollow, so the map shows what the wiki is missing.
+   */
+  async graph(): Promise<Graph> {
+    const [pages, links] = await Promise.all([
+      this.db.query<{ slug: string; title: string; hue: number; sections: number; playable: boolean }>(
+        "select slug, title, hue, sections, playable from pages where hidden_at is null order by slug",
+      ),
+      this.db.query<{ source: string; target: string; title: string }>(
+        `select p.slug as source, l.target_slug as target, l.title from links l join pages p on p.id = l.page_id
+          where p.hidden_at is null and not exists (select 1 from pages h where h.slug = l.target_slug and h.hidden_at is not null)
+          order by p.slug, l.target_slug`,
+      ),
+    ]);
+    const nodes = new Map<string, GraphNode>(
+      pages.rows.map((page) => [
+        page.slug,
+        { slug: page.slug, title: page.title, hue: Number(page.hue), written: true, playable: Boolean(page.playable), weight: Number(page.sections) },
+      ]),
+    );
+    for (const link of links.rows) {
+      if (!nodes.has(link.target))
+        nodes.set(link.target, { slug: link.target, title: link.title || link.target.replaceAll("-", " "), hue: null, written: false, playable: false, weight: 0 });
+    }
+    return { nodes: [...nodes.values()], edges: links.rows.map((link) => [link.source, link.target]) };
   }
 
   /** Pages that are linked to but not written: the wiki asking for itself. */
@@ -871,7 +914,9 @@ export class Wiki {
     const sections = await this.sectionsOf(tx, pageId);
     const facts = pageFacts(sections, page.hidden_at !== null, (version) => textOf(version.html));
     const links = new Map<string, string>();
-    for (const section of sections) for (const link of section.current?.links ?? []) if (!links.has(link.slug)) links.set(link.slug, link.title);
+    const self = await tx.query<{ slug: string }>("select slug from pages where id = $1", [pageId]);
+    for (const section of sections)
+      for (const link of section.current?.links ?? []) if (!links.has(link.slug) && link.slug !== self.rows[0]?.slug) links.set(link.slug, link.title);
     const data = pageData(sections.find((section) => section.kind === "data")?.current?.body);
     await tx.query(
       `update pages set lede = $2, sections = $3, owners = $4, playable = $5, verified = $6, indexable = $7, cover_version_id = $8, cover_kind = $9,

@@ -101,6 +101,7 @@ export function apiRoutes(deps: Deps): Hono<Env> {
       pages: `${url}/api/pages`,
       tags: `${url}/api/tags`,
       wanted: `${url}/api/wanted`,
+      graph: `${url}/api/graph`,
       changes: `${url}/api/changes`,
       live: `${url}/api/live`,
     }),
@@ -265,6 +266,7 @@ export function apiRoutes(deps: Deps): Hono<Env> {
     return c.json({ changes: changes.map((change) => changeJson(change, config)) });
   });
   api.get("/wanted", async (c) => c.json({ wanted: (await wiki.wanted()).map((entry) => ({ ...entry, create: `POST ${url}/api/pages` })) }));
+  api.get("/graph", async (c) => c.json(await wiki.graph()));
   api.get("/stats", async (c) => c.json(await wiki.stats()));
 
   api.get("/me", async (c) => {

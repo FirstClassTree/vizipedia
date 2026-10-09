@@ -104,6 +104,8 @@ test("a person gives their agent a task, the agent writes a new version, and the
   const block = page.locator("#the-curve");
   const sectionId = await block.getAttribute("data-block");
 
+  // Text is folded under its title: one click opens it.
+  await block.locator(".fold > summary").click();
   // The task: one click on the section, a few words, one click to copy. The key comes with it.
   await block.hover();
   await block.locator('[data-order="change"]').click();
@@ -152,6 +154,7 @@ test("with a key on the device, a person brings a version back from the history 
   await page.goto(`${origin}/reach-decay`);
   assert.match((await page.locator("#keychip").textContent()) ?? "", /^@ada$/u);
   const block = page.locator("#the-curve");
+  await block.locator(".fold > summary").click();
   await block.hover();
   await block.locator("[data-flag]").click();
   await page.locator(".reasons button", { hasText: "false" }).click();
@@ -172,7 +175,7 @@ test("marking words on a page starts the task there, and the words ride along as
   const { page, errors } = await watched(1440, 900);
   await page.goto(`${origin}/reach-decay`);
   const block = page.locator("#the-curve");
-  await block.scrollIntoViewIfNeeded();
+  await block.locator(".fold > summary").click();
   await block.evaluate((node) => {
     const paragraph = node.querySelector(".prose p");
     const range = document.createRange();
@@ -328,5 +331,35 @@ test("every view reads well on a phone: nothing overflows sideways", async () =>
     errors.filter((error) => !/404/u.test(error)),
     [],
   );
+  await page.close();
+});
+
+test("the map: pages are dots joined by their links, and naming a page puts it on the map with the task to write it", async () => {
+  const { page, errors } = await watched(1440, 900);
+  await page.goto(`${origin}/reach-decay`);
+  const canvas = page.locator("canvas.graph");
+  await canvas.scrollIntoViewIfNeeded();
+  await page.waitForFunction(() => Number(document.querySelector<HTMLCanvasElement>("canvas.graph")?.dataset.nodes) > 0);
+  const before = Number(await canvas.getAttribute("data-nodes"));
+
+  // Naming a page that is not there: a ring hung from this page, and the task to write it, linking back.
+  await page.locator(".map-add input").fill("Reach on Threads");
+  await page.locator(".map-add button").click();
+  assert.equal(Number(await canvas.getAttribute("data-nodes")), before + 1);
+  const prompt = (await page.locator("#sheet-prompt").textContent()) ?? "";
+  assert.match(prompt, /write the page "Reach on Threads" with slug "reach-on-threads"/u);
+  assert.match(prompt, new RegExp(`add it to the "see" list of ${origin}/reach-decay`, "u"));
+
+  // A ring already on the map is the same task, one click away: the keyboard reaches it too.
+  await page.locator("#sheet-close").click();
+  await canvas.focus();
+  for (let step = 0; step < 12; step += 1) {
+    await page.keyboard.press("ArrowRight");
+    const title = await canvas.getAttribute("title");
+    if (title?.includes("not written yet")) break;
+  }
+  await page.keyboard.press("Enter");
+  assert.match((await page.locator("#sheet-prompt").textContent()) ?? "", /Your task: write the page/u);
+  assert.deepEqual(errors, []);
   await page.close();
 });

@@ -82,6 +82,7 @@ function loadAssets(base: string): { files: Map<string, Asset>; urls: Site["asse
       text: fonts["text.woff2"] as string,
       css: add("app.css", css, "text/css; charset=utf-8"),
       js: add("app.js", here("app.js"), "text/javascript; charset=utf-8"),
+      graph: add("graph.js", here("graph.js"), "text/javascript; charset=utf-8"),
       icon: add("icon.svg", ICON_SVG, "image/svg+xml"),
     },
   };
@@ -90,7 +91,16 @@ function loadAssets(base: string): { files: Map<string, Asset>; urls: Site["asse
 export function siteRoutes(deps: Deps): Hono<Env> {
   const { wiki, identity, config } = deps;
   const assets = loadAssets(config.base);
-  const site: Site = { name: config.name, base: config.base, url: siteUrl(config), identity: identity.kind, keyUrl: config.keyUrl, by: config.by, assets: assets.urls };
+  const site: Site = {
+    name: config.name,
+    base: config.base,
+    url: siteUrl(config),
+    identity: identity.kind,
+    keyUrl: config.keyUrl,
+    signInUrl: config.signInUrl,
+    by: config.by,
+    assets: assets.urls,
+  };
   const app = new Hono<Env>({ strict: false });
   const page = async (c: Ctx, view: Html, status: 200 | 404 = 200) =>
     c.html(await view, status, { ...HTML_HEADERS, ...(config.indexing === "none" ? { "X-Robots-Tag": "noindex" } : {}) });
@@ -141,12 +151,9 @@ export function siteRoutes(deps: Deps): Hono<Env> {
   app.get("/key", (c) => page(c, keyView(site, {})));
   app.post("/key", async (c) => {
     if (!identity.issue) return page(c, keyView(site, {}));
-    const form = await c.req.parseBody();
-    const handle = String(form.handle ?? "")
-      .trim()
-      .toLowerCase();
-    const result = await identity.issue(handle);
-    const view = result.ok ? keyView(site, { issued: { handle: result.handle, key: result.key } }) : keyView(site, { error: result.error, handle });
+    // The wiki picks the public name: nobody fills in a form to get a key.
+    const result = await identity.issue("");
+    const view = result.ok ? keyView(site, { issued: { handle: result.handle, key: result.key } }) : keyView(site, { error: result.error });
     return c.html(await view, 200, { ...HTML_HEADERS, "Cache-Control": "no-store" });
   });
 

@@ -5,7 +5,7 @@ import { resolveHtml } from "../domain/markdown.ts";
 import type { Page, Section, Version } from "../domain/model.ts";
 import { indexNeeds, isShown, runsUnasked } from "../domain/rules.ts";
 import { layout } from "./layout.ts";
-import { blob, day, familyHue, type Html, ICON, plural, proof, type Site, who } from "./parts.ts";
+import { blob, byCard, day, familyHue, type Html, ICON, map, plural, proof, proofMark, type Site, who } from "./parts.ts";
 
 /** A frame holding agent code: lazy for an experience, eager for a figure, which is a picture and loads like one. */
 export function frame(site: Site, version: Version, title: string, kind: "experience" | "figure"): Html {
@@ -46,11 +46,15 @@ function block(site: Site, section: Section, current: Version, resolve: Resolve,
     </section>`;
   }
   if (section.kind === "prose") {
+    // Text is a title first (Tal, 2026-10-09: "the text should mainly be titles and
+    // visualizations"): it opens on a click, and it is in the page for answer engines either way.
     return html`<section class="block block-prose" id="${section.anchor}" data-block="${section.id}" data-sig="${sig}" data-anchor="${section.anchor}" style="${style}" tabindex="-1">
-      <h2><a href="#${section.anchor}">${section.heading}</a></h2>
-      <div class="prose">${resolve(current, prefix)}</div>
-      ${proof(current, prefix)}
-      <footer class="block-foot">${signed(current)}${tools(section, current)}</footer>
+      <details class="fold">
+        <summary><h2>${section.heading}</h2>${proofMark(current)}</summary>
+        <div class="prose">${resolve(current, prefix)}</div>
+        ${proof(current, prefix)}
+        <footer class="block-foot">${signed(current)}${tools(section, current)}</footer>
+      </details>
     </section>`;
   }
   const kind = section.kind === "figure" ? "figure" : "experience";
@@ -86,9 +90,12 @@ function live(site: Site, page: Page, exists: ReadonlySet<string>): Live {
     </p>
   </div>`;
   const coverHtml = html`<div class="slot" id="slot-cover">${coverEntry ? block(site, coverEntry.section, coverEntry.current, resolve, "cover") : ""}</div>`;
+  const visuals = rest.filter(({ section }) => section.kind !== "prose");
+  const words = rest.filter(({ section }) => section.kind === "prose");
   const sections = html`<div class="sections" id="sections">
-    ${rest.map(({ section, current }) => block(site, section, current, resolve))}
-    <button type="button" class="block block-new" data-order="add">${blob(null)}<span><b>Add a section</b>Tell your agent what this page is missing</span></button>
+    ${visuals.map(({ section, current }) => block(site, section, current, resolve))}
+    <div class="words" id="words"><h2 class="kicker">In words</h2>${words.map(({ section, current }) => block(site, section, current, resolve))}</div>
+    <button type="button" class="block block-new" data-order="add">${blob(null)}<span><b>Add a section</b>Tell your agent what to show next</span></button>
   </div>`;
   return { head, cover: coverHtml, sections };
 }
@@ -110,6 +117,7 @@ export function pageView(site: Site, page: Page, exists: ReadonlySet<string>, ac
     page: { slug: page.slug, lastEvent: page.lastEvent },
     robots: indexing === "earned" && page.indexable ? "index,follow" : "noindex,follow",
     say: "What should change on this page?",
+    graph: true,
     jsonLd: {
       "@context": "https://schema.org",
       "@type": page.playable ? ["Article", "LearningResource"] : "Article",
@@ -150,18 +158,16 @@ export function pageView(site: Site, page: Page, exists: ReadonlySet<string>, ac
             ? html`<p class="pfoot-actions">${actions.map((action) => html`<a class="btn btn-you" href="${action.url.replaceAll("{slug}", encodeURIComponent(page.slug)).replaceAll("{title}", encodeURIComponent(page.title))}">${action.label} ${raw(ICON.arrow)}</a>`)}</p>`
             : ""
         }
+        ${map(site, { focus: page.slug, title: "Connected" })}
         ${
           page.linksTo.length + page.linkedFrom.length > 0
-            ? html`<section>
-                <h2>Connected</h2>
-                <p class="chips">
-                  ${page.linksTo.map((link) => html`<a class="chip${link.exists ? "" : " chip-open"}" href="${site.base}/${link.slug}"${link.exists ? "" : raw(' rel="nofollow"')}>${link.title}</a>`)}
-                  ${page.linkedFrom.filter((link) => !page.linksTo.some((other) => other.slug === link.slug)).map((link) => html`<a class="chip" href="${site.base}/${link.slug}">${link.title}</a>`)}
-                </p>
-                ${page.linksTo.some((link) => !link.exists) ? html`<p class="pfoot-hint">A dashed page is wanted and not written yet. Send your agent.</p>` : ""}
-              </section>`
+            ? html`<p class="chips">
+                ${page.linksTo.map((link) => html`<a class="chip${link.exists ? "" : " chip-open"}" href="${site.base}/${link.slug}"${link.exists ? "" : raw(' rel="nofollow"')}>${link.title}</a>`)}
+                ${page.linkedFrom.filter((link) => !page.linksTo.some((other) => other.slug === link.slug)).map((link) => html`<a class="chip" href="${site.base}/${link.slug}">${link.title}</a>`)}
+              </p>`
             : ""
         }
+        ${byCard(site, page.slug)}
         ${page.tags.length > 0 ? html`<section><h2>Subjects</h2><p class="chips">${page.tags.map((tag) => html`<a class="chip" href="${site.base}/tag/${tag}">#${tag}</a>`)}</p></section>` : ""}
         <p class="pfoot-index">${
           indexing === "none"

@@ -1,4 +1,4 @@
-import { html } from "hono/html";
+import { html, raw } from "hono/html";
 import type { HtmlEscapedString } from "hono/utils/html";
 import { FRAME_SANDBOX } from "../domain/experience.ts";
 import type { Cover, PageSummary, Source, Version } from "../domain/model.ts";
@@ -15,8 +15,10 @@ export interface Site {
   readonly url: string;
   readonly identity: "local" | "remote";
   readonly keyUrl: string | undefined;
-  readonly by: { readonly name: string; readonly url: string } | undefined;
-  readonly assets: Readonly<Record<"css" | "js" | "font" | "text" | "icon", string>>;
+  /** Where a person signs in when identity is remote; `{next}` is where they come back to. */
+  readonly signInUrl: string | undefined;
+  readonly by: { readonly name: string; readonly url: string; readonly pitch: string | null } | undefined;
+  readonly assets: Readonly<Record<"css" | "js" | "graph" | "font" | "text" | "icon", string>>;
 }
 
 const DATE = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
@@ -63,6 +65,38 @@ export function pageCard(site: Site, page: PageSummary): Html {
   </li>`;
 }
 
+/** A link to whoever runs this wiki, tagged with where on the wiki it was clicked. */
+export function byLink(site: Site, place: string, page?: string): string {
+  if (!site.by) return "";
+  const url = new URL(site.by.url);
+  url.searchParams.set("utm_source", "vizipedia");
+  url.searchParams.set("utm_medium", place);
+  if (page) url.searchParams.set("utm_campaign", page);
+  return url.href;
+}
+
+/** The one line on every page about who runs the wiki and what they make. */
+export function byCard(site: Site, page: string): Html {
+  if (!site.by?.pitch) return html``;
+  return html`<aside class="by-card">
+    <span class="by-mark" aria-hidden="true">${blob(null)}</span>
+    <p><b>${site.by.name}</b>${site.by.pitch}</p>
+    <a class="btn btn-you" href="${byLink(site, "page", page)}" rel="noopener">Try ${site.by.name} ${raw(ICON.arrow)}</a>
+  </aside>`;
+}
+
+/** The map of the wiki: every page a dot, every link a line. Around one page when `focus` is set. */
+export function map(site: Site, options: { focus?: string; title: string }): Html {
+  return html`<section class="map${options.focus ? " map-local" : ""}" aria-label="${options.title}">
+    <header class="map-head">
+      <h2>${options.title}</h2>
+      <p class="map-legend"><span class="lg lg-page">a page</span><span class="lg lg-open">not written yet, click to start it</span></p>
+      <form class="map-add" autocomplete="off"><input name="title" maxlength="120" placeholder="Add a page" aria-label="Name a page to add to the map"><button class="btn" type="submit">Add</button></form>
+    </header>
+    <canvas class="graph" data-src="${site.base}/api/graph"${options.focus ? raw(` data-focus="${options.focus}"`) : ""} tabindex="0" role="img" aria-label="${options.title}. Use the arrow keys to move between pages and Enter to open one."></canvas>
+  </section>`;
+}
+
 export const host = (url: string): string => {
   try {
     return new URL(url).hostname.replace(/^www\./u, "");
@@ -77,6 +111,15 @@ const CHECK: Readonly<Record<NonNullable<Source["check"]>, string>> = {
   unreachable: "source could not be read",
   unchecked: "not checked",
 };
+
+/** A section's sources in one mark, for a folded section: green when every quote was found. */
+export function proofMark(version: Version): Html {
+  const quoted = version.sources.filter((source) => source.quote);
+  if (quoted.length === 0) return html``;
+  const found = quoted.filter((source) => source.check === "found").length;
+  const state = quoted.some((source) => source.check === "missing") ? "bad" : found === quoted.length ? "good" : "open";
+  return html`<span class="fold-proof proof-${state}" title="${found} of ${plural(quoted.length, "quote")} found in the sources"><span class="proof-mark" aria-hidden="true"></span>${found}/${quoted.length}</span>`;
+}
 
 /** What a version rests on: each source with the exact words, and what the wiki found when it looked. */
 export function proof(version: Version, prefix: string): Html {

@@ -1,6 +1,6 @@
 # Vizipedia
 
-**A free, interactive, visual encyclopedia your agents edit instantly with code, through an API.** Every page is short text plus something to play with. There is no edit button: a person gets a key, hands it to their agent (Claude Code, Codex, Cursor, anything that can make an HTTP call), says what should change, and the page changes while they watch. Every version is kept, nothing is overwritten. Open source, MIT.
+**A free, interactive, visual encyclopedia your agents edit instantly with code, through an API.** Every page is titles and visuals: figures and things to play with, with a little text folded under its heading. Pages link to each other, and the home page is a map of all of them, like Obsidian's graph. There is no edit button: a person gets a key, hands it to their agent (Claude Code, Codex, Cursor, anything that can make an HTTP call), says what should change, and the page changes while they watch. Every version is kept, nothing is overwritten. Open source, MIT.
 
 ![A page: short text, an interactive visual on top, who wrote it and what it rests on](docs/page.png)
 
@@ -12,7 +12,7 @@ English Wikipedia's content guideline says ["The use of large language models (L
 
 ## How it works
 
-1. **Sign in and get a key.** With the wiki's own keys, pick a public name. Mounted inside a product, one Google sign-in makes the key yours.
+1. **Sign in.** Mounted inside a product, the person signs in there (Google, on shapelessai.com) and comes back with a key. With the wiki's own keys, one button makes one and the wiki picks the public name.
 2. **Hand the key to your agent.** Press **Change** on any section or **Change this page**, say what is wrong, and copy the task it gives you, key included:
 
    ```
@@ -30,10 +30,10 @@ The server never asks a model to judge anything. It counts and it checks; the ju
 | Rule | What it does |
 |---|---|
 | The newest version shows | A write to a section is a new version on top. Every earlier version is kept; anyone with a key can bring one back (`POST /api/sections/<id>/revert`, or one click on the history page with a key on the device). |
-| Every quote is checked | Prose rests on sources, each with the exact words the claim rests on. At write time the wiki fetches the source and looks for the words. Readers see: found, not there, could not be read. |
+| Every quote is checked | Text rests on sources, each with the exact words the claim rests on. At write time the wiki fetches the source and looks for the words. Readers see: found, not there, could not be read. |
 | Flags hide, nobody deletes | Three established owners reporting a version hide it, and the version before it shows. The operator can take down anything unlawful. Both go on the public log. |
 
-The limits behind them: code is opened in a headless browser before it is accepted and refused with the reason if it throws, logs an error or draws nothing; code from a new owner (under 4 days and 10 writes) waits for the reader's click, except in its owner's own browser; one owner writes one section 3 times a day, 10 for code; 40 writes an hour and 5 new pages a day for a new key; a page is offered to search engines once it has something to play with, a quote found in its source and no open flag; prose is at most 6,000 characters, short on purpose.
+The limits behind them: code is opened in a headless browser before it is accepted and refused with the reason if it throws, logs an error or draws nothing; code from a new owner (under 4 days and 10 writes) waits for the reader's click, except in its owner's own browser; one owner writes one section 3 times a day, 10 for code; 40 writes an hour and 5 new pages a day for a new key; a page is offered to search engines once it has something to play with, a quote found in its source and no open flag; text is at most 900 characters a section and folds under its heading, short on purpose.
 
 ## Experiences: agent code, in a locked box
 
@@ -77,6 +77,7 @@ Everything the site shows is in the API, and every page is also markdown (`/<slu
 | Check quotes before writing | `POST /api/check` |
 | Changes as they happen | `GET /api/live` (server-sent events) or `GET /api/changes?after=<id>` |
 | Linked but unwritten pages | `GET /api/wanted` |
+| The map: every page and link | `GET /api/graph` |
 | A key, before any sign-up | `POST /api/keys` |
 
 ## Configure
@@ -87,11 +88,12 @@ Everything the site shows is in the API, and every page is also markdown (`/<slu
 | `PUBLIC_ORIGIN` | `http://localhost:$PORT` | The address people and agents reach the wiki at. |
 | `BASE_PATH` | none | Mount the wiki under a path of another site, for example `/wiki`. |
 | `SITE_NAME` | `Vizipedia` | |
-| `BY_NAME`, `BY_URL` | Shapeless AI | Who runs this wiki, named in the footer. |
+| `BY_NAME`, `BY_URL`, `BY_PITCH` | Shapeless AI | Who runs this wiki: named in the header and footer, and pitched in one line on every page. |
 | `DATABASE_URL` | none | A Postgres to use instead of the embedded one. Same SQL either way. |
 | `DATA_DIR` | `./data` | Where the embedded database lives. |
 | `IDENTITY_URL` | none | Check keys against your own accounts instead of the wiki's table (below). |
 | `KEY_URL` | none | Where people get a key when identity is remote. |
+| `SIGN_IN_URL` | none | Where a person signs in when identity is remote, with `{next}` for the path back, e.g. `/api/auth/google?next={next}`. The key page then asks `POST <wiki>/api/keys` with `{"session": true}` for that person's key. |
 | `SIGNUP` | `open` | `closed` stops the wiki issuing keys. |
 | `TRUSTED_OWNERS` | none | Handles that are established from their first write. |
 | `ADMIN_TOKEN` | none | Enables `POST /api/admin/moderate` for takedowns. |

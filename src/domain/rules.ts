@@ -1,4 +1,4 @@
-import { type Rendered, renderLede, renderMarkdown } from "./markdown.ts";
+import { type Rendered, renderLede, renderMarkdown, type WikiLink } from "./markdown.ts";
 import { type Cover, type Fact, LIMITS, type Section, type SectionKind, type Source, type Version } from "./model.ts";
 import { hueOf, slugify } from "./slug.ts";
 
@@ -185,7 +185,10 @@ export function checkVersion(kind: SectionKind, input: VersionInput): CheckedVer
     try {
       const parsed: unknown = JSON.parse(body);
       if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) problems.push("data must be a JSON object");
-      else problems.push(...dataProblems(parsed as Record<string, unknown>));
+      else {
+        problems.push(...dataProblems(parsed as Record<string, unknown>));
+        rendered = { html: "", links: seeLinks(parsed as Record<string, unknown>), cites: [] };
+      }
     } catch {
       problems.push("data must be valid JSON");
     }
@@ -209,7 +212,20 @@ function dataProblems(data: Record<string, unknown>): string[] {
       problems.push("each of data.facts is { label, value }: a label of up to 40 characters and a value of up to 120");
     }
   }
+  if (data.see !== undefined) {
+    if (!Array.isArray(data.see) || data.see.length > LIMITS.see) problems.push(`data.see is a list of at most ${LIMITS.see} page titles`);
+    else if (data.see.some((title) => typeof title !== "string" || !slugify(title) || title.trim().length > LIMITS.title))
+      problems.push('each of data.see is a page title, like "Watch time"');
+  }
   return problems;
+}
+
+/** The pages a data version points to: each title in `see`, as a link to its page, written or not. */
+export function seeLinks(data: Record<string, unknown>): WikiLink[] {
+  if (!Array.isArray(data.see)) return [];
+  const links = new Map<string, string>();
+  for (const title of data.see) if (typeof title === "string" && slugify(title) && !links.has(slugify(title))) links.set(slugify(title), title.trim());
+  return [...links].slice(0, LIMITS.see).map(([slug, title]) => ({ slug, title }));
 }
 
 /** The tags and facts a stored data version carries; whatever is malformed is left out. */
