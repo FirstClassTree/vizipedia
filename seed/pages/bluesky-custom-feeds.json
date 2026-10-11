@@ -133,7 +133,11 @@
       "instagram-ranking",
       "Reddit hot ranking",
       "Hacker News ranking",
-      "LinkedIn feed ranking"
+      "LinkedIn feed ranking",
+      "AT Protocol",
+      "Mastodon home timeline",
+      "Threads recommendations",
+      "Collaborative filtering"
     ]
   }
 }

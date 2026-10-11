@@ -119,7 +119,11 @@
       "Instagram Reels",
       "Hook (short video)",
       "Watch time",
-      "instagram-ranking"
+      "instagram-ranking",
+      "Average view duration",
+      "Swipe-away rate",
+      "Retention curve",
+      "Trending audio"
     ]
   }
 }

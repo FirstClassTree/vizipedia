@@ -17,7 +17,7 @@ import { noScreen, openAiScreen } from "./verify/screen.ts";
 /** The whole app for a config: what the server runs and what tests drive. */
 export async function build(env: NodeJS.ProcessEnv = process.env) {
   const config = readConfig(env);
-  const db = await openDb({ databaseUrl: config.databaseUrl, dataDir: env.DATA_DIR === ":memory:" ? undefined : config.dataDir });
+  const db = await openDb({ databaseUrl: config.databaseUrl, poolSize: config.dbPool, dataDir: env.DATA_DIR === ":memory:" ? undefined : config.dataDir });
   // Code is opened in a headless browser before it is accepted, when one is installed. Off: VERIFY_RENDER=off.
   const check = env.VERIFY_RENDER === "off" ? null : await browserRenderer();
   if (env.VERIFY_RENDER !== "off" && check === null) {

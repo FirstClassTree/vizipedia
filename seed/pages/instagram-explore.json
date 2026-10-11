@@ -150,7 +150,11 @@
       "instagram-hashtags",
       "PageRank",
       "tiktok-for-you-feed",
-      "YouTube recommendations"
+      "YouTube recommendations",
+      "Collaborative filtering",
+      "Two-tower model",
+      "Embedding similarity",
+      "Engagement rate"
     ]
   }
 }

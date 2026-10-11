@@ -158,7 +158,11 @@
       "instagram-ranking",
       "LinkedIn feed ranking",
       "Hacker News ranking",
-      "PageRank"
+      "PageRank",
+      "Community Notes",
+      "Engagement bait",
+      "Shadowban",
+      "Two-tower model"
     ]
   }
 }

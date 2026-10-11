@@ -148,7 +148,11 @@
       "Diffie-Hellman key exchange",
       "PageRank",
       "Bloom filter",
-      "Raft consensus"
+      "Raft consensus",
+      "Merkle tree",
+      "SHA-1",
+      "Git rebase",
+      "Content-addressable storage"
     ]
   }
 }

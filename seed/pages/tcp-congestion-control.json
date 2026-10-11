@@ -154,7 +154,12 @@
       "Compound interest",
       "Bloom filter",
       "Diffie-Hellman key exchange",
-      "Fourier transform"
+      "Fourier transform",
+      "BBR congestion control",
+      "Bufferbloat",
+      "Slow start",
+      "QUIC",
+      "Round-trip time"
     ]
   }
 }

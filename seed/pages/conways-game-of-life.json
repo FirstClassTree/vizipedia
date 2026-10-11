@@ -155,7 +155,11 @@
       "Fourier transform",
       "Bayes' theorem",
       "Attention in a transformer",
-      "PageRank"
+      "PageRank",
+      "Cellular automaton",
+      "Langton's ant",
+      "Rule 110",
+      "Boids"
     ]
   }
 }

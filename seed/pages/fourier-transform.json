@@ -166,7 +166,11 @@
       "Attention in a transformer",
       "TCP congestion control",
       "PageRank",
-      "Conway's Game of Life"
+      "Conway's Game of Life",
+      "Nyquist-Shannon sampling theorem",
+      "Spectrogram",
+      "JPEG compression",
+      "Convolution"
     ]
   }
 }

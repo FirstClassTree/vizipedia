@@ -154,7 +154,12 @@
       "How Git stores data",
       "Bloom filter",
       "Diffie-Hellman key exchange",
-      "Conway's Game of Life"
+      "Conway's Game of Life",
+      "Paxos",
+      "Leader election",
+      "Two-phase commit",
+      "CAP theorem",
+      "Write-ahead log"
     ]
   }
 }

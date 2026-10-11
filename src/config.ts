@@ -14,6 +14,8 @@ export interface Config {
   readonly origin: string;
   readonly name: string;
   readonly databaseUrl: string | undefined;
+  /** Postgres connections this process may hold open (DB_POOL, default 10). */
+  readonly dbPool: number;
   readonly dataDir: string | undefined;
   /** When set, keys are checked by this endpoint instead of the wiki's own table. */
   readonly identityUrl: string | undefined;
@@ -57,6 +59,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
     origin: (env.PUBLIC_ORIGIN ?? `http://localhost:${port}`).replace(/\/+$/u, ""),
     name: env.SITE_NAME ?? "Vizipedia",
     databaseUrl: env.DATABASE_URL || undefined,
+    dbPool: Math.max(1, Math.floor(Number(env.DB_POOL) || 10)),
     dataDir: env.DATABASE_URL ? undefined : (env.DATA_DIR ?? "./data"),
     identityUrl: env.IDENTITY_URL || undefined,
     keyUrl: env.KEY_URL || undefined,

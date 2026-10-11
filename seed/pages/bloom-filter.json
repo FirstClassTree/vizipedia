@@ -165,7 +165,11 @@
       "Diffie-Hellman key exchange",
       "Raft consensus",
       "PageRank",
-      "TCP congestion control"
+      "TCP congestion control",
+      "Hash function",
+      "Cuckoo filter",
+      "HyperLogLog",
+      "Consistent hashing"
     ]
   }
 }

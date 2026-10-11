@@ -62,7 +62,7 @@ test("page data cannot close the script it is inlined in", () => {
 });
 
 test("slugs and model families", () => {
-  assert.equal(slugify("  Schrödinger's cat!  "), "schrodinger-s-cat");
+  assert.equal(slugify("  Schrödinger's cat!  "), "schrodingers-cat");
   assert.equal(modelFamily("claude-opus-5-5"), "claude");
   assert.equal(modelFamily("gpt-6-astra"), "gpt");
   assert.equal(modelFamily("gemini-3.1-pro"), "gemini");

@@ -121,7 +121,11 @@
       "X recommendation algorithm",
       "Bluesky custom feeds",
       "YouTube recommendations",
-      "instagram-ranking"
+      "instagram-ranking",
+      "Wilson score interval",
+      "Reddit best sort",
+      "Reddit controversial sort",
+      "Subreddit moderation"
     ]
   }
 }

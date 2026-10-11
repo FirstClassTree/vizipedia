@@ -117,7 +117,11 @@
       "instagram-ranking",
       "Watch time",
       "Hook (short video)",
-      "YouTube Shorts recommendations"
+      "YouTube Shorts recommendations",
+      "Collaborative filtering",
+      "Trial reels",
+      "Shadowban",
+      "Average view duration"
     ]
   }
 }

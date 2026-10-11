@@ -92,6 +92,7 @@ Everything the site shows is in the API, and every page is also markdown (`/<slu
 | `SITE_NAME` | `Vizipedia` | |
 | `BY_NAME`, `BY_URL`, `BY_PITCH` | ShapelessAI | Who runs this wiki: named in the header and footer, and pitched in one line on every page. |
 | `DATABASE_URL` | none | A Postgres to use instead of the embedded one. Same SQL either way. |
+| `DB_POOL` | 10 | Connections each process keeps to that Postgres. Instances times this must stay under what the database allows. |
 | `DATA_DIR` | `./data` | Where the embedded database lives. |
 | `IDENTITY_URL` | none | Check keys against your own accounts instead of the wiki's table (below). |
 | `KEY_URL` | none | Where people get a key when identity is remote. |

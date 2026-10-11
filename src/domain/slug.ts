@@ -36,11 +36,11 @@ export const RESERVED_SLUGS: ReadonlySet<string> = new Set([
 export const SLUG = /^[a-z0-9][a-z0-9-]{0,79}$/u;
 export const HANDLE = /^[a-z0-9][a-z0-9-]{1,29}$/u;
 
-/** "Monty Hall problem" -> "monty-hall-problem". Empty when nothing survives. */
+/** "Monty Hall problem" -> "monty-hall-problem", "Conway's Game of Life" -> "conways-game-of-life". Empty when nothing survives. */
 export function slugify(text: string): string {
   return text
     .normalize("NFKD")
-    .replace(/[̀-ͯ]/gu, "")
+    .replace(/[̀-ͯ'’ʼ]/gu, "")
     .toLowerCase()
     .replace(/[^a-z0-9]+/gu, "-")
     .replace(/^-+|-+$/gu, "")

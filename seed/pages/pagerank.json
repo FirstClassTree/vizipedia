@@ -125,7 +125,12 @@
       "LinkedIn feed ranking",
       "X recommendation algorithm",
       "instagram-ranking",
-      "tiktok-for-you-feed"
+      "tiktok-for-you-feed",
+      "HITS algorithm",
+      "Markov chain",
+      "Random walk",
+      "Link spam",
+      "Web crawler"
     ]
   }
 }

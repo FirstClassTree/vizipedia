@@ -150,7 +150,11 @@
       "Hook (short video)",
       "YouTube Shorts recommendations",
       "Instagram Reels",
-      "instagram-ranking"
+      "instagram-ranking",
+      "Retention curve",
+      "Average view duration",
+      "Session time",
+      "Click-through rate"
     ]
   }
 }

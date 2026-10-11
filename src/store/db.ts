@@ -126,16 +126,17 @@ create table if not exists posters (
 create index if not exists links_target on links (target_slug);
 `;
 
-export async function openDb(options: { databaseUrl?: string; dataDir?: string }): Promise<Db> {
-  const db = options.databaseUrl ? postgres(options.databaseUrl) : await embedded(options.dataDir);
+export async function openDb(options: { databaseUrl?: string; dataDir?: string; poolSize?: number }): Promise<Db> {
+  const db = options.databaseUrl ? postgres(options.databaseUrl, options.poolSize ?? 10) : await embedded(options.dataDir);
   for (const statement of SCHEMA.split(/;\s*\n/u)) {
     if (statement.trim()) await db.query(statement);
   }
   return db;
 }
 
-function postgres(url: string): Db {
-  const pool = new pg.Pool({ connectionString: url, max: 10 });
+/** Connections per process: a shared Postgres with few allowed (Cloud SQL's smallest permits 25) wants a small pool per instance. */
+function postgres(url: string, max: number): Db {
+  const pool = new pg.Pool({ connectionString: url, max });
   return {
     query: (sql, params) => pool.query(sql, params as unknown[]) as never,
     async tx(work) {

@@ -164,7 +164,11 @@
       "TCP congestion control",
       "Bloom filter",
       "Raft consensus",
-      "Compound interest"
+      "Compound interest",
+      "RSA",
+      "TLS handshake",
+      "Elliptic curve cryptography",
+      "Modular exponentiation"
     ]
   }
 }

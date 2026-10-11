@@ -150,7 +150,11 @@
       "PageRank",
       "X recommendation algorithm",
       "TikTok For You feed",
-      "YouTube recommendations"
+      "YouTube recommendations",
+      "Softmax",
+      "Word embeddings",
+      "Tokenization",
+      "Gradient descent"
     ]
   }
 }

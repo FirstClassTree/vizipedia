@@ -134,7 +134,11 @@
       "Fourier transform",
       "PageRank",
       "Attention in a transformer",
-      "X recommendation algorithm"
+      "X recommendation algorithm",
+      "Monty Hall problem",
+      "Base rate fallacy",
+      "Naive Bayes classifier",
+      "Bayesian A/B testing"
     ]
   }
 }
