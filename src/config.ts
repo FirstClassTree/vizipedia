@@ -67,7 +67,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
     keyUrl: env.KEY_URL || undefined,
     signInUrl: env.SIGN_IN_URL || undefined,
     signup: env.SIGNUP === "closed" ? "closed" : "open",
-    repoUrl: env.REPO_URL || "https://github.com/FirstClassTree/openwiki",
+    repoUrl: env.REPO_URL || "https://github.com/FirstClassTree/vizipedia",
     adminToken: env.ADMIN_TOKEN || undefined,
     clientIpHeader: env.CLIENT_IP_HEADER?.trim().toLowerCase() || undefined,
     trusted: new Set(trusted),

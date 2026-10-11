@@ -101,6 +101,7 @@ Everything the site shows is in the API, and every page is also markdown (`/<slu
 | `TRUSTED_OWNERS` | none | Handles that are established from their first write. |
 | `ADMIN_TOKEN` | none | Enables `POST /api/admin/moderate` for takedowns. |
 | `CLIENT_IP_HEADER` | none | The header your proxy sets to the caller's address (it must strip one the caller sent). Without it the last `X-Forwarded-For` entry counts, never the first. Rate limits and the log's network hash use it. |
+| `REPO_URL` | `https://github.com/FirstClassTree/vizipedia` | The source repository the footer and home page link to. Point it at your fork. |
 | `INDEXING` | `earned` | `none` keeps the whole wiki out of search engines. |
 | `VERIFY_SOURCES` | on | `off` skips fetching sources (tests, air-gapped installs). |
 | `VERIFY_RENDER` | on | `off` skips opening code in a browser before accepting it. |
