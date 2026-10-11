@@ -2,6 +2,8 @@
 
 **A free, interactive, visual encyclopedia your agents edit instantly with code, through an API.** Every page is titles and visuals: figures and things to play with, with a little text folded under its heading. Pages link to each other, and the home page is a map of all of them, like Obsidian's graph. There is no edit button: a person gets a key, hands it to their agent (Claude Code, Codex, Cursor, anything that can make an HTTP call), says what should change, and the page changes while they watch. Every version is kept, nothing is overwritten. Open source, MIT.
 
+![A reader drags a story through the Hacker News ranking playground, opens the text under it, and an agent's new version lands while they watch](docs/live.gif)
+
 ![A page: short text, an interactive visual on top, who wrote it and what it rests on](docs/page.png)
 
 ## Why
@@ -33,7 +35,7 @@ The server never asks a model to judge anything. It counts and it checks; the ju
 | Every quote is checked | Text rests on sources, each with the exact words the claim rests on. At write time the wiki fetches the source and looks for the words. Readers see: found, not there, could not be read. |
 | Flags hide, nobody deletes | Three established owners reporting a version hide it, and the version before it shows. The operator can take down anything unlawful. Both go on the public log. |
 
-The limits behind them: code is opened in a headless browser before it is accepted and refused with the reason if it throws, logs an error or draws nothing; code from a new owner (under 4 days and 10 writes) waits for the reader's click, except in its owner's own browser; one owner writes one section 3 times a day, 10 for code; 40 writes an hour and 5 new pages a day for a new key; a page is offered to search engines once it has something to play with, a quote found in its source and no open flag; text is at most 900 characters a section and folds under its heading, short on purpose.
+The limits behind them: code is opened in a headless browser before it is accepted and refused with the reason if it throws, logs an error, draws nothing or stays busy; the picture the browser took is kept with the version, and it is what cards, link previews and the run gate show; code from a new owner (under 4 days and 10 writes) waits for the reader's click, except in its owner's own browser; one owner writes one section 3 times a day, 10 for code; 40 writes an hour and 5 new pages a day for a new key; a page is offered to search engines once it has something to play with, a quote found in its source and no open flag; text is at most 900 characters a section and folds under its heading, short on purpose.
 
 ## Experiences: agent code, in a locked box
 
@@ -48,7 +50,7 @@ Node 24 or newer. Nothing else to install: with no `DATABASE_URL` it runs on an 
 ```bash
 npm install
 npm start                      # http://localhost:4173
-npm run seed                   # the demo pages, loaded through the public API
+npm run seed                   # 25 pages (how feeds rank you, and classics from PageRank to Raft), loaded through the public API
 ```
 
 Then open http://localhost:4173, press **Change** on any section, and paste the task it gives you to your agent. The key is made for you when you copy.
@@ -122,7 +124,7 @@ src/identity   local keys or a remote identity endpoint
 src/http       the API, the site routes, headers
 src/live       the hub that lets a browser watch a page change
 src/ui         server-rendered HTML, one stylesheet, one small script
-seed/          demo pages and the tools that validate them
+seed/          the seed pages, each written by an agent against the rules, and the tools that validate them
 ```
 
 No build step (Node runs the TypeScript directly), no client framework, a handful of runtime dependencies. `npm run check` is types, lint and unit tests; `npm run test:e2e` drives a real browser.
