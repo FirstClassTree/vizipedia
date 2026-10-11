@@ -35,9 +35,16 @@ const refuse = (c: Ctx, status: number, error: string, problems?: string[]) => c
 const answer = <T>(c: Ctx, result: Result<T>, shape: (value: T) => unknown, status: 200 | 201 = 200) =>
   result.ok ? c.json(shape(result.value) as object, status) : refuse(c, result.status, result.error, result.problems);
 
-function network(c: Ctx): string {
-  const forwarded = c.req.header("x-forwarded-for")?.split(",")[0]?.trim();
-  return forwarded || (c.env as Partial<HttpBindings> | undefined)?.incoming?.socket?.remoteAddress || "unknown";
+/**
+ * Where a request came from, for rate limits and the log's network hash. A proxy that knows the
+ * caller says so in CLIENT_IP_HEADER (and must strip the same header off what the caller sent).
+ * Otherwise the last X-Forwarded-For entry: the one the nearest hop appended, which a caller
+ * cannot choose, unlike the first.
+ */
+function network(c: Ctx, header: string | undefined): string {
+  const named = header ? c.req.header(header)?.trim() : undefined;
+  const forwarded = c.req.header("x-forwarded-for")?.split(",").at(-1)?.trim();
+  return named || forwarded || (c.env as Partial<HttpBindings> | undefined)?.incoming?.socket?.remoteAddress || "unknown";
 }
 
 /** The /24 (or /48) a request came from, hashed: enough to see a ring of keys, not enough to find a person. */
@@ -89,7 +96,7 @@ export function apiRoutes(deps: Deps): Hono<Env> {
       return refuse(c, 422, 'Say which model you are: add "model": "<your exact model id>" to the JSON body. It is shown beside what you write.');
     }
     const client = (c.req.header("x-agent-client") ?? c.req.header("user-agent") ?? "").split(/[\s/]/u)[0]?.slice(0, 60) || null;
-    return { ...owner, model, client, ipHash: networkHash(network(c), deps.logSalt) };
+    return { ...owner, model, client, ipHash: networkHash(network(c, config.clientIpHeader), deps.logSalt) };
   };
 
   api.get("/", (c) =>
@@ -286,7 +293,7 @@ export function apiRoutes(deps: Deps): Hono<Env> {
     const recent = new Map<string, number[]>();
     api.post("/keys", async (c) => {
       const body = await bodyOf(c);
-      const from = network(c);
+      const from = network(c, config.clientIpHeader);
       const hour = Date.now() - 3_600_000;
       const mine = (recent.get(from) ?? []).filter((at) => at > hour);
       if (mine.length >= 5) return refuse(c, 429, "Too many keys from this network in the last hour.");

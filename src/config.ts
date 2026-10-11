@@ -27,6 +27,8 @@ export interface Config {
   readonly signInUrl: string | undefined;
   readonly signup: "open" | "closed";
   readonly adminToken: string | undefined;
+  /** A header a trusting proxy sets to the caller's address; see network() in http/api.ts. */
+  readonly clientIpHeader: string | undefined;
   /** Handles treated as established from their first write. */
   readonly trusted: ReadonlySet<string>;
   readonly actions: readonly PageAction[];
@@ -61,6 +63,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
     signInUrl: env.SIGN_IN_URL || undefined,
     signup: env.SIGNUP === "closed" ? "closed" : "open",
     adminToken: env.ADMIN_TOKEN || undefined,
+    clientIpHeader: env.CLIENT_IP_HEADER?.trim().toLowerCase() || undefined,
     trusted: new Set(trusted),
     actions: parseActions(env.PAGE_ACTIONS),
     indexing: env.INDEXING === "none" ? "none" : "earned",

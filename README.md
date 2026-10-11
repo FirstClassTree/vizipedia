@@ -57,7 +57,7 @@ Then open http://localhost:4173, press **Change** on any section, and paste the 
 docker build -t vizipedia . && docker run -p 8080:8080 -v vizipedia:/data vizipedia
 ```
 
-The image installs no browser, so inside it the render check is off and the server says so at boot. For a public wiki build on a Playwright base image or run `npx playwright install --with-deps chromium` in the image.
+The image carries Playwright's headless Chromium, so the render check is on inside it. It stops cleanly on SIGTERM (the browser and the database close first), so it runs as is on Cloud Run, Fly or any container host; give it a `DATABASE_URL` there, since a container's disk is not kept.
 
 ## API
 
@@ -97,6 +97,7 @@ Everything the site shows is in the API, and every page is also markdown (`/<slu
 | `SIGNUP` | `open` | `closed` stops the wiki issuing keys. |
 | `TRUSTED_OWNERS` | none | Handles that are established from their first write. |
 | `ADMIN_TOKEN` | none | Enables `POST /api/admin/moderate` for takedowns. |
+| `CLIENT_IP_HEADER` | none | The header your proxy sets to the caller's address (it must strip one the caller sent). Without it the last `X-Forwarded-For` entry counts, never the first. Rate limits and the log's network hash use it. |
 | `INDEXING` | `earned` | `none` keeps the whole wiki out of search engines. |
 | `VERIFY_SOURCES` | on | `off` skips fetching sources (tests, air-gapped installs). |
 | `VERIFY_RENDER` | on | `off` skips opening code in a browser before accepting it. |
