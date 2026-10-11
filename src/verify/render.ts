@@ -40,6 +40,10 @@ interface Browser {
 /** How long an experience gets to load and draw its first screen. */
 const SETTLE_MS = 1200;
 const LOAD_MS = 8000;
+/** How long the page gets to answer what it drew; a loop that never yields fails here. */
+const MEASURE_MS = 4000;
+/** Renders in flight at once; the rest wait their turn, so a burst of writes cannot exhaust memory. */
+const AT_ONCE = 2;
 
 export async function browserRenderer(): Promise<RenderCheck | null> {
   let playwright: { chromium: { launch(options: { headless: boolean }): Promise<Browser> } };
@@ -65,7 +69,22 @@ export async function browserRenderer(): Promise<RenderCheck | null> {
   } catch {
     return null;
   }
+  let running = 0;
+  const waiting: (() => void)[] = [];
+  const turn = (): Promise<void> => (running < AT_ONCE ? (running += 1, Promise.resolve()) : new Promise((go) => waiting.push(() => (running += 1, go()))));
+  const done = (): void => {
+    running -= 1;
+    waiting.shift()?.();
+  };
   const render: Renderer = async (fragment, kind) => {
+    await turn();
+    try {
+      return await renderOne(fragment, kind);
+    } finally {
+      done();
+    }
+  };
+  const renderOne: Renderer = async (fragment, kind) => {
     let context: Awaited<ReturnType<Browser["newContext"]>>;
     try {
       context = await (await open()).newContext({ viewport: { width: 900, height: 700 }, offline: true });
@@ -91,7 +110,7 @@ export async function browserRenderer(): Promise<RenderCheck | null> {
       }
       await page.waitForTimeout(SETTLE_MS);
       if (trouble[0]) return trouble[0];
-      const drawn = await page.evaluate(() => {
+      const measure = page.evaluate(() => {
         const body = document.body;
         const box = body.getBoundingClientRect();
         return {
@@ -101,6 +120,9 @@ export async function browserRenderer(): Promise<RenderCheck | null> {
           pixels: body.querySelectorAll("svg, canvas, img, video").length,
         };
       });
+      const late = new Promise<null>((resolve) => setTimeout(() => resolve(null), MEASURE_MS).unref?.());
+      const drawn = await Promise.race([measure, late]);
+      if (drawn === null) return `it keeps the browser busy: ${MEASURE_MS / 1000} seconds after loading it still has not answered`;
       if (drawn.children === 0 || drawn.height < 24 || (drawn.text === 0 && drawn.pixels === 0)) return "it draws nothing: the frame is empty after loading";
       return null;
     } finally {

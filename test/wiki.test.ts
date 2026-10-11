@@ -13,6 +13,11 @@ test("a page is its lede, its sections, and one version each, signed by owner an
   assert.equal(page.lede, PAGE.lede);
   assert.equal(page.playable, true);
   assert.equal(page.cover?.kind, "experience", "the first visual is the cover");
+  assert.equal(page.cover?.gated, true, "a new owner's code waits for a click, so lists do not frame it");
+  const trusted = await freshWiki({ trusted: ["ada"] });
+  ok(await trusted.wiki.createPage(await trusted.as("ada"), PAGE));
+  assert.equal((await trusted.wiki.listPages({ limit: 5 }))[0]?.cover?.gated, false, "an established owner's cover runs on cards");
+  await trusted.db.close();
   assert.deepEqual(page.linksTo, [{ slug: "hook-short-video", title: "Hook (short video)", exists: false }]);
   const current = page.body[2]?.current;
   assert.deepEqual(current?.by, { owner: "ada", model: "claude-opus-5-5", client: "test" });
@@ -189,5 +194,17 @@ test("the map: a page's see list and its [[links]] are edges, an unwritten page 
     (await wiki.wanted()).map((entry) => entry.slug),
     ["hook-short-video", "watch-time"],
   );
+  await db.close();
+});
+
+test("a figure may not take its frame elsewhere: links, forms, frames and meta tags are refused", async () => {
+  const { wiki, as, db } = await freshWiki();
+  const figure = (body: string) => wiki.createPage(await_as, { ...PAGE, title: "Fig", sections: [{ kind: "figure", heading: "Figure", body }, ...PAGE.sections] });
+  const await_as = await as("ada");
+  const linked = await figure('<svg><a href="https://evil.test"><text>go</text></a></svg>');
+  assert.equal(!linked.ok && linked.problems?.some((p) => p.includes("no links")), true);
+  const refresh = await figure('<meta http-equiv="refresh" content="0;url=https://evil.test"><p>x</p>');
+  assert.equal(!refresh.ok && refresh.problems?.some((p) => p.includes("no links")), true);
+  ok(await figure('<svg viewBox="0 0 10 10"><circle r="4" cx="5" cy="5"/></svg>'));
   await db.close();
 });

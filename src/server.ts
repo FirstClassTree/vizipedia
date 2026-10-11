@@ -3,6 +3,7 @@ import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { readConfig } from "./config.ts";
 import { apiRoutes, type Deps } from "./http/api.ts";
+import { KeyMints } from "./http/caller.ts";
 import { siteUrl } from "./http/present.ts";
 import { siteRoutes } from "./http/site.ts";
 import { localIdentity, remoteIdentity } from "./identity/identity.ts";
@@ -34,7 +35,7 @@ export async function build(env: NodeJS.ProcessEnv = process.env) {
     (after) => wiki.changes(500, undefined, after),
     () => wiki.lastEventId(),
   );
-  const deps: Deps = { wiki, identity, live, config, logSalt: env.LOG_SALT ?? (await wiki.setting("log_salt", () => randomBytes(16).toString("hex"))) };
+  const deps: Deps = { wiki, identity, live, config, logSalt: env.LOG_SALT ?? (await wiki.setting("log_salt", () => randomBytes(16).toString("hex"))), mints: new KeyMints() };
   const app = new Hono({ strict: false });
   app.route(`${config.base}/api`, apiRoutes(deps));
   app.route(config.base || "/", siteRoutes(deps));

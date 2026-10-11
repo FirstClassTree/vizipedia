@@ -114,16 +114,19 @@ interface SectionRow {
 const iso = (value: unknown): string => (value instanceof Date ? value.toISOString() : new Date(String(value)).toISOString());
 const list = (ids: readonly string[]): string => ids.join(",");
 const PAGE_COLUMNS = "slug, title, hue, lede, created_at, updated_at, sections, owners, playable, verified, indexable, cover_version_id, cover_kind, tags, facts";
-const P_COLUMNS = PAGE_COLUMNS.split(", ")
+/** The cover's writer, so a list can tell whether that code may run without a click. */
+const COVER_OWNER = "(select jsonb_build_object('handle', o.handle, 'writes', o.writes, 'createdAt', o.created_at) from versions v join owners o on o.id = v.owner_id where v.id = p.cover_version_id) as cover_owner";
+const P_COLUMNS = `${PAGE_COLUMNS.split(", ")
   .map((column) => `p.${column}`)
-  .join(", ");
+  .join(", ")}, ${COVER_OWNER}`;
 /** Events that are not a change to a page: they stay on the log and off every feed. */
 const QUIET = "('section.initial', 'check.run')";
 /** Writes to one section by one owner that count against the daily brake. */
 const WRITES = "('version.write', 'version.revert')";
 const SECTION_COLUMNS = "s.id, s.page_id, s.kind, s.heading, s.anchor, s.position, (select count(*) from versions v where v.section_id = s.id) as versions";
 
-const summaryOf = (row: Record<string, unknown>): PageSummary => ({
+type Standing = (owner: { handle: string; writes: number; createdAt: string }) => boolean;
+const summaryOf = (row: Record<string, unknown>, established: Standing): PageSummary => ({
   slug: String(row.slug),
   title: String(row.title),
   hue: Number(row.hue),
@@ -135,7 +138,13 @@ const summaryOf = (row: Record<string, unknown>): PageSummary => ({
   playable: Boolean(row.playable),
   verified: Number(row.verified),
   indexable: Boolean(row.indexable),
-  cover: row.cover_version_id ? { version: String(row.cover_version_id), kind: row.cover_kind as Cover["kind"] } : null,
+  cover: row.cover_version_id
+    ? {
+        version: String(row.cover_version_id),
+        kind: row.cover_kind as Cover["kind"],
+        gated: row.cover_kind === "experience" && !established(row.cover_owner as { handle: string; writes: number; createdAt: string }),
+      }
+    : null,
   tags: (row.tags as string[] | null) ?? [],
   facts: (row.facts as Fact[] | null) ?? [],
 });
@@ -236,7 +245,7 @@ export class Wiki {
     }
     const order = { new: "p.created_at desc", title: "p.title asc", updated: "p.updated_at desc" }[options.sort ?? "updated"];
     const rows = await this.db.query(`select ${P_COLUMNS} from pages p where ${where} order by ${order} limit $1 offset $2`, params);
-    return rows.rows.map(summaryOf);
+    return rows.rows.map((row) => summaryOf(row, this.standing));
   }
 
   /** Subjects pages are filed under, most used first. */
@@ -276,7 +285,7 @@ export class Wiki {
       ),
     ]);
     return {
-      ...summaryOf(row),
+      ...summaryOf(row, this.standing),
       lastEvent: Number(row.last_event),
       body,
       linksTo: linksTo.rows.map((link) => ({ slug: link.slug, title: link.title, exists: Boolean(link.exists) })),
@@ -315,7 +324,7 @@ export class Wiki {
     const data = await this.db.query<{ body: string }>("select v.body from sections s join versions v on v.id = s.current_version_id where s.page_id = $1 and s.kind = 'data'", [
       row.page_id,
     ]);
-    return { version, kind: row.kind as SectionKind, page: summaryOf(row), data: data.rows[0]?.body ?? null };
+    return { version, kind: row.kind as SectionKind, page: summaryOf(row, this.standing), data: data.rows[0]?.body ?? null };
   }
 
   /** Every version of a section, newest first: the history a reader reverts from. */
@@ -481,6 +490,8 @@ export class Wiki {
     const checked = drafts.map((draft, index) => this.checkSection(draft, index === 0 ? "lede" : `sections[${index - 1}]`));
     for (const result of checked) if (!result.ok) problems.push(...(result.problems ?? [result.error]));
     if (problems.length > 0) return fail(422, "The page was not accepted.", problems);
+    const early = await this.guard(this.db, caller, "page");
+    if (early) return early;
     const refused = await this.screen([title, ...checked.map((result) => (result.ok ? result.value.body : ""))].join("\n\n"));
     if (refused) return fail(422, `The page was refused by the content screen: ${refused}.`);
     if (dry) {
@@ -543,6 +554,8 @@ export class Wiki {
     const checked = this.checkSection(input, "section");
     if (!checked.ok) return checked;
     if (checked.value.kind === "lede") return fail(422, "A page has one lede. To change it, write the lede section.");
+    const early = await this.guard(this.db, caller, "write");
+    if (early) return early;
     const refused = await this.screen(`${checked.value.heading}\n\n${checked.value.body}`);
     if (refused) return fail(422, `The section was refused by the content screen: ${refused}.`);
     checked.value.sources = await this.check(checked.value.sources);
@@ -588,6 +601,8 @@ export class Wiki {
     const note = typeof input.note === "string" && input.note.trim() ? input.note.trim() : null;
     const checked = checkVersion(section.kind, { body: bodyText(section.kind, input.body), sources: parsed, note });
     if (Array.isArray(checked)) return fail(422, "The version was not accepted.", checked);
+    const early = await this.guard(this.db, caller, "write");
+    if (early) return early;
     const refused = await this.screen(checked.body);
     if (refused) return fail(422, `The version was refused by the content screen: ${refused}.`);
     const sources = await this.check(checked.sources);
@@ -816,6 +831,9 @@ export class Wiki {
     // Starting a page is one write, however many sections it starts with.
     if (caller && kind !== "section.initial") await tx.query("update owners set writes = writes + 1 where id = $1", [caller.ownerId]);
   }
+
+  /** Whether an owner's code runs without a reader's click; time and the trusted list both count. */
+  private readonly standing: Standing = (owner) => isEstablished({ ...owner, writes: Number(owner.writes), createdAt: iso(owner.createdAt) }, this.now(), this.trusted);
 
   private async guard(tx: Queryable, caller: Caller, kind: "write" | "page"): Promise<Result<never> | null> {
     const owner = await tx.query<{ handle: string; writes: number; created_at: Date }>("select handle, writes, created_at from owners where id = $1", [caller.ownerId]);

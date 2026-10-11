@@ -48,7 +48,8 @@ export function who(model: string, owner?: string | null): Html {
 
 /** A page's own picture, small and untouchable: the card is the link, the frame is its face. */
 export function cover(site: Site, cover: Cover | null, hue: number): Html {
-  if (!cover) return html`<span class="cover cover-plain" style="--hue:${hue}">${blob(null)}</span>`;
+  // Code from a new owner waits for a click on its page; a list never runs it (SECURITY.md, run gate).
+  if (!cover || cover.gated) return html`<span class="cover cover-plain" style="--hue:${hue}">${blob(null)}</span>`;
   return html`<span class="cover" style="--hue:${hue}"><iframe src="${site.base}/x/${cover.version}" sandbox="${FRAME_SANDBOX}" loading="lazy" referrerpolicy="no-referrer" tabindex="-1" aria-hidden="true" title=""></iframe></span>`;
 }
 

@@ -104,7 +104,7 @@ export function pageFacts(sections: readonly Section[], hidden: boolean, textOf:
     playable: experience !== undefined,
     verified,
     indexable: !hidden && openFlags === 0 && experience !== undefined && verified >= INDEX_MIN_VERIFIED,
-    cover: first ? { version: first.current.id, kind: first.section.kind as Cover["kind"] } : null,
+    cover: first ? { version: first.current.id, kind: first.section.kind as Cover["kind"], gated: first.section.kind === "experience" && !first.current.established } : null,
   };
 }
 
@@ -179,6 +179,11 @@ export function checkVersion(kind: SectionKind, input: VersionInput): CheckedVer
     if (/<\s*(?:html|head|body)[\s>]/iu.test(body)) problems.push("send the fragment that goes inside <body>, not a whole document; the wiki supplies the shell");
     if (kind === "figure" && /<\s*script[\s>]|\son[a-z]+\s*=/iu.test(body)) {
       problems.push('a figure is a still or CSS-animated picture and runs no script; send code as kind "experience"');
+    }
+    // A figure is shown without the run gate, so it must not be able to take its frame elsewhere
+    // (a link or a refresh can, in browsers without Connection Allowlists).
+    if (kind === "figure" && /<\s*(a|meta|form|iframe|object|embed|base)[\s>]/iu.test(body)) {
+      problems.push("a figure holds no links, forms, frames or meta tags: it is a picture; anything a reader acts on belongs in an experience");
     }
   } else {
     if (body.length > LIMITS.data) problems.push(`data is at most ${LIMITS.data} characters of JSON`);

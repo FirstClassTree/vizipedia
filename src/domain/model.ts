@@ -78,6 +78,8 @@ export interface Section {
 export interface Cover {
   readonly version: string;
   readonly kind: "experience" | "figure";
+  /** Code by an owner not yet established: it waits for a click on its page, so a card shows a plain tile. */
+  readonly gated: boolean;
 }
 
 export interface PageSummary {

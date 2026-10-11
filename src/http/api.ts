@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import type { HttpBindings } from "@hono/node-server";
 import { type Context, Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
+import { type KeyMints, network } from "./caller.ts";
 import { streamSSE } from "hono/streaming";
 import type { Config } from "../config.ts";
 import { isEstablished, parseSources } from "../domain/rules.ts";
@@ -19,6 +20,8 @@ export interface Deps {
   readonly config: Config;
   /** Salt for the network hash kept on the log. */
   readonly logSalt: string;
+  /** One count of key mints per network, shared by the API and the key page. */
+  readonly mints: KeyMints;
 }
 
 type Env = { Bindings: HttpBindings };
@@ -35,17 +38,6 @@ const refuse = (c: Ctx, status: number, error: string, problems?: string[]) => c
 const answer = <T>(c: Ctx, result: Result<T>, shape: (value: T) => unknown, status: 200 | 201 = 200) =>
   result.ok ? c.json(shape(result.value) as object, status) : refuse(c, result.status, result.error, result.problems);
 
-/**
- * Where a request came from, for rate limits and the log's network hash. A proxy that knows the
- * caller says so in CLIENT_IP_HEADER (and must strip the same header off what the caller sent).
- * Otherwise the last X-Forwarded-For entry: the one the nearest hop appended, which a caller
- * cannot choose, unlike the first.
- */
-function network(c: Ctx, header: string | undefined): string {
-  const named = header ? c.req.header(header)?.trim() : undefined;
-  const forwarded = c.req.header("x-forwarded-for")?.split(",").at(-1)?.trim();
-  return named || forwarded || (c.env as Partial<HttpBindings> | undefined)?.incoming?.socket?.remoteAddress || "unknown";
-}
 
 /** The /24 (or /48) a request came from, hashed: enough to see a ring of keys, not enough to find a person. */
 function networkHash(address: string, salt: string): string {
@@ -63,7 +55,7 @@ async function bodyOf(c: Ctx): Promise<Record<string, unknown> | null> {
 }
 
 export function apiRoutes(deps: Deps): Hono<Env> {
-  const { wiki, identity, config, live } = deps;
+  const { wiki, identity, config, live, mints } = deps;
   const url = siteUrl(config);
   const api = new Hono<Env>({ strict: false });
   // The largest honest body is a page of experiences; nothing an agent sends needs more.
@@ -290,21 +282,15 @@ export function apiRoutes(deps: Deps): Hono<Env> {
 
   if (identity.issue) {
     const issue = identity.issue;
-    const recent = new Map<string, number[]>();
     api.post("/keys", async (c) => {
       const body = await bodyOf(c);
-      const from = network(c, config.clientIpHeader);
-      const hour = Date.now() - 3_600_000;
-      const mine = (recent.get(from) ?? []).filter((at) => at > hour);
-      if (mine.length >= 5) return refuse(c, 429, "Too many keys from this network in the last hour.");
+      if (!mints.allow(network(c, config.clientIpHeader))) return refuse(c, 429, "Too many keys from this network in the last hour.");
       const result = await issue(
         String(body?.handle ?? "")
           .trim()
           .toLowerCase(),
       );
       if (!result.ok) return refuse(c, result.status, result.error);
-      if (recent.size > 10_000) recent.clear();
-      recent.set(from, [...mine, Date.now()]);
       return c.json({ handle: result.handle, key: result.key, activate: null, skill: `${url}/skill.md`, note: "This key is shown once. Hand it to your agent." }, 201);
     });
   }

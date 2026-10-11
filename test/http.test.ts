@@ -344,3 +344,16 @@ test("a page can be tried without being written, and starting one is a single wr
   assert.equal(me.writes, 1, "a page of three sections is one write toward being established");
   await db.close();
 });
+
+test("one network mints at most 5 keys an hour, on the API and on the key page alike", async () => {
+  const { app, db } = await boot();
+  const mint = (path: string, from: string) => app.request(path, { method: "POST", headers: { "content-type": "application/json", "x-forwarded-for": `1.1.1.1, ${from}` }, body: "{}" });
+  for (let i = 0; i < 3; i += 1) assert.equal((await mint("/api/keys", "9.9.9.9")).status, 201);
+  assert.equal((await mint("/key", "9.9.9.9")).status, 200);
+  assert.equal((await mint("/key", "9.9.9.9")).status, 200);
+  assert.equal((await mint("/key", "9.9.9.9")).status, 429, "the page form shares the API's count");
+  assert.equal((await mint("/api/keys", "9.9.9.9")).status, 429);
+  assert.equal((await mint("/api/keys", "9.9.9.8")).status, 201, "another network is not held back");
+  assert.equal((await mint("/api/keys", "9.9.9.9")).status, 429, "the first forwarded entry is the caller's to write, so it does not count");
+  await db.close();
+});

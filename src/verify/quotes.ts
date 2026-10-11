@@ -37,8 +37,11 @@ for (const [net, bits] of [
 ] as const)
   PRIVATE.addSubnet(net, bits, "ipv4");
 for (const [net, bits] of [
-  ["::", 127],
+  ["::", 96],
   ["64:ff9b::", 96],
+  ["64:ff9b:1::", 48],
+  ["2002::", 16],
+  ["fec0::", 10],
   ["100::", 64],
   ["2001:db8::", 32],
   ["fc00::", 7],
@@ -49,8 +52,10 @@ for (const [net, bits] of [
 
 /** True only for an address on the public internet. */
 export function isPublicAddress(address: string): boolean {
-  const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/iu.exec(address)?.[1];
-  const plain = mapped ?? address;
+  // A mapped IPv4 in either spelling, ::ffff:10.0.0.1 or ::ffff:a00:1, is judged as the IPv4 it names.
+  const dotted = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/iu.exec(address)?.[1];
+  const hex = /^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/iu.exec(address);
+  const plain = dotted ?? (hex ? [hex[1] ?? "0", hex[2] ?? "0"].flatMap((part) => [Number.parseInt(part, 16) >> 8, Number.parseInt(part, 16) & 255]).join(".") : address);
   const family = isIP(plain);
   if (family === 0) return false;
   return !PRIVATE.check(plain, family === 4 ? "ipv4" : "ipv6");
@@ -72,7 +77,8 @@ const publicLookup: LookupFunction = (hostname, options, callback) => {
 const dispatcher = new Agent({ connect: { lookup: publicLookup, timeout: 4000 }, headersTimeout: 5000, bodyTimeout: 5000 });
 
 const MAX_BYTES = 1_500_000;
-const MAX_HOPS = 4;
+/** The first fetch plus at most four redirects, each checked like the first. */
+const MAX_HOPS = 5;
 export const MIN_QUOTE = 20;
 
 /** A URL the wiki is willing to fetch: http(s), default port, a name or a public literal address. */

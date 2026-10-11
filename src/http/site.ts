@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { network } from "./caller.ts";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import type { HttpBindings } from "@hono/node-server";
@@ -89,7 +90,7 @@ function loadAssets(base: string): { files: Map<string, Asset>; urls: Site["asse
 }
 
 export function siteRoutes(deps: Deps): Hono<Env> {
-  const { wiki, identity, config } = deps;
+  const { wiki, identity, config, mints } = deps;
   const assets = loadAssets(config.base);
   const site: Site = {
     name: config.name,
@@ -104,7 +105,7 @@ export function siteRoutes(deps: Deps): Hono<Env> {
   const app = new Hono<Env>({ strict: false });
   const page = async (c: Ctx, view: Html, status: 200 | 404 = 200) =>
     c.html(await view, status, { ...HTML_HEADERS, ...(config.indexing === "none" ? { "X-Robots-Tag": "noindex" } : {}) });
-  const text = (c: Ctx, body: string, type: string) => c.body(body, 200, { "Content-Type": `${type}; charset=utf-8`, "Cache-Control": "public, max-age=300" });
+  const text = (c: Ctx, body: string, type: string) => c.body(body, 200, { "Content-Type": `${type}; charset=utf-8`, "X-Content-Type-Options": "nosniff", "Cache-Control": "public, max-age=300" });
   const keyHint = identity.kind === "local" ? `Get one at ${site.url}/key.` : `Get one at ${config.keyUrl ?? "the site this wiki belongs to"}.`;
 
   app.get("/assets/:file", (c) => {
@@ -151,6 +152,7 @@ export function siteRoutes(deps: Deps): Hono<Env> {
   app.get("/key", (c) => page(c, keyView(site, {})));
   app.post("/key", async (c) => {
     if (!identity.issue) return page(c, keyView(site, {}));
+    if (!mints.allow(network(c, config.clientIpHeader))) return c.html(await keyView(site, { error: "Too many keys from this network in the last hour." }), 429, HTML_HEADERS);
     // The wiki picks the public name: nobody fills in a form to get a key.
     const result = await identity.issue("");
     const view = result.ok ? keyView(site, { issued: { handle: result.handle, key: result.key } }) : keyView(site, { error: result.error });

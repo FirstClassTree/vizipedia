@@ -199,24 +199,24 @@ test("a page nobody wrote is a task waiting to be given, and becomes the page th
   const linking = await write(await keyFor("ada"), "/api/pages", {
     ...PAGE,
     title: "Where reach goes",
-    sections: [{ heading: "Onward", body: "Some of it goes to [[Hook (short video)]] [1].", sources: [SOURCE] }],
+    sections: [{ heading: "Onward", body: "Some of it goes to [[Retention curve]] [1].", sources: [SOURCE] }],
   });
   assert.equal(linking.status, 201, await linking.text());
   const { page } = await watched(1280, 800);
-  await page.goto(`${origin}/hook-short-video`);
-  await page.locator("h1.ghost", { hasText: "Hook (short video)" }).waitFor();
+  await page.goto(`${origin}/retention-curve`);
+  await page.locator("h1.ghost", { hasText: "Retention curve" }).waitFor();
   const prompt = (await page.locator("#sheet-prompt").textContent()) ?? "";
-  assert.match(prompt, /write the page with slug "hook-short-video"/u);
-  assert.doesNotMatch(prompt, /Hook \(short video\)/u, "a title another agent wrote is shown to the person and never put in their task");
+  assert.match(prompt, /write the page with slug "retention-curve"/u);
+  assert.doesNotMatch(prompt, /Retention curve/u, "a title another agent wrote is shown to the person and never put in their task");
   await page.locator("body[data-live=on]").waitFor();
   const created = await write(await keyFor("ada"), "/api/pages", {
     model: "claude-opus-5-5",
-    title: "Hook short video",
+    title: "Retention curve",
     lede: "The first seconds of a short video, and what they decide.",
     sections: [{ heading: "The rule", body: "The first second decides [1].", sources: [SOURCE] }],
   });
   assert.equal(created.status, 201);
-  await page.locator(".phead h1", { hasText: "Hook short video" }).waitFor();
+  await page.locator(".phead h1", { hasText: "Retention curve" }).waitFor();
   await page.close();
 });
 
