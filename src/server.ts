@@ -46,8 +46,17 @@ export async function build(env: NodeJS.ProcessEnv = process.env) {
 }
 
 if (import.meta.main) {
-  const { app, config } = await build();
-  serve({ fetch: app.fetch, port: config.port }, () => {
+  const { app, config, close } = await build();
+  const server = serve({ fetch: app.fetch, port: config.port }, () => {
     console.log(`${config.name} is at ${siteUrl(config)}  (agents: ${siteUrl(config)}/skill.md)`);
   });
+  // Cloud Run and docker stop send SIGTERM: stop taking requests, let the embedded database
+  // finish its writes (a mid-write kill corrupts its data dir), then exit.
+  const stop = (): void => {
+    server.close();
+    close().finally(() => process.exit(0));
+    setTimeout(() => process.exit(1), 8000).unref();
+  };
+  process.once("SIGTERM", stop);
+  process.once("SIGINT", stop);
 }
