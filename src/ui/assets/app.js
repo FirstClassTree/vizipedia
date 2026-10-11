@@ -59,7 +59,8 @@ async function signedInKey() {
 async function mintKey() {
   const mine = await signedInKey();
   if (mine) return mine;
-  const response = await fetch(`${base}/api/keys`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
+  const name = document.getElementById("key-name")?.value?.trim() ?? "";
+  const response = await fetch(`${base}/api/keys`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(name ? { name } : {}) });
   if (response.status === 404 && body.dataset.keyUrl) {
     location.href = body.dataset.keyUrl;
     throw new Error("Keys are handed out by the site this wiki belongs to.");

@@ -18,6 +18,15 @@ export interface Identified {
   readonly handle: string;
 }
 
+/** A name a person gives to sign with: one line, no address, at most 60 characters; null when there is none worth keeping. */
+export function ownerName(raw: unknown): string | null {
+  const name = String(raw ?? "")
+    .replace(/\s+/gu, " ")
+    .trim();
+  if (!name || name.length > 60 || name.includes("@") || /https?:\/\//u.test(name)) return null;
+  return name;
+}
+
 /** A key that exists and that no person has claimed yet: where a person goes to claim it. */
 export interface Pending {
   readonly activate: string;
@@ -32,7 +41,7 @@ export interface Identity {
    * Local only: a new owner and its first key. The plaintext exists once, in this result.
    * Without a handle the wiki picks one, so a key can be handed over before any form is filled.
    */
-  issue?(handle: string): Promise<{ ok: true; key: string; handle: string } | { ok: false; status: number; error: string }>;
+  issue?(handle: string, name?: string | null): Promise<{ ok: true; key: string; handle: string } | { ok: false; status: number; error: string }>;
 }
 
 export const KEY_PREFIX = "owk_";
@@ -51,11 +60,11 @@ export function localIdentity(db: Db, wiki: Wiki, options: { signup: "open" | "c
       const row = found.rows[0];
       return row ? { ownerId: row.owner_id, handle: row.handle } : null;
     },
-    async issue(handle) {
+    async issue(handle, name = null) {
       if (options.signup === "closed") return { ok: false, status: 403, error: "This wiki is not issuing keys." };
       if (handle && !HANDLE.test(handle)) return { ok: false, status: 422, error: "A handle is 2 to 30 lowercase letters, digits or dashes." };
-      let owner = handle ? await wiki.createOwner(handle) : null;
-      for (let attempt = 0; !handle && !owner && attempt < 5; attempt += 1) owner = await wiki.createOwner(`agent-${randomBytes(4).toString("hex")}`);
+      let owner = handle ? await wiki.createOwner(handle, name) : null;
+      for (let attempt = 0; !handle && !owner && attempt < 5; attempt += 1) owner = await wiki.createOwner(`agent-${randomBytes(4).toString("hex")}`, name);
       if (!owner) return { ok: false, status: 409, error: handle ? `The handle "${handle}" is taken.` : "No free handle was found. Try again." };
       const key = `${KEY_PREFIX}${randomBytes(30).toString("base64url")}`;
       await db.query("insert into keys (owner_id, key_hash) values ($1, $2)", [owner.id, hashOf(key)]);
@@ -66,8 +75,9 @@ export function localIdentity(db: Db, wiki: Wiki, options: { signup: "open" | "c
 
 /**
  * The endpoint is called as `GET <url>` with the caller's own `Authorization` header and
- * answers 200 `{ "id": "<stable account id>", "handle": "<public name>" }` or anything else
- * for "no". The handle is public; the endpoint must never return an email address as one.
+ * answers 200 `{ "id": "<stable account id>", "handle": "<public handle>", "name": "<what to call them>" }`
+ * (name optional) or anything else for "no". Handle and name are public; the endpoint must
+ * never return an email address as either.
  *
  * A site that hands out a key before its owner signs in answers such a key with 401 and
  * `{ "activate": "<https url>" }`: the wiki then tells the agent where its person claims it.
@@ -90,10 +100,10 @@ export function remoteIdentity(url: string, wiki: Wiki, fetcher: typeof fetch = 
           if (typeof body?.activate === "string" && /^https?:\/\//u.test(body.activate)) return { activate: body.activate };
         }
         if (response.ok) {
-          const body = (await response.json()) as { id?: unknown; handle?: unknown };
+          const body = (await response.json()) as { id?: unknown; handle?: unknown; name?: unknown };
           const handle = typeof body.handle === "string" ? body.handle.toLowerCase() : "";
           if (typeof body.id === "string" && body.id && HANDLE.test(handle)) {
-            const owner = await wiki.ownerForExternal(body.id, handle);
+            const owner = await wiki.ownerForExternal(body.id, handle, ownerName(body.name));
             who = { ownerId: owner.id, handle: owner.handle };
           }
         }

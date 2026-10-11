@@ -55,6 +55,7 @@ export interface Change {
   readonly at: string;
   readonly kind: string;
   readonly owner: string | null;
+  readonly ownerName: string | null;
   readonly model: string | null;
   readonly slug: string | null;
   readonly title: string | null;
@@ -178,7 +179,8 @@ export class Wiki {
   }
 
   /** The owner for an identity the wiki did not issue (a remote account), created on first sight. */
-  async ownerForExternal(externalId: string, wanted: string): Promise<{ id: string; handle: string }> {
+  async ownerForExternal(externalId: string, wanted: string, name: string | null = null): Promise<{ id: string; handle: string }> {
+    if (name) await this.db.query("update owners set name = $2 where external_id = $1 and name is distinct from $2", [externalId, name]);
     const known = await this.db.query<{ id: string; handle: string }>("select id, handle from owners where external_id = $1", [externalId]);
     if (known.rows[0]) {
       if (known.rows[0].handle === wanted) return known.rows[0];
@@ -191,10 +193,10 @@ export class Wiki {
     }
     for (let attempt = 0; attempt < 50; attempt += 1) {
       const handle = attempt === 0 ? wanted : `${wanted.slice(0, 26)}-${attempt + 1}`;
-      const made = await this.db.query<{ id: string; handle: string }>("insert into owners (handle, external_id) values ($1, $2) on conflict do nothing returning id, handle", [
-        handle,
-        externalId,
-      ]);
+      const made = await this.db.query<{ id: string; handle: string }>(
+        "insert into owners (handle, external_id, name) values ($1, $2, $3) on conflict do nothing returning id, handle",
+        [handle, externalId, name],
+      );
       if (made.rows[0]) return made.rows[0];
       const raced = await this.db.query<{ id: string; handle: string }>("select id, handle from owners where external_id = $1", [externalId]);
       if (raced.rows[0]) return raced.rows[0];
@@ -202,8 +204,11 @@ export class Wiki {
     throw new Error(`no free handle near "${wanted}"`);
   }
 
-  async createOwner(handle: string): Promise<{ id: string; handle: string } | null> {
-    const made = await this.db.query<{ id: string; handle: string }>("insert into owners (handle) values ($1) on conflict do nothing returning id, handle", [handle]);
+  async createOwner(handle: string, name: string | null = null): Promise<{ id: string; handle: string } | null> {
+    const made = await this.db.query<{ id: string; handle: string }>("insert into owners (handle, name) values ($1, $2) on conflict do nothing returning id, handle", [
+      handle,
+      name,
+    ]);
     return made.rows[0] ?? null;
   }
 
@@ -382,7 +387,7 @@ export class Wiki {
       where += ` and e.id > $${params.length}`;
     }
     const rows = await this.db.query<Record<string, unknown>>(
-      `select e.id, e.at, e.kind, o.handle, e.model, p.slug, p.title, p.hue, s.heading, s.anchor, e.payload, e.section_id, e.version_id
+      `select e.id, e.at, e.kind, o.handle, o.name as owner_name, e.model, p.slug, p.title, p.hue, s.heading, s.anchor, e.payload, e.section_id, e.version_id
          from events e
          left join owners o on o.id = e.owner_id
          left join pages p on p.id = e.page_id
@@ -396,6 +401,7 @@ export class Wiki {
       at: iso(row.at),
       kind: String(row.kind),
       owner: (row.handle as string | null) ?? null,
+      ownerName: (row.owner_name as string | null) ?? null,
       model: (row.model as string | null) ?? null,
       slug: (row.slug as string | null) ?? null,
       title: (row.title as string | null) ?? null,
@@ -910,7 +916,7 @@ export class Wiki {
     if (pick.currentOnly) where += " and v.id = s.current_version_id";
     const rows = await q.query<Record<string, unknown>>(
       `select v.id, v.section_id, v.model, v.client, v.body, v.html, v.links, v.sources, v.note, v.number, v.revert_of, v.created_at, v.hidden_at,
-              o.handle, o.writes, o.created_at as owner_created_at,
+              o.handle, o.name as owner_name, o.writes, o.created_at as owner_created_at,
               (select count(*) from flags f where f.version_id = v.id and f.resolved_at is null) as flags,
               exists(select 1 from posters x where x.version_id = v.id) as poster
          from versions v join sections s on s.id = v.section_id join owners o on o.id = v.owner_id
@@ -921,7 +927,7 @@ export class Wiki {
     return rows.rows.map((row) => ({
       id: String(row.id),
       sectionId: String(row.section_id),
-      by: { owner: String(row.handle), model: String(row.model), client: (row.client as string | null) ?? null },
+      by: { owner: String(row.handle), ownerName: (row.owner_name as string | null) ?? null, model: String(row.model), client: (row.client as string | null) ?? null },
       established: isEstablished({ handle: String(row.handle), writes: Number(row.writes), createdAt: iso(row.owner_created_at) }, now, this.trusted),
       body: String(row.body),
       html: String(row.html),

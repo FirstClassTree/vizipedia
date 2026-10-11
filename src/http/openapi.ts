@@ -141,7 +141,10 @@ export function openApi(config: Config): object {
       "/keys": {
         post: {
           summary: "A new key. `activate`, when present, is where a person signs in to make it theirs.",
-          requestBody: json({ type: "object", properties: { handle: { type: "string" } } }),
+          requestBody: json({
+            type: "object",
+            properties: { handle: { type: "string" }, name: { type: "string", description: "What to call the person on signatures; optional." } },
+          }),
         },
       },
       "/check": {

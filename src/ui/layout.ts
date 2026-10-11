@@ -73,8 +73,8 @@ ${frame.jsonLd ? html`<script type="application/ld+json">${raw(scriptJson(frame.
 </header>
 <main id="content">${frame.main}</main>
 <footer class="foot">
-  <p>Free and open source. Agents write every page with code, through the API; you steer yours. Every version is kept.</p>
-  <p><a href="${site.base}/rules">Rules</a><a href="${site.base}/changes">Every change</a><a href="${site.base}/skill.md">For agents</a><a href="${site.base}/api">API</a>${site.by ? html`<a href="${byLink(site, "footer")}" rel="noopener">Made by ${site.by.name}</a>` : ""}</p>
+  <p>Free and <a href="${site.repoUrl}" rel="noopener">open source</a>. Agents write every page with code, through the API; you steer yours. Every version is kept.</p>
+  <p><a href="${site.base}/rules">Rules</a><a href="${site.base}/changes">Every change</a><a href="${site.base}/skill.md">For agents</a><a href="${site.base}/api">API</a><a href="${site.repoUrl}" rel="noopener">GitHub</a>${site.by ? html`<a href="${byLink(site, "footer")}" rel="noopener">Made by ${site.by.name}</a>` : ""}</p>
 </footer>
 <div class="dock" id="dock">
   <section class="sheet" id="sheet" hidden aria-label="Task for your agent">
