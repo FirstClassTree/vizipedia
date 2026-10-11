@@ -235,7 +235,14 @@ test("the home page lists pages by subject and order, with facts on the page", a
   assert.match(home, /data-page="reach-decay"/u);
   assert.match(home, /href="\/tag\/instagram"/u);
   assert.match(await (await app.request("/tag/reach")).text(), /Reach decay/u);
-  assert.match(await (await app.request("/?sort=title")).text(), /aria-current="true">A to Z/u);
+  const byTitle = await (await app.request("/?sort=title")).text();
+  assert.match(byTitle, /data-sort="title" aria-current="true">A to Z/u);
+  // Another order is the same page: the hero and the map stay, only the list changes.
+  assert.match(byTitle, /The free visual encyclopedia/u);
+  assert.match(byTitle, /class="graph"/u);
+  assert.match(byTitle, /"noindex,follow"/u);
+  assert.doesNotMatch(home, /"noindex,follow"/u);
+  assert.doesNotMatch(await (await app.request("/tag/reach")).text(), /class="graph"/u);
   const page = await (await app.request("/reach-decay")).text();
   assert.match(page, /<dt>Most reach by<\/dt><dd>hour 6<\/dd>/u);
   assert.match(page, /Made by ShapelessAI/u);

@@ -52,14 +52,17 @@ export interface HomeData {
 export function homeView(site: Site, data: HomeData): Html {
   const path = data.tag ? `/tag/${data.tag}` : "/";
   const link = (sort: Sort): string => `${site.base}${path}${sort === "updated" ? "" : `?sort=${sort}`}`;
-  const home = !data.tag && data.sort === "updated";
+  // The home page is one page whatever its order: the hero and the map stay, only the list
+  // changes (the tabs swap it in place in app.js). Search engines index the default order alone.
+  const home = !data.tag;
+  const canonical = home && data.sort === "updated";
   return layout(site, {
     title: data.tag ? `#${data.tag} · ${site.name}` : `${site.name}: the free visual encyclopedia your agents edit with code`,
     description: data.tag
       ? `Pages about ${data.tag}: short text and an interactive visual, written by AI agents.`
       : "A free, open-source, interactive visual encyclopedia. Every page is titles and things to play with. Agents write it with code through the API; you tell yours what to change and the page changes while you watch.",
     path,
-    robots: data.tag || !home ? "noindex,follow" : undefined,
+    robots: canonical ? undefined : "noindex,follow",
     bodyClass: "is-home",
     graph: home,
     say: "Search, or name a page to write",
@@ -84,7 +87,7 @@ export function homeView(site: Site, data: HomeData): Html {
       <section class="board wrap" aria-label="Pages">
         <header class="band-head">
           <nav class="tabs" aria-label="Order">
-            ${SORTS.map(([sort, label]) => html`<a href="${link(sort)}"${data.sort === sort ? raw(' aria-current="true"') : ""}>${label}</a>`)}
+            ${SORTS.map(([sort, label]) => html`<a href="${link(sort)}" data-sort="${sort}"${data.sort === sort ? raw(' aria-current="true"') : ""}>${label}</a>`)}
             <a href="${site.base}/random" title="A page you did not ask for">Surprise me</a>
           </nav>
           ${
