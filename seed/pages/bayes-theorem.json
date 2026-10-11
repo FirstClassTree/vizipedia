@@ -1,0 +1,140 @@
+{
+  "title": "Bayes' theorem",
+  "slug": "bayes-theorem",
+  "hue": 210,
+  "lede": "Bayes' theorem says how much to believe something after new evidence: your prior belief, reweighed by how well the evidence fits it.",
+  "sections": [
+    {
+      "kind": "experience",
+      "heading": "1,000 people, one positive test",
+      "body": "<style>\n.bz{box-sizing:border-box;max-width:1040px;margin:0 auto;display:grid;gap:18px;grid-template-columns:1fr;font-family:var(--ow-font);color:var(--ow-fg);--sick:oklch(0.6 0.2 25);--fa:oklch(0.76 0.15 75);--dot:color-mix(in oklch,var(--ow-muted) 38%,transparent)}\n.bz *{box-sizing:border-box}\n@media (min-width:760px){.bz{grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:26px;align-items:start}}\n.bz-q{margin:0 0 12px;font-size:18px;line-height:1.35;font-weight:600}\n.bz-q b{color:var(--ow-accent)}\n.bz-box{padding:12px 16px;border-radius:14px;border:1px solid var(--ow-line);background:var(--ow-panel)}\n.bz-lab{display:flex;justify-content:space-between;gap:10px;font-size:15px;font-weight:600;margin-top:4px}\n.bz-lab output{font-family:var(--ow-mono);font-variant-numeric:tabular-nums;color:var(--ow-muted);font-weight:500;white-space:nowrap}\n.bz-hint{display:block;font-size:12.5px;font-weight:400;color:var(--ow-muted)}\n.bz input[type=range]{width:100%;margin:6px 0 8px;height:28px;accent-color:var(--ow-accent);cursor:pointer}\n.bz input[type=range]:focus-visible,.bz button:focus-visible{outline:3px solid color-mix(in oklch,var(--ow-accent) 55%,transparent);outline-offset:2px;border-radius:8px}\n.bz-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}\n.bz-btn{appearance:none;font:inherit;font-size:14px;font-weight:600;min-height:42px;padding:8px 14px;border-radius:999px;border:0;background:var(--ow-accent);color:var(--ow-accent-ink);cursor:pointer;touch-action:manipulation}\n.bz-btn.ghost{background:transparent;color:var(--ow-fg);border:1.5px solid var(--ow-line);font-weight:500}\n.bz-tip{margin:12px 2px 0;font-size:14px;line-height:1.45;color:var(--ow-muted)}\n.bz-tip b{color:var(--ow-fg);font-weight:600}\n.bz-pane{border-radius:18px;background:var(--ow-panel);border:1px solid var(--ow-line);padding:14px 16px}\n.bz-h{margin:0;font-size:13px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--ow-muted)}\n.bz-key{display:flex;flex-wrap:wrap;gap:4px 14px;margin:8px 0 6px;padding:0;list-style:none;font-size:13px;color:var(--ow-muted)}\n.bz-key li{display:flex;align-items:center;gap:6px}\n.bz-key b{color:var(--ow-fg);font-family:var(--ow-mono);font-weight:600;font-variant-numeric:tabular-nums}\n.bz-key i{display:inline-block;width:10px;height:10px;border-radius:50%}\n.bz-grid{display:block;width:100%;height:auto}\n.bz-grid circle{fill:var(--dot);transition:fill .25s,r .25s}\n.bz-grid circle.tp{fill:var(--sick)}\n.bz-grid circle.fn{fill:none;stroke:var(--sick);stroke-width:1.2}\n.bz-grid circle.fp{fill:var(--fa)}\n.bz-grid .halo{fill:none;stroke:var(--sick);stroke-width:1.5;opacity:.55;animation:bzp 1.8s ease-out infinite;transform-box:fill-box;transform-origin:center}\n@keyframes bzp{from{transform:scale(1);opacity:.7}to{transform:scale(2.6);opacity:0}}\n.bz-out{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 16px;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--ow-line)}\n.bz-big{font-size:clamp(38px,8vw,54px);line-height:1;font-weight:750;font-variant-numeric:tabular-nums;color:var(--sick)}\n.bz-say{margin:0;font-size:15px;line-height:1.4}\n.bz-bar{grid-column:1/-1;display:flex;height:26px;border-radius:8px;overflow:hidden;margin-top:6px;background:var(--dot)}\n.bz-bar span{display:block;height:100%;transition:flex-grow .3s}\n.bz-bar .t{background:var(--sick);min-width:5px}\n.bz-bar .f{background:var(--fa)}\n.bz-cap{grid-column:1/-1;display:flex;justify-content:space-between;gap:8px;font-size:13px;color:var(--ow-muted)}\n.bz-shift{grid-column:1/-1;margin:4px 0 0;font-size:13.5px;color:var(--ow-muted)}\n.bz-shift b{color:var(--ow-fg);font-variant-numeric:tabular-nums}\n@media (max-width:420px){.bz-tip{margin:12px 2px 0;font-size:14px;line-height:1.45;color:var(--ow-muted)}\n.bz-tip b{color:var(--ow-fg);font-weight:600}\n.bz-pane{padding:12px}.bz-q{font-size:17px}}\n@media (prefers-reduced-motion:reduce){.bz-grid circle,.bz-bar span{transition:none}.bz-grid .halo{animation:none;opacity:.5;transform:scale(1.8)}}\n</style>\n<div class=\"bz\">\n  <div>\n    <p class=\"bz-q\" id=\"bz-q\"></p>\n    <div class=\"bz-box\">\n      <label class=\"bz-lab\" for=\"bz-b\"><span>How many are sick<span class=\"bz-hint\">the base rate, your prior</span></span><output id=\"bz-bo\" for=\"bz-b\"></output></label>\n      <input id=\"bz-b\" type=\"range\" min=\"0\" max=\"100\" step=\"1\" value=\"0\">\n      <label class=\"bz-lab\" for=\"bz-s\"><span>Test catches the sick<span class=\"bz-hint\">sensitivity</span></span><output id=\"bz-so\" for=\"bz-s\"></output></label>\n      <input id=\"bz-s\" type=\"range\" min=\"50\" max=\"100\" step=\"0.5\" value=\"99\">\n      <label class=\"bz-lab\" for=\"bz-c\"><span>Test clears the healthy<span class=\"bz-hint\">specificity</span></span><output id=\"bz-co\" for=\"bz-c\"></output></label>\n      <input id=\"bz-c\" type=\"range\" min=\"50\" max=\"99.9\" step=\"0.1\" value=\"99\">\n    </div>\n    <div class=\"bz-row\">\n      <button class=\"bz-btn\" type=\"button\" id=\"bz-again\">Test the positives again</button>\n      <button class=\"bz-btn ghost\" type=\"button\" id=\"bz-reset\">Reset</button>\n    </div>\n    <p class=\"bz-tip\" id=\"bz-tip\"></p>\n  </div>\n  <section class=\"bz-pane\" aria-labelledby=\"bz-h\">\n    <p class=\"bz-h\" id=\"bz-h\">1,000 people take the test</p>\n    <ul class=\"bz-key\">\n      <li><i style=\"background:var(--sick)\"></i>sick, positive <b id=\"bz-ntp\"></b></li>\n      <li><i style=\"background:var(--fa)\"></i>healthy, false alarm <b id=\"bz-nfp\"></b></li>\n      <li><i style=\"border:1.5px solid var(--sick)\"></i>sick, missed <b id=\"bz-nfn\"></b></li>\n      <li><i style=\"background:var(--dot)\"></i>healthy, negative</li>\n    </ul>\n    <svg class=\"bz-grid\" id=\"bz-g\" viewBox=\"0 0 400 250\" role=\"img\"></svg>\n    <div class=\"bz-out\">\n      <div class=\"bz-big\" id=\"bz-p\" aria-live=\"polite\"></div>\n      <p class=\"bz-say\" id=\"bz-say\"></p>\n      <div class=\"bz-bar\" aria-hidden=\"true\"><span class=\"t\" id=\"bz-bt\"></span><span class=\"f\" id=\"bz-bf\"></span></div>\n      <div class=\"bz-cap\" aria-hidden=\"true\"><span id=\"bz-ct\"></span><span id=\"bz-cf\"></span></div>\n      <p class=\"bz-shift\" id=\"bz-shift\"></p>\n    </div>\n  </section>\n</div>\n<script>\n(function(){\n  var N=1000,COLS=40,g=document.getElementById('bz-g'),NS='http://www.w3.org/2000/svg';\n  var B=document.getElementById('bz-b'),S=document.getElementById('bz-s'),C=document.getElementById('bz-c');\n  function $(id){return document.getElementById(id)}\n  // A fixed shuffle, so the same people stay sick while the sliders move.\n  var seed=20261011;function rnd(){seed|=0;seed=seed+0x6D2B79F5|0;var t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}\n  var order=[];for(var i=0;i<N;i++)order.push(i);\n  for(i=N-1;i>0;i--){var j=Math.floor(rnd()*(i+1)),k=order[i];order[i]=order[j];order[j]=k}\n  var dots=[],halos=document.createElementNS(NS,'g');\n  for(i=0;i<N;i++){var c=document.createElementNS(NS,'circle');c.setAttribute('cx',5+10*(i%COLS));c.setAttribute('cy',5+10*Math.floor(i/COLS));c.setAttribute('r',2.6);g.appendChild(c);dots.push(c)}\n  g.appendChild(halos);\n  function sickOf(v){return Math.max(1,Math.min(990,Math.round(Math.pow(990,v/100))))}\n  function valOf(s){return Math.round(Math.log(s)/Math.log(990)*100)}\n  function pct(x){if(x>=99.95)return '>99.9%';if(x<0.1)return '<0.1%';if(x>=99.5)return Math.floor(x*10)/10+'%';return(x<10?Math.round(x*10)/10:Math.round(x))+'%'}\n  function fmt(n){return n.toLocaleString('en-US')}\n  var sick=1,last=-1;\n  function render(){\n    var sens=+S.value/100,spec=+C.value/100,healthy=N-sick;\n    var tp=Math.round(sick*sens),fn=sick-tp,fp=Math.round(healthy*(1-spec));\n    var prior=sick/N,post=prior*sens/(prior*sens+(1-prior)*(1-spec))*100;\n    $('bz-bo').textContent=fmt(sick)+' in 1,000';B.setAttribute('aria-valuetext',sick+' in 1,000 are sick');\n    $('bz-so').textContent=pct(sens*100);S.setAttribute('aria-valuetext',pct(sens*100)+' sensitivity');\n    $('bz-co').textContent=pct(spec*100);C.setAttribute('aria-valuetext',pct(spec*100)+' specificity');\n    var acc=(sens===spec)?pct(sens*100)+' accurate':'catches '+pct(sens*100)+' of the sick and clears '+pct(spec*100)+' of the healthy';\n    $('bz-q').innerHTML=fmt(sick)+' in 1,000 people are sick. The test '+acc+'. <b>You test positive.</b> How likely is it that you are sick?';\n    while(halos.firstChild)halos.removeChild(halos.firstChild);\n    for(var r=0;r<N;r++){\n      var who=order[r],cls='';\n      if(r<sick)cls=r<tp?'tp':'fn';else if(r<sick+fp)cls='fp';\n      var el=dots[who];if(el.getAttribute('class')!==cls)el.setAttribute('class',cls);\n      el.setAttribute('r',cls?3.6:2.4);\n      if(cls==='tp'&&tp<=12){var h=document.createElementNS(NS,'circle');h.setAttribute('class','halo');h.setAttribute('cx',el.getAttribute('cx'));h.setAttribute('cy',el.getAttribute('cy'));h.setAttribute('r',3.6);halos.appendChild(h)}\n    }\n    g.setAttribute('aria-label','1,000 people: '+tp+' sick people test positive, '+fp+' healthy people test positive, '+fn+' sick people are missed.');\n    $('bz-ntp').textContent=tp;$('bz-nfp').textContent=fp;$('bz-nfn').textContent=fn;\n    var pos=tp+fp;\n    $('bz-p').textContent=pct(post);\n    $('bz-say').innerHTML=pos?'Of the <b>'+fmt(pos)+'</b> people who test positive, <b>'+fmt(tp)+'</b> '+(tp===1?'is':'are')+' sick. That fraction is your chance.':'Nobody tests positive.';\n    $('bz-bt').style.flexGrow=tp;$('bz-bf').style.flexGrow=fp;\n    $('bz-ct').textContent=fmt(tp)+' sick';$('bz-cf').textContent=fmt(fp)+' false alarm'+(fp===1?'':'s');\n    $('bz-shift').innerHTML='Before the test: <b>'+pct(prior*100)+'</b> &rarr; after a positive: <b>'+pct(post)+'</b>';\n    $('bz-tip').innerHTML='<b>Test again</b> sends the '+fmt(pos)+' positives to a second, independent test: their '+pct(post)+' becomes the new prior.';\n    last=post;\n  }\n  B.addEventListener('input',function(){sick=sickOf(+B.value);render()});S.addEventListener('input',render);C.addEventListener('input',render);\n  $('bz-again').addEventListener('click',function(){\n    // Bayes' rule chains: today's posterior is tomorrow's prior.\n    sick=Math.max(1,Math.min(990,Math.round(last*10)));B.value=valOf(sick);render();\n  });\n  $('bz-reset').addEventListener('click',function(){sick=1;B.value=0;S.value=99;C.value=99;render()});\n  render();\n})();\n</script>"
+    },
+    {
+      "kind": "prose",
+      "heading": "Prior, likelihood, posterior",
+      "body": "Bayes' theorem is a simple formula for conditional probabilities [1]. It inverts them: from how often a cause produces an effect, it finds how likely the cause is once you see the effect [2]. In words, posterior = likelihood × prior ÷ evidence [3]. Learning becomes belief revision, where a prior probability is replaced by a posterior that takes in the new information [4].",
+      "sources": [
+        {
+          "url": "https://plato.stanford.edu/entries/bayes-theorem/",
+          "title": "Bayes' Theorem (Stanford Encyclopedia of Philosophy)",
+          "quote": "Bayes' Theorem is a simple mathematical formula used for calculating conditional probabilities."
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Bayes%27_theorem",
+          "title": "Bayes' theorem (Wikipedia)",
+          "quote": "gives a mathematical rule for inverting conditional probabilities, allowing the probability of a cause to be found given its effect"
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Bayes%27_theorem",
+          "title": "Bayes' theorem (Wikipedia)",
+          "quote": "posterior = likelihood × prior ÷ evidence"
+        },
+        {
+          "url": "https://plato.stanford.edu/entries/bayes-theorem/",
+          "title": "Bayes' Theorem (Stanford Encyclopedia of Philosophy)",
+          "quote": "a \"prior\" subjective probability P is replaced by a \"posterior\" probability Q that incorporates newly acquired information"
+        }
+      ]
+    },
+    {
+      "kind": "prose",
+      "heading": "Why most positives are false alarms",
+      "body": "When a disease is rare, the healthy far outnumber the sick, so even a good test can produce more false positives than true ones [1]. The Stanford Encyclopedia's example: a test that catches 95% of heroin users and clears 90% of non-users, where 3% use, leaves a positive tester with a 0.227 chance of being a user [2][3]; the low base rate swamps the positive result [4]. Overlooking that is the base rate fallacy [5]. Compare the false positives of a [[Bloom filter]].",
+      "sources": [
+        {
+          "url": "https://en.wikipedia.org/wiki/Base_rate_fallacy",
+          "title": "Base rate fallacy (Wikipedia)",
+          "quote": "This paradox describes situations where there are more false positive test results than true positives"
+        },
+        {
+          "url": "https://plato.stanford.edu/entries/bayes-theorem/supplement.html",
+          "title": "Bayes' Theorem: examples, tables, and proof sketches (Stanford Encyclopedia of Philosophy)",
+          "quote": "correctly identifies users 95% of the time and correctly identifies nonusers 90% of the time"
+        },
+        {
+          "url": "https://plato.stanford.edu/entries/bayes-theorem/supplement.html",
+          "title": "Bayes' Theorem: examples, tables, and proof sketches (Stanford Encyclopedia of Philosophy)",
+          "quote": "0.227 exceeds P(H) = 0.03"
+        },
+        {
+          "url": "https://plato.stanford.edu/entries/bayes-theorem/supplement.html",
+          "title": "Bayes' Theorem: examples, tables, and proof sketches (Stanford Encyclopedia of Philosophy)",
+          "quote": "the low base rate swamps the positive test result"
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Base_rate_fallacy",
+          "title": "Base rate fallacy (Wikipedia)",
+          "quote": "people tend to ignore the base rate (e.g., general prevalence) in favor of the information pertaining only to a specific case"
+        }
+      ]
+    },
+    {
+      "kind": "figure",
+      "heading": "The same test as a tree",
+      "body": "<style>\n.bt{box-sizing:border-box;max-width:820px;margin:0 auto;font-family:var(--ow-font);color:var(--ow-fg);--sick:oklch(0.6 0.2 25);--fa:oklch(0.76 0.15 75);text-align:center}\n.bt *{box-sizing:border-box}\n.bt-n{display:inline-block;padding:8px 18px;border-radius:12px;background:var(--ow-panel);border:1px solid var(--ow-line);font-size:15px}\n.bt-n b{display:block;font-size:22px;line-height:1.1;font-variant-numeric:tabular-nums}\n.bt-split{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:22px;position:relative}\n.bt-split:before{content:\"\";position:absolute;left:25%;right:25%;top:-12px;height:12px;border:1.5px solid var(--ow-line);border-bottom:0;border-radius:10px 10px 0 0}\n.bt-kids{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:20px;position:relative}\n.bt-kids:before{content:\"\";position:absolute;left:25%;right:25%;top:-11px;height:11px;border:1.5px solid var(--ow-line);border-bottom:0;border-radius:8px 8px 0 0}\n.bt-k{padding:6px 4px;border-radius:10px;font-size:13px;line-height:1.25;color:var(--ow-muted);border:1px dashed var(--ow-line)}\n.bt-k b{display:block;font-size:19px;color:var(--ow-fg);font-variant-numeric:tabular-nums}\n.bt-k.tp{border:2px solid var(--sick);color:var(--ow-fg)}\n.bt-k.fp{border:2px solid var(--fa);color:var(--ow-fg)}\n.bt-sum{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px 16px;margin-top:20px;padding:12px;border-radius:14px;background:var(--ow-panel);border:1px solid var(--ow-line)}\n.bt-dots{display:flex;gap:4px}\n.bt-dots i{width:14px;height:14px;border-radius:50%;background:var(--fa)}\n.bt-dots i:first-child{background:var(--sick)}\n.bt-frac{font-size:15px}\n.bt-frac b{font-size:24px;color:var(--sick);font-variant-numeric:tabular-nums}\n.bt-note{margin:10px 0 0;font-size:13px;color:var(--ow-muted)}\n@media (max-width:420px){.bt-k{font-size:12px}.bt-k b{font-size:17px}.bt-dots i{width:11px;height:11px}}\n</style>\n<div class=\"bt\" role=\"img\" aria-label=\"Of 1,000 people, 1 is sick and tests positive; of 999 healthy people, 10 test positive by mistake. Only 1 of the 11 positives is sick, about 9 percent.\">\n  <div class=\"bt-n\"><b>1,000</b>people tested</div>\n  <div class=\"bt-split\">\n    <div>\n      <div class=\"bt-n\"><b>1</b>sick</div>\n      <div class=\"bt-kids\">\n        <div class=\"bt-k tp\"><b>1</b>tests positive</div>\n        <div class=\"bt-k\"><b>0</b>missed</div>\n      </div>\n    </div>\n    <div>\n      <div class=\"bt-n\"><b>999</b>healthy</div>\n      <div class=\"bt-kids\">\n        <div class=\"bt-k fp\"><b>10</b>false alarms</div>\n        <div class=\"bt-k\"><b>989</b>clear</div>\n      </div>\n    </div>\n  </div>\n  <div class=\"bt-sum\">\n    <div class=\"bt-dots\" aria-hidden=\"true\"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>\n    <div class=\"bt-frac\"><b>1 in 11</b> positives is sick: about 9%</div>\n  </div>\n  <p class=\"bt-note\">A test that is right 99% of the time on the sick and on the healthy, for a disease 1 in 1,000 people have. Counts rounded.</p>\n</div>"
+    },
+    {
+      "kind": "prose",
+      "heading": "Bayes, Price and Laplace",
+      "body": "Thomas Bayes never published it. His friend Richard Price edited the manuscript for two years and had it read at the Royal Society on 23 December 1763 [1]; the essay appeared that year, two years after its author's death [2]. Pierre-Simon Laplace reached and extended the same results in 1774, apparently unaware of Bayes [3].",
+      "sources": [
+        {
+          "url": "https://en.wikipedia.org/wiki/Bayes%27_theorem",
+          "title": "Bayes' theorem (Wikipedia)",
+          "quote": "Price significantly edited the unpublished manuscript for two years before sending it to a friend who read it aloud at the Royal Society on 23 December 1763"
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/An_Essay_Towards_Solving_a_Problem_in_the_Doctrine_of_Chances",
+          "title": "An Essay Towards Solving a Problem in the Doctrine of Chances (Wikipedia)",
+          "quote": "published in 1763, two years after its author's death"
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Bayes%27_theorem",
+          "title": "Bayes' theorem (Wikipedia)",
+          "quote": "He reproduced and extended Bayes's results in 1774, apparently unaware of Bayes's work"
+        }
+      ]
+    }
+  ],
+  "data": {
+    "tags": [
+      "probability",
+      "statistics",
+      "medicine",
+      "reasoning"
+    ],
+    "facts": [
+      {
+        "label": "In words",
+        "value": "posterior = likelihood × prior ÷ evidence"
+      },
+      {
+        "label": "Read to the Royal Society",
+        "value": "23 December 1763"
+      },
+      {
+        "label": "Author",
+        "value": "Thomas Bayes, edited by Richard Price"
+      },
+      {
+        "label": "Found again by",
+        "value": "Laplace, 1774"
+      },
+      {
+        "label": "SEP example",
+        "value": "95% / 90% test, 3% base rate: 0.227"
+      },
+      {
+        "label": "Also called",
+        "value": "Bayes' law, Bayes' rule"
+      }
+    ],
+    "see": [
+      "Bloom filter",
+      "Fourier transform",
+      "PageRank",
+      "Attention in a transformer",
+      "X recommendation algorithm"
+    ]
+  }
+}

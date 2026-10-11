@@ -1,0 +1,154 @@
+{
+  "title": "How Git stores data",
+  "slug": "how-git-stores-data",
+  "hue": 18,
+  "lede": "Git keeps every version as objects named by the SHA-1 of their bytes: blobs for file contents, trees for folders, commits for snapshots. A branch is a file holding one hash.",
+  "sections": [
+    {
+      "kind": "experience",
+      "heading": "Commit and watch the objects",
+      "body": "<style>\n.gt{box-sizing:border-box;max-width:1040px;margin:0 auto;font-family:var(--ow-font);color:var(--ow-fg);display:grid;gap:16px;grid-template-columns:1fr}\n.gt *{box-sizing:border-box}\n@media (min-width:760px){.gt{grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:24px;align-items:start}}\n.gt-q{margin:0 0 12px;font-size:18px;line-height:1.35;font-weight:600}\n.gt-q b{color:var(--ow-accent)}\n.gt-box{padding:12px 14px;border-radius:14px;border:1px solid var(--ow-line);background:var(--ow-panel)}\n.gt-box+.gt-box{margin-top:12px}\n.gt-h{margin:0 0 8px;font-size:12px;font-weight:650;letter-spacing:.05em;text-transform:uppercase;color:var(--ow-muted);display:flex;justify-content:space-between;gap:8px}\n.gt-f{display:grid;grid-template-columns:78px minmax(0,1fr);align-items:center;gap:8px;margin-top:6px}\n.gt-f label{font-family:var(--ow-mono);font-size:13px;color:var(--ow-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}\n.gt-f input{font:inherit;font-family:var(--ow-mono);font-size:14px;width:100%;min-height:38px;padding:6px 10px;border-radius:10px;border:1.5px solid var(--ow-line);background:var(--ow-bg);color:var(--ow-fg)}\n.gt-f input.dirty{border-color:var(--ow-accent)}\n.gt-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}\n.gt-btn{appearance:none;font:inherit;font-size:14px;font-weight:650;min-height:40px;padding:7px 16px;border-radius:999px;border:1.5px solid var(--ow-line);background:var(--ow-bg);color:var(--ow-fg);cursor:pointer;touch-action:manipulation}\n.gt-btn.go{border-color:var(--ow-accent);background:var(--ow-accent);color:var(--ow-accent-ink)}\n.gt-btn:disabled{opacity:.45;cursor:default}\n.gt button:focus-visible,.gt input:focus-visible,.gt g[tabindex]:focus-visible{outline:3px solid color-mix(in oklch,var(--ow-accent) 55%,transparent);outline-offset:2px}\n.gt-refs{list-style:none;margin:0;padding:0;display:grid;gap:6px}\n.gt-ref{appearance:none;font:inherit;width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;text-align:left;padding:7px 10px;border-radius:10px;border:1.5px solid var(--ow-line);background:var(--ow-bg);color:var(--ow-fg);cursor:pointer}\n.gt-ref[aria-pressed=\"true\"]{border-color:var(--ow-accent);box-shadow:inset 0 0 0 1px var(--ow-accent)}\n.gt-ref b{font-family:var(--ow-mono);font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}\n.gt-ref span{font-family:var(--ow-mono);font-size:12px;color:var(--ow-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}\n.gt-ref em{font-style:normal;font-size:11.5px;font-weight:650;color:var(--ow-accent);align-self:center;grid-row:1/3;grid-column:2}\n.gt-say{margin:10px 0 0;font-size:14.5px;line-height:1.4;min-height:2.8em}\n.gt-say b{color:var(--ow-accent)}\n.gt-graph{border-radius:16px;border:1px solid var(--ow-line);background:var(--ow-panel);padding:12px 12px 6px}\n.gt-cols{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));font-size:11.5px;font-weight:650;letter-spacing:.05em;text-transform:uppercase;color:var(--ow-muted);padding:0 0 6px 14px}\n.gt-scroll{max-height:330px;overflow:auto;overscroll-behavior:contain}\n.gt svg{display:block;width:100%}\n.gt svg text{font-family:var(--ow-mono);font-size:11px;fill:var(--ow-fg)}\n.gt svg text.c{font-family:var(--ow-font);fill:var(--ow-muted);font-size:10.5px}\n.gt svg g.node{cursor:pointer}\n.gt svg g.node rect{fill:var(--ow-bg);stroke:var(--ow-line);stroke-width:1.5}\n.gt svg g.node.new rect{fill:color-mix(in oklch,var(--ow-accent) 14%,var(--ow-bg));stroke:var(--ow-accent)}\n.gt svg g.node.sel rect{stroke:var(--ow-fg);stroke-width:2.5}\n.gt svg g.node.dim{opacity:.38}\n.gt svg g.node{transition:opacity .25s}\n.gt svg path.e{fill:none;stroke:var(--ow-muted);stroke-width:1.3;opacity:.55}\n.gt svg path.e.hot{stroke:var(--ow-accent);stroke-width:2;opacity:1}\n.gt svg path.e.reuse{stroke-dasharray:4 3}\n.gt-key{display:flex;flex-wrap:wrap;gap:4px 14px;margin:8px 0 4px;font-size:12.5px;color:var(--ow-muted)}\n.gt-key i{display:inline-block;width:18px;height:0;border-top:2px solid var(--ow-accent);vertical-align:3px;margin-right:5px}\n.gt-key i.d{border-top-style:dashed}\n.gt-key i.n{width:12px;height:12px;border:1.5px solid var(--ow-accent);border-radius:3px;background:color-mix(in oklch,var(--ow-accent) 14%,transparent);vertical-align:-1px}\n.gt-cat{margin:10px 0 0;padding:10px 12px;border-radius:12px;background:var(--ow-bg);border:1px solid var(--ow-line);font-family:var(--ow-mono);font-size:12px;line-height:1.5;white-space:pre-wrap;word-break:break-all;min-height:6.5em;max-height:170px;overflow:auto}\n.gt-cat b{color:var(--ow-accent);font-weight:600}\n@keyframes gtpop{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}}\n.gt svg g.node.pop{animation:gtpop .35s ease-out both;transform-box:fill-box;transform-origin:center}\n@media (max-width:420px){.gt-q{font-size:17px}.gt-f{grid-template-columns:64px minmax(0,1fr)}.gt svg text{font-size:10px}}\n@media (prefers-reduced-motion:reduce){.gt svg g.node.pop{animation:none}.gt svg g.node{transition:none}}\n</style>\n<div class=\"gt\">\n  <div>\n    <p class=\"gt-q\">Edit a file and press <b>Commit</b>. Watch which objects are new and which are reused.</p>\n    <div class=\"gt-box\">\n      <p class=\"gt-h\"><span>Working tree</span><span id=\"gt-st\"></span></p>\n      <div id=\"gt-files\"></div>\n      <div class=\"gt-acts\">\n        <button class=\"gt-btn go\" type=\"button\" id=\"gt-commit\">Commit</button>\n        <button class=\"gt-btn\" type=\"button\" id=\"gt-branch\">New branch</button>\n      </div>\n    </div>\n    <div class=\"gt-box\">\n      <p class=\"gt-h\"><span>Branches: files in .git/refs/heads</span></p>\n      <ul class=\"gt-refs\" id=\"gt-refs\"></ul>\n      <p class=\"gt-say\" id=\"gt-say\" aria-live=\"polite\"></p>\n    </div>\n  </div>\n  <div class=\"gt-graph\">\n    <div class=\"gt-cols\" aria-hidden=\"true\"><span>commit</span><span>tree /</span><span>tree lib/</span><span>blob</span></div>\n    <div class=\"gt-scroll\" id=\"gt-sc\"><svg id=\"gt-svg\" role=\"group\" aria-label=\"Object graph: commits, trees and blobs, with arrows for references\"></svg></div>\n    <p class=\"gt-key\"><span><i class=\"n\"></i>new in the latest commit</span><span><i></i>points to</span><span><i class=\"d\"></i>reuses an older object</span><span>faded: not in the selected commit</span></p>\n    <pre class=\"gt-cat\" id=\"gt-cat\" aria-live=\"polite\"></pre>\n  </div>\n</div>\n<script>\n(function(){\n  /* SHA-1 over bytes, so every hash shown is the one real git would compute for the same object. */\n  function sha1(bytes){\n    var l=bytes.length,n=((l+8>>6)+1)*16,w=new Array(n).fill(0),i;\n    for(i=0;i<l;i++)w[i>>2]|=bytes[i]<<(24-(i%4)*8);\n    w[l>>2]|=0x80<<(24-(l%4)*8);w[n-1]=l*8;\n    var h0=0x67452301,h1=0xEFCDAB89,h2=0x98BADCFE,h3=0x10325476,h4=0xC3D2E1F0,x=new Array(80);\n    for(var b=0;b<n;b+=16){\n      for(i=0;i<16;i++)x[i]=w[b+i];\n      for(i=16;i<80;i++){var t=x[i-3]^x[i-8]^x[i-14]^x[i-16];x[i]=(t<<1)|(t>>>31)}\n      var a=h0,bb=h1,c=h2,d=h3,e=h4;\n      for(i=0;i<80;i++){\n        var f,k;\n        if(i<20){f=(bb&c)|(~bb&d);k=0x5A827999}else if(i<40){f=bb^c^d;k=0x6ED9EBA1}else if(i<60){f=(bb&c)|(bb&d)|(c&d);k=0x8F1BBCDC}else{f=bb^c^d;k=0xCA62C1D6}\n        var tmp=(((a<<5)|(a>>>27))+f+e+k+x[i])|0;e=d;d=c;c=(bb<<30)|(bb>>>2);bb=a;a=tmp;\n      }\n      h0=(h0+a)|0;h1=(h1+bb)|0;h2=(h2+c)|0;h3=(h3+d)|0;h4=(h4+e)|0;\n    }\n    return [h0,h1,h2,h3,h4].map(function(v){return('00000000'+(v>>>0).toString(16)).slice(-8)}).join('');\n  }\n  var enc=new TextEncoder();\n  function cat(){var parts=[].slice.call(arguments),len=0;parts.forEach(function(p){len+=p.length});var o=new Uint8Array(len),off=0;parts.forEach(function(p){o.set(p,off);off+=p.length});return o}\n  function raw(hex){var o=new Uint8Array(20);for(var i=0;i<20;i++)o[i]=parseInt(hex.substr(i*2,2),16);return o}\n  var objs={},order=[],commits=[],refs={main:null},head='main',files={'README':'Hello, world','main.py':'print(\"hi\")','lib/util.py':'def add(a, b): return a + b'},T0=1760140800;\n  function store(type,body,meta){\n    var full=cat(enc.encode(type+' '+body.length+'\\0'),body),id=sha1(full);\n    if(!objs[id]){objs[id]=Object.assign({id:id,type:type,size:body.length,born:commits.length},meta);order.push(id)}\n    return id;\n  }\n  function blob(text){return store('blob',enc.encode(text+'\\n'),{text:text})}\n  // Git sorts tree entries by name, comparing a directory as if it ended in \"/\".\n  function tree(entries,label){\n    entries.sort(function(a,b){var x=a.name+(a.mode==='40000'?'/':''),y=b.name+(b.mode==='40000'?'/':'');return x<y?-1:x>y?1:0});\n    var body=cat.apply(null,[new Uint8Array(0)].concat(entries.map(function(e){return cat(enc.encode(e.mode+' '+e.name+'\\0'),raw(e.id))})));\n    return store('tree',body,{entries:entries,label:label});\n  }\n  function snapshot(){\n    var lib=tree([{mode:'100644',name:'util.py',id:blob(files['lib/util.py'])}],'lib/');\n    return tree([{mode:'100644',name:'README',id:blob(files['README'])},{mode:'100644',name:'main.py',id:blob(files['main.py'])},{mode:'40000',name:'lib',id:lib}],'/');\n  }\n  function commit(msg){\n    var parent=refs[head],root=snapshot(),ts=T0+commits.length*60,who='You <you@example.com> '+ts+' +0000';\n    var text='tree '+root+'\\n'+(parent?'parent '+parent+'\\n':'')+'author '+who+'\\ncommitter '+who+'\\n\\n'+msg+'\\n';\n    var id=store('commit',enc.encode(text),{tree:root,parent:parent,msg:msg,text:text});\n    commits.push(id);refs[head]=id;return id;\n  }\n  function tipFiles(id){\n    var c=objs[id],t=objs[c.tree],out={};\n    t.entries.forEach(function(e){if(e.mode==='40000')objs[e.id].entries.forEach(function(s){out['lib/'+s.name]=objs[s.id].text});else out[e.name]=objs[e.id].text});\n    return out;\n  }\n  var fbox=document.getElementById('gt-files'),inputs={};\n  Object.keys(files).forEach(function(name,i){\n    var row=document.createElement('div');row.className='gt-f';\n    row.innerHTML='<label for=\"gt-i'+i+'\">'+name+'</label><input id=\"gt-i'+i+'\" spellcheck=\"false\" autocomplete=\"off\" maxlength=\"60\">';\n    var inp=row.querySelector('input');inp.value=files[name];inputs[name]=inp;\n    inp.addEventListener('input',function(){files[name]=inp.value;dirty()});\n    inp.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();doCommit()}});\n    fbox.appendChild(row);\n  });\n  var cbtn=document.getElementById('gt-commit'),bbtn=document.getElementById('gt-branch'),say=document.getElementById('gt-say'),catEl=document.getElementById('gt-cat'),sel=null,lastNew={};\n  function changed(){var t=tipFiles(refs[head]),out=[];Object.keys(files).forEach(function(n){if(t[n]!==files[n])out.push(n)});return out}\n  function dirty(){\n    var ch=changed(),t=tipFiles(refs[head]);\n    Object.keys(inputs).forEach(function(n){inputs[n].classList.toggle('dirty',t[n]!==files[n])});\n    cbtn.disabled=!ch.length;cbtn.textContent=ch.length?'Commit':'Nothing to commit';\n    document.getElementById('gt-st').textContent=ch.length?ch.length+' changed':'clean';\n  }\n  function doCommit(){\n    var ch=changed();if(!ch.length)return;\n    var before=order.length,id=commit('Edit '+ch.join(', ')),fresh=order.slice(before);\n    lastNew={};fresh.forEach(function(o){lastNew[o]=1});\n    var kinds={blob:0,tree:0};fresh.forEach(function(o){if(objs[o].type!=='commit')kinds[objs[o].type]++});\n    var reused=countReach(id)-fresh.length;\n    say.innerHTML='Commit <b>'+id.slice(0,7)+'</b> wrote '+fresh.length+' objects: 1 commit, '+kinds.tree+' tree'+(kinds.tree===1?'':'s')+', '+kinds.blob+' blob'+(kinds.blob===1?'':'s')+'. It reuses <b>'+reused+'</b> by hash.';\n    dirty();refsDraw();show(id,true);\n  }\n  function reach(id,acc){acc=acc||{};if(acc[id])return acc;acc[id]=1;var o=objs[id];if(o.type==='commit')reach(o.tree,acc);if(o.type==='tree')o.entries.forEach(function(e){reach(e.id,acc)});return acc}\n  function countReach(id){return Object.keys(reach(id)).length}\n  bbtn.addEventListener('click',function(){\n    var names=['feature','idea','fix','wip'],name=names.filter(function(n){return!(n in refs)})[0];\n    if(!name)return;refs[name]=refs[head];head=name;\n    say.innerHTML='New branch <b>'+name+'</b>: Git wrote one 41-byte file, the 40-character hash of commit '+refs[name].slice(0,7)+' plus a newline. No objects were copied.';\n    if(!names.some(function(n){return!(n in refs)}))bbtn.disabled=true;\n    refsDraw();draw(false);\n  });\n  cbtn.addEventListener('click',doCommit);\n  function refsDraw(){\n    var ul=document.getElementById('gt-refs');ul.innerHTML='';\n    Object.keys(refs).forEach(function(n){\n      var li=document.createElement('li'),b=document.createElement('button');b.type='button';b.className='gt-ref';\n      b.setAttribute('aria-pressed',String(n===head));\n      b.innerHTML='<b>refs/heads/'+n+'</b><span>'+refs[n]+'</span><em>'+(n===head?'HEAD':'41 bytes')+'</em>';\n      b.setAttribute('aria-label','Branch '+n+(n===head?', checked out':', press to check out'));\n      b.addEventListener('click',function(){\n        if(n===head)return;head=n;var t=tipFiles(refs[n]);Object.keys(t).forEach(function(k){files[k]=t[k];inputs[k].value=t[k]});\n        say.innerHTML='Checked out <b>'+n+'</b>: HEAD now says <code>ref: refs/heads/'+n+'</code>, and the files are rebuilt from commit '+refs[n].slice(0,7)+'.';\n        sel=refs[n];lastNew={};dirty();refsDraw();draw(false);\n      });\n      li.appendChild(b);ul.appendChild(li);\n    });\n  }\n  function show(id,scroll){\n    sel=id;var o=objs[id],s='<b>$ git cat-file -p '+id.slice(0,7)+'</b>  <span>('+o.type+', '+o.size+' bytes)</span>\\n';\n    if(o.type==='blob')s+=esc(o.text);\n    else if(o.type==='tree')s+=o.entries.map(function(e){return(e.mode==='40000'?'040000 tree ':'100644 blob ')+e.id+'    '+e.name}).join('\\n');\n    else s+=esc(o.text.replace(/\\n$/,''));\n    catEl.innerHTML=s;draw(!!scroll);\n  }\n  function esc(t){return t.replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c]})}\n  var NS='http://www.w3.org/2000/svg',svg=document.getElementById('gt-svg'),sc=document.getElementById('gt-sc');\n  function E(n,a,p){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e}\n  function col(o){return o.type==='commit'?0:o.type==='blob'?3:o.label==='/'?1:2}\n  function draw(scroll){\n    while(svg.firstChild)svg.removeChild(svg.firstChild);\n    var W=Math.max(280,Math.round(sc.clientWidth)||600),L=14,cw=(W-L)/4,nw=Math.min(cw-12,110),nh=34,gap=8,pos={},y=4;\n    var defs=E('defs',{},svg),mk=E('marker',{id:'gt-ar',viewBox:'0 0 8 8',refX:7,refY:4,markerWidth:7,markerHeight:7,orient:'auto-start-reverse'},defs);E('path',{d:'M0 0L8 4L0 8z',fill:'var(--ow-muted)'},mk);\n    var mk2=E('marker',{id:'gt-ar2',viewBox:'0 0 8 8',refX:7,refY:4,markerWidth:7,markerHeight:7,orient:'auto-start-reverse'},defs);E('path',{d:'M0 0L8 4L0 8z',fill:'var(--ow-accent)'},mk2);\n    // One band per commit, holding the objects that commit created; reused objects stay where they were born.\n    for(var ci=0;ci<commits.length;ci++){\n      var rows=[0,0,0,0];\n      order.forEach(function(id){var o=objs[id];if(o.born!==ci)return;var c=col(o);pos[id]={x:L+c*cw+(cw-nw)/2,y:y+rows[c]*(nh+gap)};rows[c]++});\n      y+=Math.max.apply(null,rows)*(nh+gap)+10;\n    }\n    var H=y;svg.setAttribute('viewBox','0 0 '+W+' '+H);svg.setAttribute('height',H);\n    var live=sel?reach(sel):{},eg=E('g',{},svg),ng=E('g',{},svg);\n    function edge(a,b,kind){\n      var p=pos[a],q=pos[b],hot=live[a]&&live[b],reuse=objs[b].born<objs[a].born,d;\n      if(kind==='parent'){var x=p.x,y1=p.y+nh/2,y2=q.y+nh/2;d='M'+x+' '+y1+'C'+(x-L-6)+' '+y1+' '+(x-L-6)+' '+y2+' '+x+' '+y2}\n      else{\n        var x1=p.x+nw,yy1=p.y+nh/2,x2=q.x,yy2=q.y+nh/2,m=(x1+x2)/2;\n        // A root tree's arrow to a blob skips the lib/ column: bend in the first gap, then run level, so it never seems to leave from lib/.\n        if(col(objs[b])-col(objs[a])>1){var g=cw-nw;d='M'+x1+' '+yy1+'C'+(x1+g*.6)+' '+yy1+' '+(x1+g*.4)+' '+yy2+' '+(x1+g)+' '+yy2+'L'+x2+' '+yy2}\n        else d='M'+x1+' '+yy1+'C'+m+' '+yy1+' '+m+' '+yy2+' '+x2+' '+yy2;\n      }\n      E('path',{d:d,'class':'e'+(hot?' hot':'')+(reuse&&kind!=='parent'?' reuse':''),'marker-end':hot?'url(#gt-ar2)':'url(#gt-ar)'},eg);\n    }\n    order.forEach(function(id){var o=objs[id];\n      if(o.type==='commit'){edge(id,o.tree);if(o.parent)edge(id,o.parent,'parent')}\n      if(o.type==='tree')o.entries.forEach(function(e){edge(id,e.id)});\n    });\n    var tips={};Object.keys(refs).forEach(function(n){(tips[refs[n]]=tips[refs[n]]||[]).push(n)});\n    order.forEach(function(id){\n      var o=objs[id],p=pos[id],g=E('g',{'class':'node'+(lastNew[id]?' new':'')+(id===sel?' sel':'')+(sel&&!live[id]?' dim':'')+(scroll&&lastNew[id]?' pop':''),tabindex:0,role:'button','aria-label':o.type+' '+id.slice(0,7)+(o.type==='blob'?', '+o.text:o.type==='commit'?', '+o.msg:', '+o.label)},ng);\n      E('rect',{x:p.x,y:p.y,width:nw,height:nh,rx:8},g);\n      var t=E('text',{x:p.x+8,y:p.y+14},g);t.textContent=id.slice(0,7);\n      var cap=o.type==='blob'?'\"'+o.text+'\"':o.type==='commit'?(tips[id]?tips[id].join(', '):o.msg):o.entries.length+' entr'+(o.entries.length===1?'y':'ies');\n      var c=E('text',{x:p.x+8,y:p.y+27,'class':'c'},g),mx=Math.max(5,Math.floor((nw-14)/6));c.textContent=cap.length>mx?cap.slice(0,mx-1)+'…':cap;\n      if(o.type==='commit'&&tips[id])c.style.fill='var(--ow-accent)';\n      g.addEventListener('click',function(){show(id)});\n      g.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();show(id)}});\n    });\n    if(scroll)sc.scrollTop=sc.scrollHeight;\n  }\n  commit('First commit');lastNew={};order.forEach(function(o){lastNew[o]=1});sel=refs.main;\n  refsDraw();dirty();show(refs.main);\n  say.innerHTML='One commit so far: 3 blobs, 2 trees, 1 commit. Each name is the SHA-1 of the object\\'s bytes. Click any box to read it.';\n  var rt=0;window.addEventListener('resize',function(){clearTimeout(rt);rt=setTimeout(function(){draw(false)},60)});\n})();\n</script>\n"
+    },
+    {
+      "kind": "prose",
+      "heading": "Objects named by their content",
+      "body": "Git is a content-addressable filesystem: at its core is a simple key-value data store [1][2]. Store some content and the key you get back is its SHA-1 hash, a checksum of the content plus a header [3], usually written as 40 hexadecimal characters [4]. The object goes under .git/objects, in a folder named for the first 2 characters of the hash and a file named for the other 38 [5], compressed with zlib [6]. A blob holds only the content, not the file name [7].",
+      "sources": [
+        {
+          "url": "https://git-scm.com/book/en/v2/Git-Internals-Git-Objects",
+          "title": "Pro Git, 10.2 Git Internals - Git Objects",
+          "quote": "Git is a content-addressable filesystem"
+        },
+        {
+          "url": "https://git-scm.com/book/en/v2/Git-Internals-Git-Objects",
+          "title": "Pro Git, 10.2 Git Internals - Git Objects",
+          "quote": "at the core of Git is a simple key-value data store"
+        },
+        {
+          "url": "https://git-scm.com/book/en/v2/Git-Internals-Git-Objects",
+          "title": "Pro Git, 10.2 Git Internals - Git Objects",
+          "quote": "This is the SHA-1 hash — a checksum of the content you’re storing plus a header"
+        },
+        {
+          "url": "https://git-scm.com/docs/gitglossary",
+          "title": "gitglossary: a Git glossary (git-scm.com)",
+          "quote": "The object name is usually represented by a 40 character hexadecimal string."
+        },
+        {
+          "url": "https://git-scm.com/book/en/v2/Git-Internals-Git-Objects",
+          "title": "Pro Git, 10.2 Git Internals - Git Objects",
+          "quote": "The subdirectory is named with the first 2 characters of the SHA-1, and the filename is the remaining 38 characters."
+        },
+        {
+          "url": "https://git-scm.com/book/en/v2/Git-Internals-Git-Objects",
+          "title": "Pro Git, 10.2 Git Internals - Git Objects",
+          "quote": "Git compresses the new content with zlib"
+        },
+        {
+          "url": "https://git-scm.com/book/en/v2/Git-Internals-Git-Objects",
+          "title": "Pro Git, 10.2 Git Internals - Git Objects",
+          "quote": "you aren't storing the filename in your system — just the content"
+        }
+      ]
+    },
+    {
+      "kind": "prose",
+      "heading": "Trees, commits and the graph",
+      "body": "Names live in trees: each tree entry is the SHA-1 of a blob or subtree with its mode, type and filename [1]. A commit names the top-level tree of a snapshot and its parent commits, if any, plus author and committer [2]. Because every commit points at its parents, the commits form a directed acyclic graph [3], a graph of the same kind [[PageRank]] walks over links. Blob, tree, commit and tag are the four object types [4].",
+      "sources": [
+        {
+          "url": "https://git-scm.com/book/en/v2/Git-Internals-Git-Objects",
+          "title": "Pro Git, 10.2 Git Internals - Git Objects",
+          "quote": "A single tree object contains one or more entries, each of which is the SHA-1 hash of a blob or subtree with its associated mode, type, and filename."
+        },
+        {
+          "url": "https://git-scm.com/book/en/v2/Git-Internals-Git-Objects",
+          "title": "Pro Git, 10.2 Git Internals - Git Objects",
+          "quote": "it specifies the top-level tree for the snapshot of the project at that point; the parent commits if any"
+        },
+        {
+          "url": "https://git-scm.com/docs/gitglossary",
+          "title": "gitglossary: a Git glossary (git-scm.com)",
+          "quote": "The commit objects form a directed acyclic graph, because they have parents (directed)"
+        },
+        {
+          "url": "https://git-scm.com/docs/gitglossary",
+          "title": "gitglossary: a Git glossary (git-scm.com)",
+          "quote": "One of the identifiers \"commit\", \"tree\", \"tag\" or \"blob\""
+        }
+      ]
+    },
+    {
+      "kind": "prose",
+      "heading": "A branch is a 41-byte file",
+      "body": "A branch is a simple pointer or reference to the head of a line of work [1]. On disk it is a file holding the 40-character hash of a commit, so creating one means writing 41 bytes: 40 characters and a newline [2]. HEAD is usually a symbolic reference to the branch you are on [3], and the branch head moves forward as you commit [4].",
+      "sources": [
+        {
+          "url": "https://git-scm.com/book/en/v2/Git-Internals-Git-References",
+          "title": "Pro Git, 10.3 Git Internals - Git References",
+          "quote": "That's basically what a branch in Git is: a simple pointer or reference to the head of a line of work."
+        },
+        {
+          "url": "https://git-scm.com/book/en/v2/Git-Branching-Branches-in-a-Nutshell",
+          "title": "Pro Git, 3.1 Git Branching - Branches in a Nutshell",
+          "quote": "Creating a new branch is as quick and simple as writing 41 bytes to a file (40 characters and a newline)."
+        },
+        {
+          "url": "https://git-scm.com/book/en/v2/Git-Internals-Git-References",
+          "title": "Pro Git, 10.3 Git Internals - Git References",
+          "quote": "Usually the HEAD file is a symbolic reference to the branch you're currently on."
+        },
+        {
+          "url": "https://git-scm.com/docs/gitglossary",
+          "title": "gitglossary: a Git glossary (git-scm.com)",
+          "quote": "The tip of the branch is referenced by a branch head, which moves forward as additional development is done on the branch."
+        }
+      ]
+    },
+    {
+      "kind": "figure",
+      "heading": "From HEAD to the bytes",
+      "body": "<style>\n.gf{box-sizing:border-box;max-width:1040px;margin:0 auto;font-family:var(--ow-font);color:var(--ow-fg)}\n.gf *{box-sizing:border-box}\n.gf-row{display:grid;grid-template-columns:1fr;gap:6px}\n@media (min-width:760px){.gf-row{grid-template-columns:minmax(0,.85fr) 16px minmax(0,1.1fr) 16px minmax(0,1.1fr) 16px minmax(0,1.3fr) 16px minmax(0,.95fr);gap:6px;align-items:stretch}}\n.gf-b{border-radius:14px;border:1px solid var(--ow-line);background:var(--ow-panel);padding:10px 12px;min-width:0}\n.gf-b.ref{background:transparent;border-style:dashed}\n.gf-k{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 6px;font-size:11.5px;font-weight:650;letter-spacing:.05em;text-transform:uppercase;color:var(--ow-muted)}\n.gf-k b{color:var(--ow-accent);font-weight:700}\n.gf-p{margin:4px 0 6px;font-family:var(--ow-mono);font-size:11.5px;color:var(--ow-muted);overflow-wrap:break-word}\n.gf-c{margin:0;font-family:var(--ow-mono);font-size:12px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}\n.gf-c u{overflow-wrap:break-word;text-decoration:none;color:var(--ow-accent);font-weight:600}\n.gf-a{display:grid;place-items:center;color:var(--ow-accent);font-size:20px;line-height:1}\n.gf-a::before{content:\"\\2193\"}\n@media (min-width:760px){.gf-a::before{content:\"\\2192\"}}\n.gf-n{margin:12px 0 0;font-size:13px;color:var(--ow-muted)}\n</style>\n<div class=\"gf\" role=\"img\" aria-label=\"The chain Git follows from HEAD to file content: HEAD names the branch main, the branch file holds a commit hash, the commit names a tree, the tree lists blobs by hash with file names, and the blob holds the bytes\">\n  <div class=\"gf-row\">\n    <div class=\"gf-b ref\"><div class=\"gf-k\"><span>HEAD</span></div><p class=\"gf-p\">.git/HEAD</p><p class=\"gf-c\">ref:\n<u>refs/heads/<wbr>main</u></p></div>\n    <div class=\"gf-a\" aria-hidden=\"true\"></div>\n    <div class=\"gf-b ref\"><div class=\"gf-k\"><span>branch</span><b>41&nbsp;bytes</b></div><p class=\"gf-p\">.git/refs/<wbr>heads/<wbr>main</p><p class=\"gf-c\"><u>fd5370b</u>7a5efd78ddc00d64f9d03f6adff27ce5b</p></div>\n    <div class=\"gf-a\" aria-hidden=\"true\"></div>\n    <div class=\"gf-b\"><div class=\"gf-k\"><span>commit</span><b>fd5370b</b></div><p class=\"gf-p\">.git/objects/<wbr>fd/5370b7…</p><p class=\"gf-c\">tree <u>3db4187</u>\nauthor You …\ncommitter You …\n\nFirst commit</p></div>\n    <div class=\"gf-a\" aria-hidden=\"true\"></div>\n    <div class=\"gf-b\"><div class=\"gf-k\"><span>tree</span><b>3db4187</b></div><p class=\"gf-p\">.git/objects/<wbr>3d/b4187d…</p><p class=\"gf-c\">blob <u>a5c1966</u> README\ntree 0cec0a4 lib\nblob b80e322 main.py</p></div>\n    <div class=\"gf-a\" aria-hidden=\"true\"></div>\n    <div class=\"gf-b\"><div class=\"gf-k\"><span>blob</span><b>a5c1966</b></div><p class=\"gf-p\">.git/objects/<wbr>a5/c19667…</p><p class=\"gf-c\">Hello, world</p></div>\n  </div>\n  <p class=\"gf-n\">Real hashes for this three-file repo. The file name lives in the tree; the blob holds only the bytes.</p>\n</div>\n"
+    }
+  ],
+  "data": {
+    "tags": [
+      "git",
+      "version-control",
+      "data-structures",
+      "hashing"
+    ],
+    "facts": [
+      {
+        "label": "Object types",
+        "value": "blob, tree, commit, tag"
+      },
+      {
+        "label": "Object name",
+        "value": "SHA-1, 40 hex characters"
+      },
+      {
+        "label": "Where objects live",
+        "value": ".git/objects, by hash"
+      },
+      {
+        "label": "A branch on disk",
+        "value": "41 bytes"
+      },
+      {
+        "label": "Compression",
+        "value": "zlib"
+      },
+      {
+        "label": "History shape",
+        "value": "Directed acyclic graph"
+      }
+    ],
+    "see": [
+      "Diffie-Hellman key exchange",
+      "PageRank",
+      "Bloom filter",
+      "Raft consensus"
+    ]
+  }
+}

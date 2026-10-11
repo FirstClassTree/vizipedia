@@ -1,0 +1,156 @@
+{
+  "title": "Instagram Explore",
+  "slug": "instagram-explore",
+  "hue": 280,
+  "lede": "Explore is Instagram's grid of photos and videos from accounts you don't follow, found through what you, and people who like what you like, engaged with.",
+  "sections": [
+    {
+      "kind": "experience",
+      "heading": "Like a few posts, watch Explore fill",
+      "body": "<style>\n.ex{font-family:var(--ow-font);color:var(--ow-fg);font-size:16px;line-height:1.4;max-width:1040px;margin:0 auto;-webkit-font-smoothing:antialiased;--cats:oklch(0.66 0.15 55);--cook:oklch(0.6 0.17 25);--hike:oklch(0.6 0.13 150);--kicks:oklch(0.58 0.15 255)}\n.ex *{box-sizing:border-box}\n.ex-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px;align-items:start}\n.ex-h{margin:0 0 4px;font-size:13px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--ow-muted)}\n.ex-q{margin:0 0 12px;font-size:17px;font-weight:600;line-height:1.3;min-height:2.6em}\n.ex-q span{color:var(--ow-muted);font-weight:400}\n.ex-grid{display:grid;gap:6px;list-style:none;margin:0;padding:0}\n.ex-likes{grid-template-columns:repeat(4,minmax(0,1fr));max-width:440px}\n.ex-feed{grid-template-columns:repeat(3,minmax(0,1fr));max-width:340px}\n.ex-tile{appearance:none;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;width:100%;aspect-ratio:1;margin:0;padding:6px 4px;border:0;border-radius:10px;font:inherit;color:#fff;cursor:pointer;touch-action:manipulation;background:var(--c);overflow:hidden;transition:transform .18s,box-shadow .18s,opacity .2s}\n.ex-tile svg{width:42%;height:auto;max-width:44px;flex:none;opacity:.95}\n.ex-tile .hd{display:block;max-width:100%;font-size:12px;font-weight:600;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 2px rgb(0 0 0/.35)}\n.ex-tile:hover{transform:translateY(-2px)}\n.ex-tile:focus-visible{outline:3px solid var(--ow-accent);outline-offset:2px}\n.ex-likes .ex-tile[aria-pressed=\"false\"]{opacity:.62}\n.ex-likes .ex-tile[aria-pressed=\"false\"]:hover{opacity:.9}\n.ex-heart{position:absolute;top:5px;right:5px;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:rgb(255 255 255/.92);color:oklch(0.58 0.22 15);opacity:0;transform:scale(.4);transition:opacity .18s,transform .25s cubic-bezier(.3,1.6,.5,1)}\n.ex-heart svg{width:12px;max-width:none}\n.ex-likes .ex-tile[aria-pressed=\"true\"] .ex-heart{opacity:1;transform:none}\n.ex-likes .ex-tile[aria-pressed=\"true\"]{box-shadow:0 0 0 2px var(--ow-bg),0 0 0 4px var(--c)}\n.ex-feed .ex-tile[aria-pressed=\"true\"]{box-shadow:0 0 0 2px var(--ow-bg),0 0 0 4px var(--ow-accent)}\n.ex-rank{position:absolute;top:5px;left:6px;font-family:var(--ow-mono);font-size:12px;font-weight:700;text-shadow:0 1px 2px rgb(0 0 0/.4)}\n.ex-empty{aspect-ratio:1;border:1.5px dashed var(--ow-line);border-radius:10px}\n.ex-in{animation:exin .38s cubic-bezier(.2,.8,.2,1) backwards}\n@keyframes exin{from{opacity:0;transform:scale(.82)}to{opacity:1;transform:none}}\n.ex-chain{margin-top:18px;padding:14px 16px;border:1px solid var(--ow-line);border-radius:14px;background:var(--ow-panel);min-height:96px}\n.ex-steps{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:6px 0 0;padding:0;list-style:none;font-size:15px}\n.ex-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:99px;border:1px solid var(--ow-line);background:var(--ow-bg);font-weight:600;white-space:nowrap}\n.ex-pill i{width:10px;height:10px;border-radius:50%;background:var(--c);flex:none}\n.ex-arrow{color:var(--ow-muted);font-size:14px}\n.ex-num{font-family:var(--ow-mono);font-weight:700;color:var(--ow-accent)}\n.ex-out{margin:10px 0 0;font-size:14px;color:var(--ow-muted)}\n.ex-out s{text-decoration-thickness:2px}\n.ex-foot{margin:10px 0 0;font-size:13px;color:var(--ow-muted)}\n.ex-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px}\n.ex-reset{appearance:none;background:none;border:0;padding:0 2px;margin:0 0 4px;font:inherit;font-size:13px;line-height:1.4;font-weight:600;color:var(--ow-muted);text-decoration:underline;text-underline-offset:3px;cursor:pointer}\n.ex-reset:focus-visible{outline:2px solid var(--ow-accent);outline-offset:2px;border-radius:4px}\n.ex-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}\n@media (max-width:720px){.ex-cols{grid-template-columns:minmax(0,1fr);gap:18px}.ex-likes{max-width:none}.ex-feed{max-width:300px}.ex-q{min-height:0}}\n@media (max-width:420px){.ex-tile .hd{font-size:10.5px}.ex-tile{border-radius:8px}.ex-steps{font-size:14px}}\n@media (prefers-reduced-motion:reduce){.ex-tile,.ex-heart{transition:none}.ex-in{animation:none}}\n</style>\n<div class=\"ex\">\n  <div class=\"ex-cols\">\n    <section aria-labelledby=\"ex-lh\">\n      <p class=\"ex-h\" id=\"ex-lh\">1 · Posts you saw</p>\n      <p class=\"ex-q\">Tap the posts you like. <span>Explore then looks for accounts that people who like them also like.</span></p>\n      <ul class=\"ex-grid ex-likes\" id=\"ex-likes\"></ul>\n    </section>\n    <section aria-labelledby=\"ex-fh\">\n      <div class=\"ex-row\"><p class=\"ex-h\" id=\"ex-fh\">2 · Your Explore grid</p><button class=\"ex-reset\" type=\"button\" id=\"ex-reset\">Clear likes</button></div>\n      <p class=\"ex-q\">Accounts you don't follow. <span>Tap a tile to see why it is there.</span></p>\n      <ul class=\"ex-grid ex-feed\" id=\"ex-feed\" aria-live=\"off\"></ul>\n    </section>\n  </div>\n  <div class=\"ex-chain\" aria-live=\"polite\">\n    <p class=\"ex-h\">Why this post</p>\n    <ol class=\"ex-steps\" id=\"ex-steps\"></ol>\n    <p class=\"ex-out\" id=\"ex-out\"></p>\n  </div>\n  <p class=\"ex-foot\">Illustrative accounts and numbers. The method is the one Instagram describes: start from what you liked, find what people who liked it also like, rank by popularity first.</p>\n</div>\n<script>\n(function(){\n  var ICON={\n    cats:'<svg viewBox=\"0 0 32 32\" fill=\"currentColor\"><path d=\"M6 5l6 6h8l6-6v13a10 10 0 0 1-20 0z\"/><circle cx=\"12.5\" cy=\"17\" r=\"1.8\" fill=\"#000\" opacity=\".45\"/><circle cx=\"19.5\" cy=\"17\" r=\"1.8\" fill=\"#000\" opacity=\".45\"/></svg>',\n    cook:'<svg viewBox=\"0 0 32 32\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 15h24v2a10 10 0 0 1-10 10h-4A10 10 0 0 1 4 17z\" fill=\"currentColor\"/><path d=\"M11 10c0-2 2-2 2-5M17 10c0-2 2-2 2-5\"/></svg>',\n    hike:'<svg viewBox=\"0 0 32 32\" fill=\"currentColor\"><path d=\"M2 27l9-15 5 7 4-5 10 13z\"/><circle cx=\"24\" cy=\"7\" r=\"3\"/></svg>',\n    kicks:'<svg viewBox=\"0 0 32 32\" fill=\"currentColor\"><path d=\"M3 22c0-4 1-9 3-11l5 2c2 1 4 0 5-2l3 4c3 2 7 3 9 4 2 1 2 5 0 5H5c-1 0-2-1-2-2z\"/></svg>'\n  };\n  var HEART='<svg viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M12 21s-8-5-8-11a4.5 4.5 0 0 1 8-3 4.5 4.5 0 0 1 8 3c0 6-8 11-8 11z\"/></svg>';\n  var TOPIC={cats:'var(--cats)',cook:'var(--cook)',hike:'var(--hike)',kicks:'var(--kicks)'};\n  // Posts the reader can like, and for each, accounts \"people who liked it also like\" (share of those people, illustrative).\n  var SEEDS=[\n    {h:'window.cat',t:'cats',also:[['kitten.rescue',38],['cat.yoga',22],['latte.art',11]]},\n    {h:'dumpling.club',t:'cook',also:[['dimsum.house',41],['gyoza.lab',27]]},\n    {h:'alpine.trails',t:'hike',also:[['summit.photos',36],['hut.to.hut',24],['trail.kitchen',13]]},\n    {h:'kicks.daily',t:'kicks',also:[['sneaker.drops',44],['vape.clouds',19]]},\n    {h:'catcafe.lisbon',t:'cats',also:[['maine.coons',30],['latte.art',18]]},\n    {h:'pasta.nonna',t:'cook',also:[['bread.lab',33],['gyoza.lab',12]]},\n    {h:'desert.miles',t:'hike',also:[['camp.coffee',29],['trail.kitchen',21]]},\n    {h:'sole.archive',t:'kicks',also:[['boot.repair',26],['sneaker.drops',20]]},\n    {h:'foster.kittens',t:'cats',also:[['kitten.rescue',35],['maine.coons',15]]},\n    {h:'sourdough.sam',t:'cook',also:[['bread.lab',39],['camp.coffee',14]]},\n    {h:'trailrunner.jo',t:'hike',also:[['trail.shoes',34],['hut.to.hut',17]]},\n    {h:'retro.runners',t:'kicks',also:[['trail.shoes',28],['boot.repair',16]]}\n  ];\n  // Candidates: topic and popularity (how many people like, save and share it, and how fast), illustrative.\n  var CAND={\n    'kitten.rescue':{t:'cats',pop:82},'cat.yoga':{t:'cats',pop:57},'maine.coons':{t:'cats',pop:71},'latte.art':{t:'cook',pop:64},\n    'dimsum.house':{t:'cook',pop:88},'gyoza.lab':{t:'cook',pop:61},'bread.lab':{t:'cook',pop:76},'trail.kitchen':{t:'hike',pop:52},\n    'summit.photos':{t:'hike',pop:90},'hut.to.hut':{t:'hike',pop:58},'camp.coffee':{t:'hike',pop:66},\n    'sneaker.drops':{t:'kicks',pop:86},'boot.repair':{t:'kicks',pop:49},'trail.shoes':{t:'kicks',pop:73},\n    'vape.clouds':{t:'kicks',pop:95,out:'vaping products are on the list Instagram aims not to recommend'}\n  };\n  var liked={'dumpling.club':true,'alpine.trails':true,'window.cat':true},sel=null,reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;\n  var likesEl=document.getElementById('ex-likes'),feedEl=document.getElementById('ex-feed'),steps=document.getElementById('ex-steps'),out=document.getElementById('ex-out');\n  function esc(s){return String(s).replace(/[&<>\"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]})}\n  function tile(h,t,extra){return '<span class=\"ex-rank\">'+(extra||'')+'</span>'+ICON[t]+'<span class=\"hd\">@'+esc(h)+'</span><span class=\"ex-heart\" aria-hidden=\"true\">'+HEART+'</span>'}\n  SEEDS.forEach(function(s){\n    var li=document.createElement('li'),b=document.createElement('button');\n    b.type='button';b.className='ex-tile';b.style.setProperty('--c',TOPIC[s.t]);b.innerHTML=tile(s.h,s.t);\n    b.setAttribute('aria-label','Like post from @'+s.h);\n    b.addEventListener('click',function(){liked[s.h]=!liked[s.h];if(!liked[s.h])delete liked[s.h];sel=null;render(true)});\n    s.btn=b;li.appendChild(b);likesEl.appendChild(li);\n  });\n  function rank(){\n    var c={};\n    SEEDS.forEach(function(s){if(!liked[s.h])return;s.also.forEach(function(a){\n      var x=c[a[0]]||(c[a[0]]={h:a[0],via:[],act:0});x.via.push([s.h,a[1],s.t]);x.act+=a[1];\n    })});\n    var all=Object.keys(c).map(function(k){var x=c[k],d=CAND[k];x.t=d.t;x.pop=d.pop;x.out=d.out;\n      // Popularity counts most in Explore, then your activity: an illustrative 60/40 blend.\n      x.score=.6*d.pop/100+.4*Math.min(1,x.act/60);x.via.sort(function(a,b){return b[1]-a[1]});return x});\n    all.sort(function(a,b){return b.score-a.score});\n    return {shown:all.filter(function(x){return !x.out}).slice(0,9),left:all.filter(function(x){return x.out})};\n  }\n  var prevShown='';\n  function render(anim){\n    SEEDS.forEach(function(s){s.btn.setAttribute('aria-pressed',liked[s.h]?'true':'false')});\n    var r=rank(),key=r.shown.map(function(x){return x.h}).join();\n    if(!sel||!r.shown.some(function(x){return x.h===sel}))sel=r.shown.length?r.shown[0].h:null;\n    feedEl.textContent='';\n    for(var i=0;i<9;i++){\n      var li=document.createElement('li'),x=r.shown[i];\n      if(!x){var e=document.createElement('div');e.className='ex-empty';li.appendChild(e);feedEl.appendChild(li);continue}\n      var b=document.createElement('button');b.type='button';b.className='ex-tile'+(anim&&!reduce&&prevShown.indexOf(x.h)<0?' ex-in':'');\n      b.style.setProperty('--c',TOPIC[x.t]);b.style.animationDelay=(i*35)+'ms';b.innerHTML=tile(x.h,x.t,i+1);\n      b.setAttribute('aria-pressed',x.h===sel?'true':'false');b.setAttribute('aria-label','Explore post '+(i+1)+' from @'+x.h+'. Show why.');\n      (function(h){b.addEventListener('click',function(){sel=h;render(false);var n=feedEl.querySelector('[aria-pressed=\"true\"]');if(n)n.focus()})})(x.h);\n      li.appendChild(b);feedEl.appendChild(li);\n    }\n    prevShown=key;explain(r);\n  }\n  function pill(h,t){return '<span class=\"ex-pill\" style=\"--c:'+TOPIC[t]+'\"><i></i>@'+esc(h)+'</span>'}\n  function explain(r){\n    var x=null;r.shown.forEach(function(y,i){if(y.h===sel){x=y;x.i=i}});\n    if(!x){steps.innerHTML='<li>Like a post on the left. With no likes, nothing here has a reason to be shown.</li>';out.textContent='';return}\n    var v=x.via[0],more=x.via.length-1;\n    steps.innerHTML='<li>You liked '+pill(v[0],v[2])+(more?' <span class=\"ex-arrow\">and '+more+' more</span>':'')+'</li><li class=\"ex-arrow\" aria-hidden=\"true\">→</li>'+\n      '<li><span class=\"ex-num\">'+v[1]+'%</span> of people who liked it also like '+pill(x.h,x.t)+'</li><li class=\"ex-arrow\" aria-hidden=\"true\">→</li>'+\n      '<li>popularity <span class=\"ex-num\">'+x.pop+'</span>/100</li><li class=\"ex-arrow\" aria-hidden=\"true\">→</li><li><span class=\"ex-num\">#'+(x.i+1)+'</span> in your grid</li>';\n    if(r.left.length)out.innerHTML='Left out: '+r.left.map(function(y){return '<s>@'+esc(y.h)+'</s> (popularity '+y.pop+'), because '+esc(y.out)}).join('; ')+'.';\n    else out.textContent=x.t!==x.via[0][2]?'A different topic: Explore follows people, not subjects, so it can cross topics without knowing what a post is about.':'Explore follows the likes of people like you, without needing to know what a post is about.';\n  }\n  document.getElementById('ex-reset').addEventListener('click',function(){liked={};sel=null;render(true)});\n  render(false);\n})();\n</script>\n",
+      "sources": [
+        {
+          "url": "https://about.instagram.com/blog/announcements/shedding-more-light-on-how-instagram-works",
+          "title": "Shedding More Light on How Instagram Works (Instagram, 2021)",
+          "quote": "We then look at who else likes Cathay's photos, and then what other accounts those people are interested in"
+        }
+      ]
+    },
+    {
+      "kind": "prose",
+      "heading": "Where Explore finds posts",
+      "body": "Explore starts from what you engaged with. In Instagram's own example, after you like a dumpling chef's photos it looks at who else likes them and what other accounts those people are interested in [1], so you may see gyoza and dim sum without it knowing what each post is about [2]. Meta says retrieval uses collaborative filtering and personalized [[PageRank]], and fetches up to 1,500 posts [3][4].",
+      "sources": [
+        {
+          "url": "https://about.instagram.com/blog/announcements/shedding-more-light-on-how-instagram-works",
+          "title": "Shedding More Light on How Instagram Works (Instagram, 2021)",
+          "quote": "We then look at who else likes Cathay's photos, and then what other accounts those people are interested in"
+        },
+        {
+          "url": "https://about.instagram.com/blog/announcements/shedding-more-light-on-how-instagram-works",
+          "title": "Shedding More Light on How Instagram Works (Instagram, 2021)",
+          "quote": "you might see posts about related topics, like gyoza and dim sum, without us necessarily understanding what each post is about"
+        },
+        {
+          "url": "https://transparency.meta.com/features/explaining-ranking/ig-explore/",
+          "title": "Instagram Explore AI system (Meta Transparency Center, updated 2026)",
+          "quote": "including item collaborative filtering, personalized PageRank, and two tower sparse network sourcing"
+        },
+        {
+          "url": "https://transparency.meta.com/features/explaining-ranking/ig-explore/",
+          "title": "Instagram Explore AI system (Meta Transparency Center, updated 2026)",
+          "quote": "At the end of the retrieval stage, up to 1500 media are fetched"
+        }
+      ]
+    },
+    {
+      "kind": "prose",
+      "heading": "How the grid is ordered",
+      "body": "Instagram lists Explore's signals in rough order: information about the post, then your activity, your history with the poster, and information about the poster [1]. A post's popularity counts much more here than in Feed or Stories [2]. The top 100 candidates go to a final model, and the actions it predicts most are likes, saves and shares [3][4]. [[Instagram ranking]] sets this order beside Feed, Stories and [[Instagram Reels]].",
+      "sources": [
+        {
+          "url": "https://about.instagram.com/blog/announcements/instagram-ranking-explained",
+          "title": "Instagram Ranking Explained (Instagram, 2023)",
+          "quote": "The most important signals we look at, in rough order of importance, are: Information about the post"
+        },
+        {
+          "url": "https://about.instagram.com/blog/announcements/instagram-ranking-explained",
+          "title": "Instagram Ranking Explained (Instagram, 2023)",
+          "quote": "These signals matter much more in Explore than they do in Feed or in Stories"
+        },
+        {
+          "url": "https://transparency.meta.com/features/explaining-ranking/ig-explore/",
+          "title": "Instagram Explore AI system (Meta Transparency Center, updated 2026)",
+          "quote": "At the end of this stage, the top 100 media are passed to the next stage"
+        },
+        {
+          "url": "https://about.instagram.com/blog/announcements/instagram-ranking-explained",
+          "title": "Instagram Ranking Explained (Instagram, 2023)",
+          "quote": "The most important actions we predict in Explore include likes, saves, and shares"
+        }
+      ]
+    },
+    {
+      "kind": "prose",
+      "heading": "What Explore leaves out",
+      "body": "Because Explore recommends people you have not chosen to follow, Instagram adds Recommendation Guidelines on top of its Community Standards [1]. Posts that break them stay on Instagram but are not recommended, for example violence, or the use of tobacco, vaping products or pharmaceutical drugs [2][3]. Since April 2026, accounts that mostly re-upload others' work are not shown where Instagram recommends content [4].",
+      "sources": [
+        {
+          "url": "https://about.instagram.com/blog/announcements/instagram-ranking-explained",
+          "title": "Instagram Ranking Explained (Instagram, 2023)",
+          "quote": "we have rules for what we recommend in places like Explore, Reels, Search, Suggested Posts in Feed and Suggested Accounts"
+        },
+        {
+          "url": "https://about.instagram.com/blog/announcements/instagram-ranking-explained",
+          "title": "Instagram Ranking Explained (Instagram, 2023)",
+          "quote": "Posts that go against our Recommendation Guidelines are allowed on Instagram"
+        },
+        {
+          "url": "https://about.instagram.com/blog/announcements/instagram-ranking-explained",
+          "title": "Instagram Ranking Explained (Instagram, 2023)",
+          "quote": "content depicting the use of certain regulated products, such as tobacco, vaping products, or pharmaceutical drugs"
+        },
+        {
+          "url": "https://creators.instagram.com/blog/rewarding-original-creators-on-instagram",
+          "title": "Rewarding original creators on Instagram (Instagram for Creators, 2026)",
+          "quote": "accounts that primarily post unoriginal content in photos or carousel posts, in addition to reels, will no longer be shown in places where we recommend content"
+        }
+      ]
+    },
+    {
+      "kind": "figure",
+      "heading": "From 1,500 candidates to one grid",
+      "body": "<style>\n.fn{font-family:var(--ow-font);color:var(--ow-fg);max-width:880px;margin:0 auto}\n.fn *{box-sizing:border-box}\n.fn ol{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}\n.fn li{position:relative;display:flex;flex-direction:column;gap:8px;padding:14px;border:1px solid var(--ow-line);border-radius:14px;background:var(--ow-panel)}\n.fn li+li::before{content:\"\";position:absolute;left:-12px;top:50%;width:12px;height:2px;background:var(--ow-line)}\n.fn .k{font-size:13px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--ow-muted)}\n.fn .n{font-family:var(--ow-mono);font-size:30px;font-weight:700;line-height:1;color:var(--ow-accent)}\n.fn .n small{font-size:14px;font-weight:600;color:var(--ow-muted)}\n.fn .d{font-size:14px;line-height:1.4}\n.fn .dots{display:grid;gap:2px;margin-top:2px}\n.fn .dots i{display:block;aspect-ratio:1;border-radius:1px;background:var(--ow-accent)}\n.fn .d1{grid-template-columns:repeat(30,1fr)}\n.fn .d1 i{opacity:.35}\n.fn .d2{grid-template-columns:repeat(10,1fr);max-width:60%}\n.fn .d2 i{opacity:.7}\n.fn .d3{grid-template-columns:repeat(3,1fr);max-width:42%;gap:3px}\n.fn .d3 i{border-radius:3px}\n.fn .cap{margin:12px 0 0;font-size:14px;color:var(--ow-muted);text-align:center}\n@media (max-width:640px){.fn ol{grid-template-columns:minmax(0,1fr)}.fn li+li::before{left:50%;top:-12px;width:2px;height:12px}}\n</style>\n<div class=\"fn\" role=\"img\" aria-label=\"Explore narrows candidates in three stages: retrieval fetches up to 1,500 posts, early ranking keeps the top 100, late ranking orders them by predicted likes and saves into the grid.\">\n  <ol>\n    <li><span class=\"k\">1 · Retrieval</span><span class=\"n\">1,500 <small>posts at most</small></span><span class=\"d\">From authors you engaged with and posts similar to ones you engaged with, found by collaborative filtering and personalized PageRank.</span><span class=\"dots d1\" aria-hidden=\"true\"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></li>\n    <li><span class=\"k\">2 · Early ranking</span><span class=\"n\">100 <small>posts</small></span><span class=\"d\">A fast two-tower network scores how well each post matches you.</span><span class=\"dots d2\" aria-hidden=\"true\"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></li>\n    <li><span class=\"k\">3 · Late ranking</span><span class=\"n\">Grid</span><span class=\"d\">A larger network predicts likes, saves and other actions and orders what you see.</span><span class=\"dots d3\" aria-hidden=\"true\"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></li>\n  </ol>\n  <p class=\"cap\">Explore's three stages, as Meta's Transparency Center describes them (updated June 2026). Each dot is 5 posts in stage 1 and 1 post in stage 2.</p>\n</div>\n",
+      "sources": [
+        {
+          "url": "https://transparency.meta.com/features/explaining-ranking/ig-explore/",
+          "title": "Instagram Explore AI system (Meta Transparency Center, updated 2026)",
+          "quote": "At the end of the retrieval stage, up to 1500 media are fetched"
+        },
+        {
+          "url": "https://transparency.meta.com/features/explaining-ranking/ig-explore/",
+          "title": "Instagram Explore AI system (Meta Transparency Center, updated 2026)",
+          "quote": "At the end of this stage, the top 100 media are passed to the next stage"
+        }
+      ]
+    }
+  ],
+  "data": {
+    "tags": [
+      "instagram",
+      "explore",
+      "recommendation",
+      "discovery"
+    ],
+    "facts": [
+      {
+        "label": "Candidates fetched",
+        "value": "Up to 1,500"
+      },
+      {
+        "label": "Passed to final ranking",
+        "value": "100"
+      },
+      {
+        "label": "First signal",
+        "value": "Post popularity"
+      },
+      {
+        "label": "Top predicted actions",
+        "value": "Likes, saves, shares"
+      },
+      {
+        "label": "Posts from",
+        "value": "Accounts you don't follow"
+      }
+    ],
+    "see": [
+      "instagram-ranking",
+      "Instagram Reels",
+      "instagram-hashtags",
+      "PageRank",
+      "tiktok-for-you-feed",
+      "YouTube recommendations"
+    ]
+  }
+}

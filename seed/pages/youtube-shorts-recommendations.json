@@ -1,0 +1,125 @@
+{
+  "title": "YouTube Shorts recommendations",
+  "slug": "youtube-shorts-recommendations",
+  "hue": 18,
+  "lede": "YouTube Shorts recommendations fill the swipeable Shorts feed, where people choose by swiping instead of clicking, so staying past the first seconds is the signal that counts.",
+  "sections": [
+    {
+      "kind": "experience",
+      "heading": "Swipe simulator",
+      "body": "<style>\n.ys{--good:oklch(0.6 0.15 150);--bad:oklch(0.6 0.18 25);box-sizing:border-box;max-width:1040px;margin:0 auto;display:grid;gap:22px;grid-template-columns:1fr;font-family:var(--ow-font);color:var(--ow-fg)}\n.ys *{box-sizing:border-box}\n@media (min-width:700px){.ys{grid-template-columns:300px minmax(0,1fr);gap:32px;align-items:start}}\n.ys-q{margin:0 0 12px;font-size:18px;line-height:1.35;font-weight:650}\n.ys-phone{position:relative;margin:0 auto;width:100%;max-width:260px;aspect-ratio:9/14;max-height:400px;border-radius:26px;background:oklch(0.2 0.01 260);padding:8px;box-shadow:0 10px 30px -14px oklch(0.2 0.02 260 / .55);touch-action:pan-x;user-select:none;-webkit-user-select:none}\n@media (max-width:699px){.ys-phone{max-width:220px}}\n.ys-screen{position:relative;width:100%;height:100%;border-radius:19px;overflow:hidden;background:oklch(0.28 0.01 260)}\n.ys-short{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;padding:16px 14px 14px;color:#fff;background:linear-gradient(160deg,var(--a),var(--b));transition:transform .42s cubic-bezier(.3,.7,.2,1),opacity .42s}\n.ys-short.gone{transform:translateY(-105%)}\n.ys-short.next{transform:translateY(0) scale(.94);opacity:.0}\n.ys-icon{position:absolute;top:28%;left:50%;width:84px;height:84px;margin-left:-42px;opacity:.92}\n.ys-title{font-size:17px;font-weight:700;line-height:1.25;text-shadow:0 1px 6px rgba(0,0,0,.35)}\n.ys-ch{margin-top:4px;font-size:13px;opacity:.85}\n.ys-prog{position:absolute;left:0;right:0;bottom:0;height:4px;background:rgba(255,255,255,.25)}\n.ys-prog i{display:block;height:100%;width:0;background:#fff}\n.ys-prog i.run{width:100%;transition:width .5s linear}\n.ys-count{position:absolute;top:10px;left:12px;font-size:12.5px;font-weight:700;letter-spacing:.04em;color:#fff;background:rgba(0,0,0,.3);padding:3px 8px;border-radius:99px}\n.ys-done{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;text-align:center;color:#fff;font-size:16px;line-height:1.4}\n.ys-done.on{display:flex}\n.ys-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:300px;margin:14px auto 0}\n.ys-btn{appearance:none;font:inherit;font-size:16px;font-weight:700;min-height:48px;border-radius:14px;border:2px solid var(--c);background:color-mix(in oklch,var(--c) 12%,var(--ow-panel));color:var(--ow-fg);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;touch-action:manipulation}\n.ys-btn:hover{background:color-mix(in oklch,var(--c) 22%,var(--ow-panel))}\n.ys-btn:focus-visible{outline:3px solid color-mix(in oklch,var(--c) 60%,transparent);outline-offset:2px}\n.ys-btn:disabled{opacity:.4;cursor:default}\n.ys-btn kbd{font-family:var(--ow-mono);font-size:11.5px;font-weight:600;padding:1px 5px;border-radius:5px;border:1px solid var(--ow-line);color:var(--ow-muted);background:var(--ow-bg)}\n.ys-hint{margin:8px 0 0;text-align:center;font-size:13px;color:var(--ow-muted)}\n.ys-panel{border-radius:18px;background:var(--ow-panel);border:1px solid var(--ow-line);padding:18px 18px 16px}\n.ys-h{margin:0;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ow-muted)}\n.ys-big{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:4px 0 2px}\n.ys-reach{font-size:44px;font-weight:800;line-height:1.05;font-variant-numeric:tabular-nums;letter-spacing:-.01em}\n.ys-delta{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums}\n.ys-delta.up{color:var(--good)}.ys-delta.down{color:var(--bad)}\n.ys-unit{font-size:15px;color:var(--ow-muted)}\n.ys-chart{display:block;width:100%;height:170px;margin:10px 0 4px}\n.ys-row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:6px}\n.ys-dots{display:flex;gap:6px;list-style:none;margin:0;padding:0}\n.ys-dots li{width:18px;height:18px;border-radius:50%;border:2px solid var(--ow-line);background:var(--ow-bg)}\n.ys-dots li.w{background:var(--good);border-color:var(--good)}\n.ys-dots li.s{background:var(--bad);border-color:var(--bad)}\n.ys-dots li.cur{border-color:var(--ow-fg)}\n.ys-rate{font-size:15px;font-weight:600}\n.ys-rate b{font-variant-numeric:tabular-nums}\n.ys-key{margin:12px 0 0;font-size:13.5px;line-height:1.45;color:var(--ow-muted)}\n.ys-reset{appearance:none;font:inherit;font-size:14px;font-weight:600;color:var(--ow-muted);background:none;border:0;padding:6px 2px;cursor:pointer;text-decoration:underline;text-underline-offset:3px}\n.ys-reset:focus-visible{outline:2px solid var(--ow-accent);outline-offset:2px;border-radius:4px}\n.ys-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}\n@media (prefers-reduced-motion:reduce){.ys-short,.ys-prog i.run{transition:none}}\n</style>\n<div class=\"ys\">\n  <div>\n    <p class=\"ys-q\" id=\"ys-q\">You are a new channel's test audience. Watch or swipe each Short.</p>\n    <div class=\"ys-phone\" id=\"ys-phone\" aria-label=\"Shorts feed\" role=\"group\">\n      <div class=\"ys-screen\" id=\"ys-screen\">\n        <div class=\"ys-done\" id=\"ys-done\"><b style=\"font-size:20px\">That was 10 Shorts.</b><span id=\"ys-sum\"></span></div>\n      </div>\n    </div>\n    <div class=\"ys-btns\">\n      <button class=\"ys-btn\" type=\"button\" id=\"ys-w\" style=\"--c:var(--good)\">Watched <kbd>W</kbd></button>\n      <button class=\"ys-btn\" type=\"button\" id=\"ys-s\" style=\"--c:var(--bad)\">Swiped away <kbd>S</kbd></button>\n    </div>\n    <p class=\"ys-hint\">Or swipe the phone up to skip.</p>\n  </div>\n  <section class=\"ys-panel\" aria-labelledby=\"ys-h\">\n    <div class=\"ys-row\" style=\"margin:0\"><p class=\"ys-h\" id=\"ys-h\">Feed's estimate: next Short's reach</p><button class=\"ys-reset\" type=\"button\" id=\"ys-r\">Start over</button></div>\n    <div class=\"ys-big\"><span class=\"ys-reach\" id=\"ys-reach\">1,000</span><span class=\"ys-unit\">viewers</span><span class=\"ys-delta\" id=\"ys-d\"></span></div>\n    <svg class=\"ys-chart\" id=\"ys-chart\" viewBox=\"0 0 400 170\" aria-hidden=\"true\"></svg>\n    <div class=\"ys-row\"><ol class=\"ys-dots\" id=\"ys-dots\" aria-hidden=\"true\"></ol><span class=\"ys-rate\">Stayed to watch: <b id=\"ys-pct\">no data yet</b></span></div>\n    <p class=\"ys-key\">Illustrative model: the feed starts each new channel with a small exploratory audience and widens or narrows it with the share of viewers who stay past the first seconds. YouTube publishes no formula or thresholds.</p>\n    <p class=\"ys-sr\" aria-live=\"polite\" id=\"ys-live\"></p>\n  </section>\n</div>\n<script>\n(function(){\n  var ICON={\n    cup:'<path d=\"M14 30h44v18a18 18 0 0 1-18 18h-8a18 18 0 0 1-18-18z\"/><path d=\"M58 36h6a8 8 0 0 1 0 16h-6\"/><path d=\"M28 22c0-4 4-4 4-8M40 22c0-4 4-4 4-8\"/>',\n    cat:'<path d=\"M18 30l4-16 10 10h16l10-10 4 16v18a22 22 0 0 1-44 0z\"/><circle cx=\"31\" cy=\"40\" r=\"2.5\"/><circle cx=\"49\" cy=\"40\" r=\"2.5\"/><path d=\"M36 50h8M40 50v4\"/>',\n    pan:'<circle cx=\"32\" cy=\"40\" r=\"20\"/><path d=\"M52 40h22\"/><path d=\"M24 36c4-4 12-4 16 0\"/>',\n    board:'<path d=\"M10 44h60\"/><circle cx=\"22\" cy=\"54\" r=\"5\"/><circle cx=\"58\" cy=\"54\" r=\"5\"/><path d=\"M32 40l8-22 8 22\"/>',\n    desk:'<rect x=\"14\" y=\"16\" width=\"52\" height=\"32\" rx=\"3\"/><path d=\"M40 48v10M28 60h24\"/>',\n    math:'<path d=\"M14 24h20M24 14v20M46 24h20M14 52l16 0M46 46l16 12M62 46l-16 12\"/>',\n    sun:'<circle cx=\"40\" cy=\"44\" r=\"12\"/><path d=\"M10 58h60M40 20v-6M22 28l-4-4M58 28l4-4M16 44h-6M70 44h-6\"/>',\n    guitar:'<circle cx=\"30\" cy=\"50\" r=\"13\"/><path d=\"M38 42l24-24M58 14l8 8\"/><circle cx=\"30\" cy=\"50\" r=\"3\"/>',\n    crane:'<path d=\"M10 50l26-10 8-22 6 18 20 4-24 10z\"/>',\n    dog:'<path d=\"M18 26l8-10h22l10 10v20a20 20 0 0 1-40 0z\"/><path d=\"M18 26l-6 14M58 26l6 14\"/><circle cx=\"31\" cy=\"38\" r=\"2.5\"/><circle cx=\"45\" cy=\"38\" r=\"2.5\"/><path d=\"M36 50h4\"/>'\n  };\n  var SH=[\n    {t:'Latte art in 10 seconds',i:'cup',h:30},{t:'My cat meets a cucumber',i:'cat',h:80},{t:'One-pan pasta, no mess',i:'pan',h:45},\n    {t:'Kickflip, attempt #212',i:'board',h:200},{t:'Desk setup under $200',i:'desk',h:250},{t:'Multiply by 11 instantly',i:'math',h:140},\n    {t:'Sunset, 3 hours in 20s',i:'sun',h:20},{t:'The riff everyone gets wrong',i:'guitar',h:300},{t:'Paper crane, slowly',i:'crane',h:170},{t:'Dog learns to open doors',i:'dog',h:100}\n  ];\n  var screen=document.getElementById('ys-screen'),done=document.getElementById('ys-done'),reachEl=document.getElementById('ys-reach'),dEl=document.getElementById('ys-d');\n  var chart=document.getElementById('ys-chart'),dots=document.getElementById('ys-dots'),pct=document.getElementById('ys-pct'),live=document.getElementById('ys-live');\n  var bW=document.getElementById('ys-w'),bS=document.getElementById('ys-s');\n  var reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;\n  var idx,hist,busy,cards=[];\n  // Illustrative: a prior of one watch and one swipe, reach = 1,000 x 10^(3 x (rate - 0.5)).\n  function reach(w,n){var p=(w+1)/(n+2);return 1000*Math.pow(10,3*(p-.5))}\n  function fmt(n){n=Math.round(n);if(n>=10000)return Math.round(n/1000)+'K';return n.toLocaleString('en-US')}\n  function build(){\n    cards.forEach(function(c){c.remove()});cards=[];\n    SH.forEach(function(s,i){\n      var d=document.createElement('div');d.className='ys-short'+(i===0?'':' next');\n      d.style.setProperty('--a','oklch(0.62 0.14 '+s.h+')');d.style.setProperty('--b','oklch(0.38 0.12 '+((s.h+40)%360)+')');\n      d.innerHTML='<span class=\"ys-count\">'+(i+1)+' / 10</span><svg class=\"ys-icon\" viewBox=\"0 0 80 80\" fill=\"none\" stroke=\"#fff\" stroke-width=\"3.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\">'+ICON[s.i]+'</svg><div class=\"ys-title\">'+s.t+'</div><div class=\"ys-ch\">@newchannel</div><div class=\"ys-prog\"><i></i></div>';\n      d.style.zIndex=String(20-i);screen.insertBefore(d,done);cards.push(d);\n    });\n  }\n  function draw(){\n    var pts=[1000],w=0;\n    hist.forEach(function(h,i){if(h)w++;pts.push(reach(w,i+1))});\n    var W=Math.max(240,Math.round(chart.getBoundingClientRect().width)||400);chart.setAttribute('viewBox','0 0 '+W+' 170');var X=function(i){return 16+i*((W-70)/10)},Y=function(v){return 150-(Math.log10(v)-1.5)/(3)*138};\n    var s='';\n    [100,1000,10000].forEach(function(g){var y=Y(g);s+='<line x1=\"16\" x2=\"'+(W-8)+'\" y1=\"'+y+'\" y2=\"'+y+'\" stroke=\"var(--ow-line)\" stroke-dasharray=\"3 4\"/><text x=\"'+(W-8)+'\" y=\"'+(y-4)+'\" text-anchor=\"end\" font-size=\"11\" fill=\"var(--ow-muted)\" font-family=\"var(--ow-mono)\">'+fmt(g)+'</text>'});\n    s+='<line x1=\"16\" x2=\"'+(W-8)+'\" y1=\"158\" y2=\"158\" stroke=\"var(--ow-line)\"/>';\n    var d=pts.map(function(v,i){return (i?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1)}).join(' ');\n    s+='<path d=\"'+d+'\" fill=\"none\" stroke=\"var(--ow-accent)\" stroke-width=\"3\" stroke-linejoin=\"round\" stroke-linecap=\"round\" vector-effect=\"non-scaling-stroke\"/>';\n    pts.forEach(function(v,i){s+='<circle cx=\"'+X(i)+'\" cy=\"'+Y(v)+'\" r=\"'+(i===pts.length-1?5:3.2)+'\" fill=\"'+(i===0?'var(--ow-muted)':hist[i-1]?'var(--good)':'var(--bad)')+'\" stroke=\"var(--ow-panel)\" stroke-width=\"1.5\"/>'});\n    if(!hist.length)s+='<text x=\"'+(X(0)+14)+'\" y=\"'+(Y(1000)+4)+'\" font-size=\"13\" fill=\"var(--ow-muted)\" font-family=\"var(--ow-font)\">Every answer moves this line. Start with Short 1.</text>';\n    chart.innerHTML=s;\n    var now=pts[pts.length-1],prev=pts.length>1?pts[pts.length-2]:now;\n    reachEl.textContent=fmt(now);\n    if(hist.length){var r=now/prev;dEl.textContent=(r>=1?'▲ ':'▼ ')+(r>=1?'×'+r.toFixed(2):'×'+r.toFixed(2));dEl.className='ys-delta '+(r>=1?'up':'down')}else{dEl.textContent='';dEl.className='ys-delta'}\n    dots.innerHTML=SH.map(function(_,i){return '<li class=\"'+(i<hist.length?(hist[i]?'w':'s'):i===hist.length?'cur':'')+'\"></li>'}).join('');\n    pct.textContent=hist.length?Math.round(w/hist.length*100)+'% of '+hist.length:'no data yet';\n    return {now:now,w:w};\n  }\n  function act(watched){\n    if(busy||idx>=SH.length)return;busy=true;\n    var c=cards[idx],bar=c.querySelector('.ys-prog i');\n    function go(){\n      c.classList.add('gone');hist.push(watched);idx++;\n      if(cards[idx])cards[idx].classList.remove('next');\n      var r=draw();\n      live.textContent=(watched?'Watched':'Swiped away')+'. Next Short reach estimate: '+fmt(r.now)+' viewers.';\n      if(idx>=SH.length){\n        document.getElementById('ys-sum').textContent='You stayed for '+r.w+' of 10. The feed would now try this channel\\'s next Short on about '+fmt(r.now)+' people.';\n        done.classList.add('on');bW.disabled=bS.disabled=true;\n      }\n      setTimeout(function(){busy=false},reduce?0:300);\n    }\n    if(watched&&!reduce){bar.classList.add('run');setTimeout(go,520)}else go();\n  }\n  function reset(){idx=0;hist=[];busy=false;done.classList.remove('on');bW.disabled=bS.disabled=false;build();draw();live.textContent='Started over.'}\n  bW.addEventListener('click',function(){act(true)});\n  bS.addEventListener('click',function(){act(false)});\n  document.getElementById('ys-r').addEventListener('click',reset);\n  document.addEventListener('keydown',function(e){\n    if(e.altKey||e.ctrlKey||e.metaKey)return;\n    var k=e.key.toLowerCase();\n    if(k==='w'){act(true)}else if(k==='s'){act(false)}\n  });\n  var phone=document.getElementById('ys-phone'),y0=null;\n  phone.addEventListener('pointerdown',function(e){y0=e.clientY});\n  phone.addEventListener('pointerup',function(e){if(y0!==null&&y0-e.clientY>40)act(false);y0=null});\n  phone.addEventListener('pointercancel',function(){y0=null});\n  window.addEventListener('resize',function(){draw()});\n  reset();live.textContent='';\n})();\n</script>"
+    },
+    {
+      "heading": "Swiped, not clicked",
+      "body": "The Shorts player is a stream of vertical videos, personalized to what YouTube thinks you want to see next [1]. Shorts lead Todd Sherman said that unlike long-form, where people pick a video, Shorts are found by swiping through a feed, so they are measured differently [2]. Creators see one number for this: the share of times viewers stayed to watch past the first seconds, introduced as viewed versus swiped away [3][2].",
+      "sources": [
+        {
+          "url": "https://support.google.com/youtube/answer/16089387?hl=en",
+          "title": "How YouTube recommendations work (YouTube Help)",
+          "quote": "The Shorts Feed is personalized to reflect what we think you want to see next."
+        },
+        {
+          "url": "https://www.searchenginejournal.com/youtube-explains-how-shorts-algorithm-works/494953/",
+          "title": "YouTube Explains How Shorts Algorithm Works (Search Engine Journal, August 2023)",
+          "quote": "Unlike long-form videos where people actively select a video to watch, Shorts viewers often discover content by swiping through a feed."
+        },
+        {
+          "url": "https://support.google.com/youtube/answer/12220281?hl=en",
+          "title": "Understand your YouTube content performance (YouTube Help)",
+          "quote": "The percentage of times viewers stayed to watch past the initial seconds of a Short."
+        },
+        {
+          "url": "https://www.searchenginejournal.com/youtube-explains-how-shorts-algorithm-works/494953/",
+          "title": "YouTube Explains How Shorts Algorithm Works (Search Engine Journal, August 2023)",
+          "quote": "A new metric in YouTube Analytics shows the percentage of times a Short is viewed versus swiped away"
+        }
+      ]
+    },
+    {
+      "heading": "What counts as a view",
+      "body": "Since 31 March 2025 a Shorts view counts every time a Short starts to play or replay, with no minimum watch time [1]. The old count lives on as engaged views, and Partner Program pay still uses engaged Shorts views [1]. From 24 August 2026 YouTube counts views the moment any video starts, Shorts, long-form and live [2].",
+      "sources": [
+        {
+          "url": "https://support.google.com/youtube/answer/10059070?hl=en",
+          "title": "Get started creating YouTube Shorts (YouTube Help)",
+          "quote": "Views will count the number of times a Short starts to play or replay, with no minimum watch time requirement."
+        },
+        {
+          "url": "https://support.google.com/youtube/answer/10059070?hl=en",
+          "title": "Get started creating YouTube Shorts (YouTube Help)",
+          "quote": "They will both be based on \"Engaged Shorts views.\""
+        },
+        {
+          "url": "https://support.google.com/youtube/answer/12220281?hl=en",
+          "title": "Understand your YouTube content performance (YouTube Help)",
+          "quote": "views are counted the moment a video starts to play across all formats, including Shorts, long-form videos (VOD), and live streams"
+        }
+      ]
+    },
+    {
+      "heading": "What Shorts shares with long-form",
+      "body": "Both systems aim to get people videos they value, Sherman said [1], and YouTube's help lists the Shorts player among the places its one recommendation system works, with the same signals such as likes, dislikes and satisfaction surveys [2]. A new Short may get a few hundred or thousand views and then stall; Sherman called those early views exploratory, the system looking for an audience [1]. See [[YouTube recommendations]] and [[TikTok For You feed]].",
+      "sources": [
+        {
+          "url": "https://www.searchenginejournal.com/youtube-explains-how-shorts-algorithm-works/494953/",
+          "title": "YouTube Explains How Shorts Algorithm Works (Search Engine Journal, August 2023)",
+          "quote": "At the core, we’re trying to get videos to people they value, both in long form and short form."
+        },
+        {
+          "url": "https://support.google.com/youtube/answer/16089387?hl=en",
+          "title": "How YouTube recommendations work (YouTube Help)",
+          "quote": "User surveys that ask you to rate videos that you watched helps the system understand satisfaction, not just watch time."
+        },
+        {
+          "url": "https://www.searchenginejournal.com/youtube-explains-how-shorts-algorithm-works/494953/",
+          "title": "YouTube Explains How Shorts Algorithm Works (Search Engine Journal, August 2023)",
+          "quote": "He suggested that these early views can be seen as exploratory as YouTube tries to help creators find their audience."
+        }
+      ]
+    },
+    {
+      "kind": "figure",
+      "heading": "View or engaged view",
+      "body": "<style>\n.sv{box-sizing:border-box;max-width:1040px;margin:0 auto;font-family:var(--ow-font);color:var(--ow-fg)}\n.sv-track{position:relative;height:56px;margin:8px 0 0;border-radius:14px;overflow:hidden;display:grid;grid-template-columns:22% 78%}\n.sv-a{background:repeating-linear-gradient(135deg,color-mix(in oklch,var(--ow-accent) 18%,var(--ow-panel)) 0 8px,var(--ow-panel) 8px 16px);border:1px solid var(--ow-line);border-right:0;border-radius:14px 0 0 14px;display:flex;align-items:center;padding:0 12px;font-size:14px;font-weight:650}\n.sv-b{background:color-mix(in oklch,var(--ow-accent) 30%,var(--ow-panel));border:1px solid var(--ow-line);border-radius:0 14px 14px 0;display:flex;align-items:center;padding:0 14px;font-size:14px;font-weight:650}\n.sv-marks{position:relative;height:78px;display:grid;grid-template-columns:22% 78%}\n.sv-mk{position:relative;padding:14px 10px 0 0;border-left:2px solid var(--ow-fg);font-size:14px;line-height:1.35}\n.sv-mk b{display:block;font-size:15.5px}\n.sv-mk span{color:var(--ow-muted)}\n.sv-mk{padding-left:10px}\n.sv-rows{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}\n.sv-row{padding:12px 14px;border-radius:12px;background:var(--ow-panel);border:1px solid var(--ow-line);font-size:14.5px;line-height:1.45}\n.sv-row b{display:block;font-size:15.5px;margin-bottom:2px}\n.sv-row span{color:var(--ow-muted)}\n.sv-ax{display:flex;justify-content:space-between;font-family:var(--ow-mono);font-size:12.5px;color:var(--ow-muted)}\n@media (max-width:560px){.sv-rows{grid-template-columns:1fr}.sv-track{grid-template-columns:34% 66%}.sv-marks{grid-template-columns:34% 66%;height:auto}.sv-mk{padding-bottom:8px}}\n</style>\n<div class=\"sv\" role=\"img\" aria-label=\"One Short playing: a view counts the moment it starts to play; an engaged view only after the viewer stays past the initial seconds; swiping before then is swiped away\">\n  <div class=\"sv-ax\"><span>Short starts</span><span>keeps playing →</span></div>\n  <div class=\"sv-track\"><div class=\"sv-a\">first seconds</div><div class=\"sv-b\">stayed to watch</div></div>\n  <div class=\"sv-marks\">\n    <div class=\"sv-mk\"><b>View</b><span>counts at first play, since 31 Mar 2025</span></div>\n    <div class=\"sv-mk\"><b>Engaged view</b><span>viewer chose to keep watching; threshold not published</span></div>\n  </div>\n  <div class=\"sv-rows\">\n    <div class=\"sv-row\"><b>Swipe in the first seconds</b><span>Still a view. Counts as swiped away, not engaged.</span></div>\n    <div class=\"sv-row\"><b>Partner Program money</b><span>Paid on engaged Shorts views, not on the new view count.</span></div>\n  </div>\n</div>"
+    }
+  ],
+  "data": {
+    "tags": [
+      "youtube",
+      "shorts",
+      "recommendation",
+      "short-video",
+      "reach"
+    ],
+    "facts": [
+      {
+        "label": "Where it runs",
+        "value": "The Shorts feed"
+      },
+      {
+        "label": "Key creator metric",
+        "value": "Stayed to watch past the first seconds"
+      },
+      {
+        "label": "Views counted from",
+        "value": "First play, since 31 Mar 2025"
+      },
+      {
+        "label": "Partner pay based on",
+        "value": "Engaged Shorts views"
+      },
+      {
+        "label": "Max Short length",
+        "value": "3 minutes"
+      }
+    ],
+    "see": [
+      "YouTube recommendations",
+      "TikTok For You feed",
+      "Instagram Reels",
+      "Hook (short video)",
+      "Watch time",
+      "instagram-ranking"
+    ]
+  }
+}

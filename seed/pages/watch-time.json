@@ -1,0 +1,156 @@
+{
+  "title": "Watch time",
+  "slug": "watch-time",
+  "hue": 205,
+  "lede": "Watch time is how long people spend watching a video. YouTube, TikTok and Instagram all treat how long someone keeps watching as a sign of interest.",
+  "sections": [
+    {
+      "kind": "experience",
+      "heading": "Retention curve sketcher",
+      "body": "<style>\n.wt{box-sizing:border-box;max-width:1040px;margin:0 auto;display:grid;gap:18px;grid-template-columns:1fr;font-family:var(--ow-font);color:var(--ow-fg)}\n.wt *{box-sizing:border-box}\n@media (min-width:760px){.wt{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:26px;align-items:start}}\n.wt-q{margin:0 0 4px;font-size:18px;line-height:1.35;font-weight:600}\n.wt-sub{margin:0 0 12px;font-size:15px;line-height:1.4;color:var(--ow-muted)}\n.wt-plot{position:relative;border-radius:16px;background:var(--ow-panel);border:1px solid var(--ow-line);padding:8px 8px 4px}\n.wt-svg{display:block;width:100%;touch-action:none;cursor:crosshair;user-select:none;-webkit-user-select:none;border-radius:10px}\n.wt-svg:focus-visible{outline:3px solid color-mix(in oklch,var(--ow-accent) 55%,transparent);outline-offset:2px}\n.wt-svg text{font-family:var(--ow-font);fill:var(--ow-muted);font-size:12px}\n.wt-hint{position:absolute;left:46%;top:66%;transform:translate(-50%,-50%);pointer-events:none;padding:7px 13px;border-radius:999px;background:var(--ow-fg);color:var(--ow-bg);font-size:14px;font-weight:650;white-space:nowrap;animation:wtbob 1.6s ease-in-out infinite;transition:opacity .3s}\n.wt-hint.gone{opacity:0}\n@keyframes wtbob{0%,100%{transform:translate(-56%,-50%)}50%{transform:translate(-44%,-50%)}}\n.wt-pre{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0;padding:0;list-style:none}\n.wt-btn{appearance:none;font:inherit;font-size:14px;line-height:1.2;min-height:38px;padding:7px 13px;border-radius:999px;border:1.5px solid var(--ow-line);background:var(--ow-bg);color:var(--ow-fg);cursor:pointer;touch-action:manipulation}\n.wt-btn:hover{border-color:color-mix(in oklch,var(--ow-accent) 55%,var(--ow-line))}\n.wt-btn:focus-visible,.wt-row:focus-visible{outline:3px solid color-mix(in oklch,var(--ow-accent) 55%,transparent);outline-offset:2px}\n.wt-btn[aria-pressed=\"true\"]{background:var(--ow-fg);border-color:var(--ow-fg);color:var(--ow-bg)}\n.wt-h{margin:0 0 8px;font-size:13px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--ow-muted)}\n.wt-rows{display:grid;gap:8px;margin:0;padding:0;list-style:none}\n.wt-row{appearance:none;font:inherit;color:inherit;text-align:left;width:100%;display:block;padding:11px 14px 12px;border-radius:14px;border:1.5px solid var(--ow-line);background:var(--ow-panel);cursor:pointer;touch-action:manipulation}\n.wt-row[aria-pressed=\"true\"]{border-color:var(--ow-accent);box-shadow:0 0 0 1px var(--ow-accent)}\n.wt-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}\n.wt-len{font-size:16px;font-weight:700}\n.wt-big{font-family:var(--ow-mono);font-variant-numeric:tabular-nums;font-size:15px;font-weight:650}\n.wt-bar{display:block;height:10px;margin:8px 0 7px;border-radius:99px;background:color-mix(in oklch,var(--ow-line) 70%,transparent);overflow:hidden}\n.wt-bar i{display:block;height:100%;min-width:3px;border-radius:inherit;background:var(--ow-accent);transition:width .35s cubic-bezier(.2,.8,.2,1)}\n.wt-stats{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:14px;color:var(--ow-muted)}\n.wt-stats b{color:var(--ow-fg);font-family:var(--ow-mono);font-variant-numeric:tabular-nums;font-weight:600}\n.wt-key{margin:12px 0 0;font-size:15px;line-height:1.45}\n.wt-key b{color:var(--ow-accent)}\n.wt-note{margin:8px 0 0;font-size:13px;line-height:1.4;color:var(--ow-muted)}\n.wt-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}\n@media (max-width:420px){.wt-q{font-size:17px}.wt-row{padding:10px 12px}}\n@media (prefers-reduced-motion:reduce){.wt-hint{animation:none}.wt-bar i{transition:none}}\n</style>\n<div class=\"wt\">\n  <div>\n    <p class=\"wt-q\" id=\"wt-q\">Drag across the chart to draw how many viewers are still watching.</p>\n    <p class=\"wt-sub\">At 0 s everyone (100%) is watching; the line shows who is left at each moment.</p>\n    <div class=\"wt-plot\">\n      <svg class=\"wt-svg\" id=\"wt-svg\" tabindex=\"0\" role=\"slider\" aria-labelledby=\"wt-q\" aria-valuemin=\"0\" aria-valuemax=\"100\" aria-describedby=\"wt-kb\"></svg>\n      <span class=\"wt-hint\" id=\"wt-hint\" aria-hidden=\"true\">&#8596; drag to draw</span>\n    </div>\n    <ul class=\"wt-pre\" aria-label=\"Example curves\">\n      <li><button class=\"wt-btn\" type=\"button\" data-p=\"cliff\" aria-pressed=\"true\">Early cliff</button></li>\n      <li><button class=\"wt-btn\" type=\"button\" data-p=\"hook\" aria-pressed=\"false\">Strong hook</button></li>\n      <li><button class=\"wt-btn\" type=\"button\" data-p=\"fade\" aria-pressed=\"false\">Steady fade</button></li>\n      <li><button class=\"wt-btn\" type=\"button\" data-p=\"hold\" aria-pressed=\"false\">Holds to the end</button></li>\n    </ul>\n    <p class=\"wt-sr\" id=\"wt-kb\">Arrow keys: left and right pick a moment, up and down move the curve there.</p>\n  </div>\n  <section aria-labelledby=\"wt-h\">\n    <p class=\"wt-h\" id=\"wt-h\">Same curve, three lengths, per 1,000 views</p>\n    <ul class=\"wt-rows\" id=\"wt-rows\"></ul>\n    <p class=\"wt-key\" id=\"wt-key\"></p>\n    <p class=\"wt-note\">Average view duration is the area under the curve; completion is where the curve ends. Tap a length to relabel the chart.</p>\n    <p class=\"wt-sr\" aria-live=\"polite\" id=\"wt-live\"></p>\n  </section>\n</div>\n<script>\n(function(){\n  var N=41,r=[],sel=1,cur=30,dragging=false,last=-1,touched=false;\n  var LENS=[{s:15,name:'15-second video'},{s:60,name:'60-second video'},{s:600,name:'10-minute video'}];\n  var svg=document.getElementById('wt-svg'),hint=document.getElementById('wt-hint'),rows=document.getElementById('wt-rows'),key=document.getElementById('wt-key'),live=document.getElementById('wt-live');\n  var NS='http://www.w3.org/2000/svg',W=600,H=280,P={l:44,r:14,t:14,b:30};\n  var PRE={\n    cliff:function(x){return x===0?1:.32+.48*Math.exp(-x*14)-.1*x},\n    hook:function(x){return 1-.12*Math.min(1,x*12)-.38*x},\n    fade:function(x){return 1-.8*x},\n    hold:function(x){return 1-.06*Math.min(1,x*10)-.14*x}\n  };\n  function preset(name){for(var i=0;i<N;i++)r[i]=clamp(PRE[name](i/(N-1)));r[0]=1;}\n  function clamp(v){return Math.max(0,Math.min(1,v))}\n  function el(tag,attrs,parent){var e=document.createElementNS(NS,tag);for(var k in attrs){var v=String(attrs[k]);if(v.indexOf('var(')>=0)e.style.setProperty(k,v);else e.setAttribute(k,v)}if(parent)parent.appendChild(e);return e}\n  function X(i){return P.l+(W-P.l-P.r)*i/(N-1)}\n  function Y(v){return P.t+(H-P.t-P.b)*(1-v)}\n  function fmt(sec){sec=Math.round(sec);if(sec<60)return sec+' s';var m=Math.floor(sec/60),s=sec%60;return m+':'+(s<10?'0':'')+s}\n  function frac(){var a=0;for(var i=1;i<N;i++)a+=(r[i]+r[i-1])/2;return a/(N-1)}\n  function at(t){var x=t*(N-1),i=Math.floor(x),f=x-i;return i>=N-1?r[N-1]:r[i]*(1-f)+r[i+1]*f}\n  function hours(sec){var h=sec/3600;return h<10?h.toFixed(1)+' h':Math.round(h).toLocaleString('en-US')+' h'}\n  var g={};\n  function build(){\n    W=Math.max(260,svg.clientWidth||600);H=Math.round(Math.max(200,Math.min(300,W*.52)));\n    svg.setAttribute('viewBox','0 0 '+W+' '+H);svg.setAttribute('height',H);\n    while(svg.firstChild)svg.removeChild(svg.firstChild);\n    g.grid=el('g',{},svg);\n    [0,.25,.5,.75,1].forEach(function(v){\n      el('line',{x1:P.l,x2:W-P.r,y1:Y(v),y2:Y(v),stroke:'var(--ow-line)','stroke-dasharray':v===0?'':'3 4'},g.grid);\n      var t=el('text',{x:P.l-8,y:Y(v)+4,'text-anchor':'end'},g.grid);t.textContent=Math.round(v*100)+'%';\n    });\n    g.xl=el('g',{},svg);\n    g.intro=el('g',{},svg);\n    g.area=el('path',{fill:'color-mix(in oklch, var(--ow-accent) 20%, transparent)'},svg);\n    g.line=el('path',{fill:'none',stroke:'var(--ow-accent)','stroke-width':3,'stroke-linejoin':'round','stroke-linecap':'round'},svg);\n    g.end=el('circle',{r:5,fill:'var(--ow-bg)',stroke:'var(--ow-accent)','stroke-width':2.5},svg);\n    g.endt=el('text',{'text-anchor':'end','font-weight':'650'},svg);\n    g.cur=el('line',{stroke:'var(--ow-fg)','stroke-width':1,'stroke-dasharray':'2 3',opacity:.5},svg);\n    g.dot=el('circle',{r:8,fill:'var(--ow-accent)',stroke:'var(--ow-bg)','stroke-width':3},svg);\n    g.lab=el('text',{'font-weight':'650'},svg);\n  }\n  function draw(){\n    var d='',L=LENS[sel].s;\n    for(var i=0;i<N;i++)d+=(i?'L':'M')+X(i).toFixed(1)+' '+Y(r[i]).toFixed(1);\n    g.line.setAttribute('d',d);\n    g.area.setAttribute('d',d+'L'+X(N-1)+' '+Y(0)+'L'+X(0)+' '+Y(0)+'Z');\n    while(g.xl.firstChild)g.xl.removeChild(g.xl.firstChild);\n    [0,.25,.5,.75,1].forEach(function(t,k){\n      var tx=el('text',{x:P.l+(W-P.l-P.r)*t,y:H-9,'text-anchor':k===0?'start':k===4?'end':'middle'},g.xl);tx.textContent=fmt(L*t);\n    });\n    while(g.intro.firstChild)g.intro.removeChild(g.intro.firstChild);\n    if(L>=60){\n      var t30=30/L,ix=P.l+(W-P.l-P.r)*t30;\n      el('line',{x1:ix,x2:ix,y1:P.t,y2:Y(0),stroke:'var(--ow-muted)','stroke-dasharray':'5 4','stroke-width':1.5},g.intro);\n      var it=el('text',{x:ix+6,y:P.t+12,'font-size':'12'},g.intro);it.textContent='30 s: '+Math.round(at(t30)*100)+'% left';\n    }\n    var ex=X(N-1),ey=Y(r[N-1]);g.end.setAttribute('cx',ex);g.end.setAttribute('cy',ey);\n    g.endt.setAttribute('x',ex-4);g.endt.setAttribute('y',ey+22>Y(0)-4?ey-12:ey+22);g.endt.style.fill='var(--ow-fg)';g.endt.textContent='finish '+Math.round(r[N-1]*100)+'%';g.endt.style.display=cur>=N-9?'none':'';\n    var cx=X(cur),cy=Y(r[cur]);\n    g.cur.setAttribute('x1',cx);g.cur.setAttribute('x2',cx);g.cur.setAttribute('y1',P.t);g.cur.setAttribute('y2',Y(0));\n    g.dot.setAttribute('cx',cx);g.dot.setAttribute('cy',cy);\n    var right=cx>W*.62;g.lab.setAttribute('x',right?cx-12:cx+12);g.lab.setAttribute('text-anchor',right?'end':'start');\n    g.lab.setAttribute('y',cy<P.t+30?cy+26:cy-14);g.lab.style.fill='var(--ow-fg)';\n    g.lab.textContent=Math.round(r[cur]*100)+'% at '+fmt(L*cur/(N-1));\n    svg.setAttribute('aria-valuenow',Math.round(r[cur]*100));\n    svg.setAttribute('aria-valuetext',Math.round(r[cur]*100)+' percent still watching at '+Math.round(cur/(N-1)*100)+' percent of the video');\n    stats();\n  }\n  function stats(){\n    var f=frac(),comp=r[N-1],max=LENS[2].s*f*1000;\n    while(rows.firstChild)rows.removeChild(rows.firstChild);\n    LENS.forEach(function(len,k){\n      var avd=len.s*f,tot=avd*1000;\n      var li=document.createElement('li'),b=document.createElement('button');\n      b.className='wt-row';b.type='button';b.setAttribute('aria-pressed',String(k===sel));\n      b.innerHTML='<span class=\"wt-top\"><span class=\"wt-len\">'+len.name+'</span><span class=\"wt-big\">'+hours(tot)+' watched</span></span>'+\n        '<span class=\"wt-bar\"><i style=\"width:'+(max>0?Math.max(.4,tot/max*100):0).toFixed(2)+'%\"></i></span>'+\n        '<span class=\"wt-stats\"><span>avg view <b>'+fmt(avd)+'</b></span><span>viewed <b>'+Math.round(f*100)+'%</b></span><span>finished <b>'+Math.round(comp*100)+'%</b></span></span>';\n      b.addEventListener('click',function(){sel=k;draw();live.textContent='Chart now shows the '+len.name+'.'});\n      li.appendChild(b);rows.appendChild(li);\n    });\n    key.innerHTML='Percent viewed and finished stay the same at every length. Total watch time does not: the 10-minute video collects <b>'+Math.round(LENS[2].s/LENS[0].s)+'&times;</b> the 15-second one from the same curve.';\n  }\n  function pick(name){\n    preset(name);document.querySelectorAll('.wt-btn').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.p===name))});draw();\n    live.textContent='Average view on the '+LENS[sel].name+': '+fmt(LENS[sel].s*frac())+'. Finished: '+Math.round(r[N-1]*100)+' percent.';\n  }\n  function setAt(i,v){\n    if(i===0){v=1}\n    r[i]=v;for(var j=0;j<i;j++)if(r[j]<v)r[j]=v;for(j=i+1;j<N;j++)if(r[j]>v)r[j]=v;\n  }\n  function unpress(){document.querySelectorAll('.wt-btn').forEach(function(b){b.setAttribute('aria-pressed','false')})}\n  function point(e){\n    var rc=svg.getBoundingClientRect(),sx=W/rc.width;\n    var x=(e.clientX-rc.left)*sx,y=(e.clientY-rc.top)*sx;\n    var i=Math.round((x-P.l)/(W-P.l-P.r)*(N-1));i=Math.max(0,Math.min(N-1,i));\n    return {i:i,v:clamp(1-(y-P.t)/(H-P.t-P.b))};\n  }\n  function sketch(e){\n    var p=point(e);\n    if(last<0||last===p.i)setAt(p.i,p.v);\n    else{var a=last,b=p.i,va=r[a],st=a<b?1:-1;for(var i=a+st;i!==b+st;i+=st)setAt(i,va+(p.v-va)*(i-a)/(b-a));}\n    last=p.i;cur=p.i;draw();\n  }\n  function first(){if(!touched){touched=true;hint.classList.add('gone')}unpress()}\n  svg.addEventListener('pointerdown',function(e){dragging=true;last=-1;first();try{svg.setPointerCapture(e.pointerId)}catch(_){}sketch(e);e.preventDefault()});\n  svg.addEventListener('pointermove',function(e){if(dragging)sketch(e)});\n  function stop(){if(dragging){dragging=false;live.textContent='Average view on the '+LENS[sel].name+': '+fmt(LENS[sel].s*frac())+'. Finished: '+Math.round(r[N-1]*100)+' percent.'}}\n  svg.addEventListener('pointerup',stop);svg.addEventListener('pointercancel',stop);\n  svg.addEventListener('keydown',function(e){\n    var step=e.shiftKey?.01:.05,k=e.key;\n    if(k==='ArrowLeft'){cur=Math.max(0,cur-1)}\n    else if(k==='ArrowRight'){cur=Math.min(N-1,cur+1)}\n    else if(k==='ArrowUp'||k==='ArrowDown'){first();setAt(cur,clamp(r[cur]+(k==='ArrowUp'?step:-step)))}\n    else if(k==='Home'){cur=0}else if(k==='End'){cur=N-1}\n    else return;\n    e.preventDefault();draw();\n  });\n  document.querySelectorAll('.wt-btn').forEach(function(b){b.addEventListener('click',function(){first();pick(b.dataset.p)})});\n  preset('cliff');build();draw();\n  var lastW=svg.clientWidth;\n  if(window.ResizeObserver)new ResizeObserver(function(){if(Math.abs(svg.clientWidth-lastW)>2){lastW=svg.clientWidth;build();draw()}}).observe(svg);\n})();\n</script>\n"
+    },
+    {
+      "heading": "Why YouTube switched to watch time",
+      "body": "YouTube learned in 2011 that a click did not mean a video was actually watched [1], so in 2012 it added watch time, which videos someone watched and for how long, to its recommendations [2]. Views dropped 20% right after the change [3]. That October it also began ranking search to reward videos that keep viewers watching [4]. YouTube later added surveys because, in its words, not all watch time is equal [5]. More in [[YouTube recommendations]].",
+      "sources": [
+        {
+          "url": "https://blog.youtube/inside-youtube/on-youtubes-recommendation-system/",
+          "title": "On YouTube's recommendation system (YouTube Official Blog, Sept 2021)",
+          "quote": "But we learned back in 2011 that clicking on a video doesn’t mean you actually watched it"
+        },
+        {
+          "url": "https://blog.youtube/inside-youtube/on-youtubes-recommendation-system/",
+          "title": "On YouTube's recommendation system (YouTube Official Blog, Sept 2021)",
+          "quote": "That’s why we added in watchtime in 2012"
+        },
+        {
+          "url": "https://blog.youtube/inside-youtube/on-youtubes-recommendation-system/",
+          "title": "On YouTube's recommendation system (YouTube Official Blog, Sept 2021)",
+          "quote": "When we first incorporated watchtime into recommendations, we saw an immediate 20% drop in views"
+        },
+        {
+          "url": "https://blog.youtube/news-and-events/youtube-search-now-optimized-for-time/",
+          "title": "YouTube search, now optimized for time watched (YouTube Official Blog, Oct 2012)",
+          "quote": "We've started adjusting the ranking of videos in YouTube search to reward engaging videos that keep viewers watching"
+        },
+        {
+          "url": "https://blog.youtube/inside-youtube/on-youtubes-recommendation-system/",
+          "title": "On YouTube's recommendation system (YouTube Official Blog, Sept 2021)",
+          "quote": "Still, not all watchtime is equal"
+        }
+      ]
+    },
+    {
+      "heading": "How other feeds use it",
+      "body": "TikTok gives finishing a longer video from beginning to end as its example of a strong indicator of interest, weighted above weak ones [1]. Instagram says its most important Reels predictions include how likely you are to watch a reel all the way through [2], and in Feed it predicts how likely you are to spend a few seconds on a post [3]. See [[TikTok For You feed]], [[Instagram Reels]] and [[Instagram ranking]].",
+      "sources": [
+        {
+          "url": "https://newsroom.tiktok.com/en-us/how-tiktok-recommends-videos-for-you",
+          "title": "How TikTok recommends videos #ForYou (TikTok Newsroom, June 2020)",
+          "quote": "A strong indicator of interest, such as whether a user finishes watching a longer video from beginning to end, would receive greater weight"
+        },
+        {
+          "url": "https://about.instagram.com/blog/announcements/instagram-ranking-explained",
+          "title": "Instagram Ranking Explained (Instagram, 2023)",
+          "quote": "The most important predictions we make are how likely you are to reshare a reel, watch a reel all the way through"
+        },
+        {
+          "url": "https://about.instagram.com/blog/announcements/instagram-ranking-explained",
+          "title": "Instagram Ranking Explained (Instagram, 2023)",
+          "quote": "In Feed, the five interactions we look at most closely are how likely you are to spend a few seconds on a post"
+        }
+      ]
+    },
+    {
+      "heading": "Average view duration and retention",
+      "body": "YouTube defines average view duration as the average minutes watched per view [1] and watch time as the amount of time viewers have watched [2], so total watch time is average view duration times views. A retention curve shows who is still watching at each moment; a flat line means viewers watch that part from start to finish [3]. Its intro metric is the share still watching after the first 30 seconds [4]. Same curve, different length: a 10-minute video earns 40 times the watch time of a 15-second one.",
+      "sources": [
+        {
+          "url": "https://support.google.com/youtube/answer/12942217?hl=en",
+          "title": "Content tab analytics tips (YouTube Help)",
+          "quote": "The average minutes watched per view for the selected content"
+        },
+        {
+          "url": "https://support.google.com/youtube/answer/9314486?hl=en",
+          "title": "Check your YouTube thumbnail impressions and watch time (YouTube Help)",
+          "quote": "The amount of time viewers have watched your video"
+        },
+        {
+          "url": "https://support.google.com/youtube/answer/9314415?hl=en",
+          "title": "Measure key moments for audience retention (YouTube Help)",
+          "quote": "When the line on the chart is flat, it means viewers are watching that part of your video from start to finish"
+        },
+        {
+          "url": "https://support.google.com/youtube/answer/9314415?hl=en",
+          "title": "Measure key moments for audience retention (YouTube Help)",
+          "quote": "Intro tells you what percentage of your audience still watched your video after the first 30 seconds"
+        }
+      ]
+    },
+    {
+      "kind": "figure",
+      "heading": "Anatomy of a retention curve",
+      "body": "<style>\n.wf{box-sizing:border-box;max-width:1040px;margin:0 auto;font-family:var(--ow-font);color:var(--ow-fg);display:grid;gap:18px;grid-template-columns:1fr}\n.wf *{box-sizing:border-box}\n@media (min-width:760px){.wf{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);align-items:center;gap:28px}}\n.wf-c{border-radius:16px;background:var(--ow-panel);border:1px solid var(--ow-line);padding:12px}\n.wf svg{display:block;width:100%;height:auto}\n.wf svg text{font-family:var(--ow-font)}\n.wf ol{list-style:none;margin:0;padding:0;display:grid;gap:10px}\n.wf li{display:grid;grid-template-columns:30px 1fr;gap:12px;align-items:start}\n.wf .n{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--ow-accent);color:var(--ow-accent-ink);font-weight:750;font-size:15px}\n.wf b{display:block;font-size:16px;line-height:1.3}\n.wf span.d{display:block;font-size:15px;line-height:1.4;color:var(--ow-muted)}\n.wf .eq{margin-top:6px;padding:12px 14px;border-radius:12px;border:1px dashed var(--ow-line);font-size:15px;line-height:1.55}\n.wf .eq code{font-family:var(--ow-mono);font-size:14px}\n</style>\n<div class=\"wf\" role=\"img\" aria-label=\"A retention curve with four labelled shapes from YouTube's help pages: a flat stretch where viewers watch through, a gradual decline as interest fades, a spike where viewers rewatch or share, and a dip where they skip or leave. Average view duration is the shaded area under the curve; total watch time is that times the number of views.\">\n  <div class=\"wf-c\">\n    <svg viewBox=\"0 0 520 250\" aria-hidden=\"true\">\n      <g style=\"stroke:var(--ow-line)\" stroke-width=\"1\">\n        <line x1=\"40\" y1=\"20\" x2=\"40\" y2=\"210\"/><line x1=\"40\" y1=\"210\" x2=\"505\" y2=\"210\"/>\n        <line x1=\"40\" y1=\"20\" x2=\"505\" y2=\"20\" stroke-dasharray=\"3 4\"/><line x1=\"40\" y1=\"115\" x2=\"505\" y2=\"115\" stroke-dasharray=\"3 4\"/>\n      </g>\n      <g style=\"fill:var(--ow-muted)\" font-size=\"13\">\n        <text x=\"32\" y=\"25\" text-anchor=\"end\">100%</text><text x=\"32\" y=\"120\" text-anchor=\"end\">50%</text><text x=\"32\" y=\"214\" text-anchor=\"end\">0%</text>\n        <text x=\"40\" y=\"236\">start</text><text x=\"505\" y=\"236\" text-anchor=\"end\">end of video</text>\n        <text x=\"272\" y=\"236\" text-anchor=\"middle\">time in the video</text>\n      </g>\n      <path d=\"M40 20 C70 40 80 60 100 64 L190 66 C205 66 210 40 222 40 C234 40 240 70 255 74 C300 84 330 100 360 106 L372 106 C380 106 382 140 392 140 C402 140 404 118 414 120 C450 128 480 136 505 140 L505 210 L40 210 Z\" style=\"fill:color-mix(in oklch,var(--ow-accent) 18%,transparent)\"/>\n      <path d=\"M40 20 C70 40 80 60 100 64 L190 66 C205 66 210 40 222 40 C234 40 240 70 255 74 C300 84 330 100 360 106 L372 106 C380 106 382 140 392 140 C402 140 404 118 414 120 C450 128 480 136 505 140\" fill=\"none\" style=\"stroke:var(--ow-accent)\" stroke-width=\"3.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>\n      <text x=\"200\" y=\"178\" text-anchor=\"middle\" font-size=\"15\" font-weight=\"650\" style=\"fill:var(--ow-fg)\">shaded area = % viewed</text>\n      <circle cx=\"505\" cy=\"140\" r=\"5.5\" style=\"fill:var(--ow-bg);stroke:var(--ow-accent)\" stroke-width=\"2.5\"/>\n      <text x=\"499\" y=\"162\" text-anchor=\"end\" font-size=\"13\" font-weight=\"650\" style=\"fill:var(--ow-fg)\">finished</text>\n      <g font-size=\"14\" font-weight=\"750\" text-anchor=\"middle\" style=\"fill:var(--ow-accent-ink)\">\n        <circle cx=\"145\" cy=\"46\" r=\"13\" style=\"fill:var(--ow-accent)\"/><text x=\"145\" y=\"51\">1</text>\n        <circle cx=\"300\" cy=\"62\" r=\"13\" style=\"fill:var(--ow-accent)\"/><text x=\"300\" y=\"67\">2</text>\n        <circle cx=\"222\" cy=\"18\" r=\"13\" style=\"fill:var(--ow-accent)\"/><text x=\"222\" y=\"23\">3</text>\n        <circle cx=\"392\" cy=\"162\" r=\"13\" style=\"fill:var(--ow-accent)\"/><text x=\"392\" y=\"167\">4</text>\n      </g>\n    </svg>\n  </div>\n  <div>\n    <ol>\n      <li><span class=\"n\">1</span><span><b>Flat</b><span class=\"d\">Viewers watch this part from start to finish.</span></span></li>\n      <li><span class=\"n\">2</span><span><b>Gradual decline</b><span class=\"d\">Viewers lose interest over time; most videos taper.</span></span></li>\n      <li><span class=\"n\">3</span><span><b>Spike</b><span class=\"d\">More viewers watching, rewatching or sharing this part.</span></span></li>\n      <li><span class=\"n\">4</span><span><b>Dip</b><span class=\"d\">Viewers skip or leave at this moment.</span></span></li>\n    </ol>\n    <p class=\"eq\">% viewed = <code>shaded area &divide; whole box</code><br>Average view duration = <code>% viewed &times; length</code><br>Total watch time = <code>average view duration &times; views</code></p>\n  </div>\n</div>\n",
+      "sources": [
+        {
+          "url": "https://support.google.com/youtube/answer/9314415?hl=en",
+          "title": "Measure key moments for audience retention (YouTube Help)",
+          "quote": "Gradual declines mean that viewers are losing interest over time"
+        },
+        {
+          "url": "https://support.google.com/youtube/answer/9314415?hl=en",
+          "title": "Measure key moments for audience retention (YouTube Help)",
+          "quote": "Spikes appear when more viewers are watching, rewatching, or sharing those parts of your video"
+        },
+        {
+          "url": "https://support.google.com/youtube/answer/9314415?hl=en",
+          "title": "Measure key moments for audience retention (YouTube Help)",
+          "quote": "Dips mean that viewers are abandoning or skipping at that specific part of your video"
+        }
+      ]
+    }
+  ],
+  "data": {
+    "tags": [
+      "watch-time",
+      "retention",
+      "youtube",
+      "tiktok",
+      "instagram"
+    ],
+    "facts": [
+      {
+        "label": "YouTube added watch time",
+        "value": "2012"
+      },
+      {
+        "label": "YouTube views right after",
+        "value": "Dropped 20%"
+      },
+      {
+        "label": "Average view duration",
+        "value": "Minutes watched per view"
+      },
+      {
+        "label": "Total watch time",
+        "value": "Average view duration × views"
+      },
+      {
+        "label": "YouTube intro metric",
+        "value": "Share still watching at 30 s"
+      },
+      {
+        "label": "TikTok strong signal",
+        "value": "Finishing a longer video"
+      }
+    ],
+    "see": [
+      "YouTube recommendations",
+      "tiktok-for-you-feed",
+      "Hook (short video)",
+      "YouTube Shorts recommendations",
+      "Instagram Reels",
+      "instagram-ranking"
+    ]
+  }
+}

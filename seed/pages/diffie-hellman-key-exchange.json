@@ -1,0 +1,170 @@
+{
+  "title": "Diffie-Hellman key exchange",
+  "slug": "diffie-hellman-key-exchange",
+  "hue": 265,
+  "lede": "Diffie-Hellman lets two parties agree on a shared secret over a channel anyone can read, by mixing private exponents into public numbers an eavesdropper cannot unmix.",
+  "sections": [
+    {
+      "kind": "experience",
+      "heading": "Mix a secret in public",
+      "body": "<style>\n.dh{box-sizing:border-box;max-width:1040px;margin:0 auto;font-family:var(--ow-font);color:var(--ow-fg)}\n.dh *{box-sizing:border-box}\n.dh-top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;margin:0 0 14px}\n.dh-q{margin:0;font-size:18px;line-height:1.35;font-weight:600;flex:1 1 280px}\n.dh-q b{color:var(--ow-accent)}\n.dh-seg{display:inline-flex;padding:3px;border-radius:999px;border:1.5px solid var(--ow-line);background:var(--ow-panel)}\n.dh-seg button{appearance:none;font:inherit;font-size:14px;font-weight:600;min-height:36px;padding:6px 14px;border:0;border-radius:999px;background:transparent;color:var(--ow-muted);cursor:pointer;touch-action:manipulation}\n.dh-seg button[aria-pressed=\"true\"]{background:var(--ow-fg);color:var(--ow-bg)}\n.dh-grid{display:grid;gap:12px;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:\"a b\" \"c c\"}\n@media (min-width:700px){.dh-grid{grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) minmax(0,1fr);grid-template-areas:\"a c b\";gap:14px}}\n.dh-p{border-radius:16px;border:1px solid var(--ow-line);background:var(--ow-panel);padding:14px;min-width:0}\n.dh-a{grid-area:a}.dh-b{grid-area:b}\n.dh-c{grid-area:c;background:transparent;border:1.5px dashed var(--ow-line)}\n.dh-n{margin:0 0 10px;font-size:17px;font-weight:750;display:flex;align-items:center;gap:8px}\n.dh-n i{width:12px;height:12px;border-radius:50%;background:var(--ow-accent);flex:none}\n.dh-l{margin:12px 0 6px;font-size:12px;font-weight:650;letter-spacing:.05em;text-transform:uppercase;color:var(--ow-muted)}\n.dh-l:first-of-type{margin-top:0}\n.dh-chips{display:grid;grid-template-columns:repeat(3,minmax(0,40px));gap:8px}\n.dh-chip{appearance:none;width:100%;aspect-ratio:1;max-width:40px;border-radius:50%;border:3px solid var(--ow-panel);box-shadow:0 0 0 1.5px var(--ow-line);background:var(--k);cursor:pointer;padding:0;touch-action:manipulation}\n.dh-chip[aria-checked=\"true\"]{box-shadow:0 0 0 3px var(--ow-fg)}\n.dh button:focus-visible,.dh input:focus-visible{outline:3px solid color-mix(in oklch,var(--ow-accent) 55%,transparent);outline-offset:2px}\n.dh-row{display:flex;align-items:center;gap:10px;min-height:44px}\n.dh-sw{flex:none;width:40px;height:40px;border-radius:50%;background:var(--k);box-shadow:inset 0 0 0 1px rgba(0,0,0,.12);transition:background-color .35s}\n.dh-sw.big{width:56px;height:56px}\n.dh-num{flex:none;min-width:44px;height:40px;padding:0 8px;border-radius:12px;display:grid;place-items:center;font-family:var(--ow-mono);font-size:19px;font-weight:700;background:var(--ow-bg);border:1.5px solid var(--ow-line)}\n.dh-num.big{min-width:56px;height:56px;font-size:26px;border-color:var(--ow-accent);color:var(--ow-accent)}\n.dh-cap{font-size:13px;line-height:1.35;color:var(--ow-muted);min-width:0}\n.dh-cap code{font-family:var(--ow-mono);font-size:12.5px;color:var(--ow-fg)}\n.dh-shared{transition:opacity .35s}\n.dh-wait .dh-shared{opacity:.25}\n.dh input[type=range]{width:100%;height:28px;margin:2px 0 0;accent-color:var(--ow-accent);cursor:pointer}\n.dh-sec{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--ow-mono);font-size:15px}\n.dh-sec b{font-size:22px}\n.dh-pub{display:flex;align-items:center;gap:10px;flex-wrap:wrap}\n.dh-lane{position:relative;height:44px;margin:6px 0;border-radius:999px;background:color-mix(in oklch,var(--ow-line) 45%,transparent)}\n.dh-lane::after{content:\"\";position:absolute;left:14px;right:14px;top:50%;border-top:2px dotted var(--ow-muted);opacity:.5}\n.dh-pk{position:absolute;top:4px;left:4px;z-index:1;height:36px;display:flex;align-items:center;gap:6px;padding:0 10px 0 4px;border-radius:999px;background:var(--ow-panel);border:1.5px solid var(--ow-line);font-size:13px;font-weight:650;white-space:nowrap;transition:left .9s cubic-bezier(.3,.7,.2,1)}\n.dh-pk .dh-sw{width:28px;height:28px}\n.dh-pk code{font-family:var(--ow-mono)}\n.dh-eve{margin-top:12px;padding:12px;border-radius:12px;background:var(--ow-panel);border:1px solid var(--ow-line)}\n.dh-eve h4{margin:0 0 8px;font-size:15px;display:flex;align-items:center;gap:8px}\n.dh-eve h4 svg{width:22px;height:22px;flex:none}\n.dh-held{display:flex;gap:6px;align-items:center;flex-wrap:wrap}\n.dh-held .dh-sw{width:28px;height:28px}\n.dh-x{font-weight:800;color:oklch(0.55 0.2 25)}\n.dh-strip{display:grid;grid-template-columns:repeat(11,minmax(0,1fr));gap:3px;margin-top:8px}\n.dh-strip>span{display:grid;place-items:center;text-align:center;height:30px;border-radius:6px;font-family:var(--ow-mono);font-size:12px;background:var(--ow-bg);border:1px solid var(--ow-line);line-height:1}\n.dh-strip b{font-weight:600}.dh-strip small{display:block;font-size:9px;color:var(--ow-muted)}\n.dh-strip>span.on{background:var(--ow-fg);color:var(--ow-bg);border-color:var(--ow-fg)}\n.dh-strip>span.on small{color:var(--ow-bg)}\n.dh-strip>span.hit{background:var(--ow-accent);color:var(--ow-accent-ink);border-color:var(--ow-accent)}\n.dh-strip>span.hit small{color:var(--ow-accent-ink)}\n.dh-btn{appearance:none;font:inherit;font-size:14px;font-weight:650;min-height:40px;margin-top:10px;padding:7px 14px;border-radius:999px;border:0;background:var(--ow-accent);color:var(--ow-accent-ink);cursor:pointer;touch-action:manipulation}\n.dh-say{margin:12px 0 0;font-size:15px;line-height:1.45;display:flex;align-items:center;gap:12px;min-height:44px}\n.dh-say b{color:var(--ow-accent)}\n.dh [hidden]{display:none!important}\n@media (max-width:420px){.dh-p{padding:12px 10px}.dh-chips{gap:6px}.dh-q{font-size:17px}.dh-cap{font-size:12px}}\n@media (prefers-reduced-motion:reduce){.dh-pk,.dh-sw,.dh-shared{transition:none}}\n</style>\n<div class=\"dh\" id=\"dh\">\n  <div class=\"dh-top\">\n    <p class=\"dh-q\">Pick <b>secret colours</b> for Alice and Bob. Eve sees everything that crosses the middle.</p>\n    <div class=\"dh-seg\" role=\"group\" aria-label=\"Show as\">\n      <button type=\"button\" id=\"dh-m0\" aria-pressed=\"true\">Paint</button>\n      <button type=\"button\" id=\"dh-m1\" aria-pressed=\"false\">Numbers</button>\n    </div>\n  </div>\n  <div class=\"dh-grid\">\n    <section class=\"dh-p dh-a\" id=\"dh-A\" aria-label=\"Alice\"></section>\n    <section class=\"dh-p dh-c\" aria-label=\"Public channel\">\n      <p class=\"dh-l\">Public, agreed in the open</p>\n      <div class=\"dh-pub\" id=\"dh-pub\"></div>\n      <p class=\"dh-l\">On the wire</p>\n      <div class=\"dh-lane\"><div class=\"dh-pk\" id=\"dh-pa\"></div></div>\n      <div class=\"dh-lane\"><div class=\"dh-pk\" id=\"dh-pb\"></div></div>\n      <div class=\"dh-eve\" aria-live=\"polite\">\n        <h4><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"/><circle cx=\"12\" cy=\"12\" r=\"3.2\" fill=\"currentColor\"/></svg>Eve, listening</h4>\n        <div id=\"dh-eve\"></div>\n      </div>\n    </section>\n    <section class=\"dh-p dh-b\" id=\"dh-B\" aria-label=\"Bob\"></section>\n  </div>\n  <p class=\"dh-say\" id=\"dh-say\" aria-live=\"polite\"></p>\n</div>\n<script>\n(function(){\n  var root=document.getElementById('dh'),reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;\n  var PAL=[['red','#e8473b'],['teal','#14b3c4'],['blue','#4a6cf0'],['pink','#e0559e'],['green','#3fbf5f'],['violet','#9a5ae0']];\n  var BASE='#f7d23e',G=5,P=23;\n  var st={mode:0,ca:0,cb:2,a:6,b:15};\n  function lin(h){return [1,3,5].map(function(i){var v=parseInt(h.substr(i,2),16)/255;return v<=.04045?v/12.92:Math.pow((v+.055)/1.055,2.4)})}\n  function hex(l){return '#'+l.map(function(v){v=Math.max(0,Math.min(1,v));v=v<=.0031308?v*12.92:1.055*Math.pow(v,1/2.4)-.055;return('0'+Math.round(v*255).toString(16)).slice(-2)}).join('')}\n  // Paint as a weighted geometric mean of linear reflectance: mixing order never changes the result, like the exponents it stands for.\n  function mix(parts){var out=[0,0,0],w=0;parts.forEach(function(p){w+=p[1];var l=lin(p[0]);for(var i=0;i<3;i++)out[i]+=p[1]*Math.log(Math.max(l[i],.002))});return hex(out.map(function(v){return Math.exp(v/w)}))}\n  function pw(g,e,m){var r=1;for(var i=0;i<e;i++)r=r*g%m;return r}\n  function card(who,name,other){\n    var el=document.getElementById('dh-'+who),k=who==='A'?'ca':'cb',n=who==='A'?'a':'b';\n    el.innerHTML='<h3 class=\"dh-n\"><i></i>'+name+'</h3>'+\n      '<p class=\"dh-l\">Secret, never sent</p>'+\n      '<div class=\"dh-chips\" role=\"radiogroup\" aria-label=\"'+name+'\\'s secret colour\"></div>'+\n      '<div class=\"dh-nb\" hidden><label class=\"dh-sec\"><span>'+n+' =</span><b></b></label><input type=\"range\" min=\"1\" max=\"22\" step=\"1\" aria-label=\"'+name+'\\'s secret exponent '+n+'\"></div>'+\n      '<p class=\"dh-l\">Sends</p><div class=\"dh-row dh-snd\"></div>'+\n      '<p class=\"dh-l\">Gets '+other+'\\'s, adds own secret</p><div class=\"dh-row dh-shared\"></div>';\n    var chips=el.querySelector('.dh-chips');\n    PAL.forEach(function(c,i){\n      var b=document.createElement('button');b.type='button';b.className='dh-chip';b.style.setProperty('--k',c[1]);\n      b.setAttribute('role','radio');b.setAttribute('aria-label',c[0]);\n      b.addEventListener('click',function(){st[k]=i;update(who)});\n      b.addEventListener('keydown',function(e){var d=e.key==='ArrowRight'||e.key==='ArrowDown'?1:e.key==='ArrowLeft'||e.key==='ArrowUp'?-1:0;if(!d)return;e.preventDefault();st[k]=(st[k]+d+PAL.length)%PAL.length;update(who);chips.children[st[k]].focus()});\n      chips.appendChild(b);\n    });\n    var r=el.querySelector('input');r.value=st[n];\n    r.addEventListener('input',function(){st[n]=+r.value;update(who)});\n    return el;\n  }\n  var A=card('A','Alice','Bob'),B=card('B','Bob','Alice');\n  var pa=document.getElementById('dh-pa'),pb=document.getElementById('dh-pb'),pub=document.getElementById('dh-pub'),eve=document.getElementById('dh-eve'),say=document.getElementById('dh-say');\n  var timer=0,scan=0;\n  function sw(c,big){return '<span class=\"dh-sw'+(big?' big':'')+'\" style=\"--k:'+c+'\"></span>'}\n  function nb(v,big){return '<span class=\"dh-num'+(big?' big':'')+'\">'+v+'</span>'}\n  function send(el,fromLeft){\n    el.style.transition='none';el.style.left=fromLeft?'4px':'calc(100% - 4px - '+el.offsetWidth+'px)';\n    void el.offsetWidth;el.style.transition='';\n    el.style.left=fromLeft?'calc(100% - 4px - '+el.offsetWidth+'px)':'4px';\n  }\n  function update(who){\n    var m=st.mode,ca=PAL[st.ca][1],cb=PAL[st.cb][1];\n    [[A,'ca','a'],[B,'cb','b']].forEach(function(x){\n      var el=x[0];\n      el.querySelector('.dh-chips').hidden=!!m;el.querySelector('.dh-nb').hidden=!m;\n      [].forEach.call(el.querySelector('.dh-chips').children,function(c,i){var on=i===st[x[1]];c.setAttribute('aria-checked',String(on));c.tabIndex=on?0:-1});\n      el.querySelector('.dh-sec b').textContent=st[x[2]];\n      el.querySelector('input').setAttribute('aria-valuetext',x[2]+' = '+st[x[2]]);\n    });\n    var Am=mix([[BASE,1],[ca,1]]),Bm=mix([[BASE,1],[cb,1]]),S=mix([[BASE,1],[ca,1],[cb,1]]),SA=mix([[Bm,2],[ca,1]]),SB=mix([[Am,2],[cb,1]]),Ev=mix([[Am,1],[Bm,1]]);\n    var a=st.a,b=st.b,An=pw(G,a,P),Bn=pw(G,b,P),sA=pw(Bn,a,P),sB=pw(An,b,P);\n    if(!m){\n      A.querySelector('.dh-snd').innerHTML=sw(Am)+'<span class=\"dh-cap\">yellow + '+PAL[st.ca][0]+'</span>';\n      B.querySelector('.dh-snd').innerHTML=sw(Bm)+'<span class=\"dh-cap\">yellow + '+PAL[st.cb][0]+'</span>';\n      A.querySelector('.dh-shared').innerHTML=sw(SA,1)+'<span class=\"dh-cap\">Bob\\'s mix + '+PAL[st.ca][0]+'</span>';\n      B.querySelector('.dh-shared').innerHTML=sw(SB,1)+'<span class=\"dh-cap\">Alice\\'s mix + '+PAL[st.cb][0]+'</span>';\n      pub.innerHTML=sw(BASE)+'<span class=\"dh-cap\">Starting paint: yellow</span>';\n      pa.innerHTML=sw(Am)+'Alice\\'s mix &rarr;';pb.innerHTML='&larr; '+sw(Bm)+'Bob\\'s mix';\n      eve.innerHTML='<div class=\"dh-held\">'+sw(BASE)+sw(Am)+sw(Bm)+'<span class=\"dh-cap\">all she has</span></div>'+\n        '<div class=\"dh-row\" style=\"margin-top:6px\">'+sw(Ev)+'<span class=\"dh-cap\">Her best guess, mixing the two she saw: too much yellow. <span class=\"dh-x\">Not the secret.</span></span></div>';\n      say.innerHTML=sw(S,1)+'<span>Both ends hold the <b>same colour</b>, though no secret ever crossed the wire. Unmixing paint is the hard part, and Eve would have to do it.</span>';\n    }else{\n      A.querySelector('.dh-snd').innerHTML=nb(An)+'<span class=\"dh-cap\"><code>A = 5<sup>'+a+'</sup> mod 23</code></span>';\n      B.querySelector('.dh-snd').innerHTML=nb(Bn)+'<span class=\"dh-cap\"><code>B = 5<sup>'+b+'</sup> mod 23</code></span>';\n      A.querySelector('.dh-shared').innerHTML=nb(sA,1)+'<span class=\"dh-cap\"><code>'+Bn+'<sup>'+a+'</sup> mod 23</code></span>';\n      B.querySelector('.dh-shared').innerHTML=nb(sB,1)+'<span class=\"dh-cap\"><code>'+An+'<sup>'+b+'</sup> mod 23</code></span>';\n      pub.innerHTML=nb('g=5')+nb('p=23')+'<span class=\"dh-cap\">base and prime modulus</span>';\n      pa.innerHTML='<code>A = '+An+'</code> &rarr;';pb.innerHTML='&larr; <code>B = '+Bn+'</code>';\n      var cells='';for(var i=1;i<=22;i++)cells+='<span><b>'+pw(G,i,P)+'<small>a='+i+'</small></b></span>';\n      eve.innerHTML='<span class=\"dh-cap\">She holds g, p, A = '+An+' and B = '+Bn+'. The secret needs <code>a</code> with <code>5<sup>a</sup> mod 23 = '+An+'</code>, a discrete log. No pattern helps:</span>'+\n        '<div class=\"dh-strip\" id=\"dh-st\">'+cells+'</div><div class=\"dh-row\" style=\"flex-wrap:wrap;gap:4px 12px\"><button class=\"dh-btn\" type=\"button\" id=\"dh-try\" style=\"margin-top:6px\">Let Eve try every a</button><span class=\"dh-cap\" id=\"dh-tr\" style=\"flex:1 1 160px\"></span></div>';\n      document.getElementById('dh-try').addEventListener('click',crack);\n      say.innerHTML=nb(sA,1)+'<span>Alice and Bob both get <b>s = '+sA+'</b>, because (5<sup>a</sup>)<sup>b</sup> = (5<sup>b</sup>)<sup>a</sup>. Eve cracks p = 23 in a blink; the recommended p has 2048 bits or more.</span>';\n    }\n    if(scan){clearInterval(scan);scan=0}\n    clearTimeout(timer);\n    if(who!=='mode'&&!reduce){root.classList.add('dh-wait');if(who!=='B')send(pa,true);if(who!=='A')send(pb,false);timer=setTimeout(function(){root.classList.remove('dh-wait')},800)}\n    else{pa.style.transition='none';pb.style.transition='none';pa.style.left='calc(100% - 4px - '+pa.offsetWidth+'px)';pb.style.left='4px'}\n  }\n  function crack(){\n    var cells=document.querySelectorAll('#dh-st>span'),target=pw(G,st.a,P),i=0,out=document.getElementById('dh-tr');\n    if(scan)clearInterval(scan);\n    [].forEach.call(cells,function(c){c.className=''});\n    function step(){\n      var c=cells[i];i++;\n      if(+c.firstChild.firstChild.nodeValue===target){c.className='hit';out.innerHTML='Found <b>a = '+i+'</b> in '+i+' tries. At 2048 bits this list has about 10<sup>616</sup> entries.';clearInterval(scan);scan=0;return true}\n      c.className='on';return false;\n    }\n    if(reduce){while(!step());return}\n    scan=setInterval(step,90);\n  }\n  function setMode(m){st.mode=m;document.getElementById('dh-m0').setAttribute('aria-pressed',String(!m));document.getElementById('dh-m1').setAttribute('aria-pressed',String(!!m));\n    root.querySelector('.dh-q').innerHTML=m?'Drag <b>secret exponents</b> for Alice and Bob. Eve sees everything that crosses the middle.':'Pick <b>secret colours</b> for Alice and Bob. Eve sees everything that crosses the middle.';update('mode')}\n  document.getElementById('dh-m0').addEventListener('click',function(){setMode(0)});\n  document.getElementById('dh-m1').addEventListener('click',function(){setMode(1)});\n  window.addEventListener('resize',function(){update('mode')});\n  update('mode');\n  setTimeout(function(){update('both')},350);\n})();\n</script>\n"
+    },
+    {
+      "kind": "prose",
+      "heading": "How the exchange works",
+      "body": "Alice and Bob agree in public on a prime modulus p and a base g. Each picks a secret exponent and sends g raised to it, mod p; each then raises what the other sent to their own secret, and both land on the same number, written in RFC 2631 as ZZ = (yb ^ xa) mod p = (ya ^ xb) mod p [1]. Wikipedia's small example uses p = 23 and g = 5 [2] and ends with a shared secret of 18 [3]. The goal is a secret that stays unavailable to eavesdroppers [4], which then keys a fast symmetric cipher [5]. Paint is the classic picture: anyone listening knows only the common color and the two mixes [6].",
+      "sources": [
+        {
+          "url": "https://www.rfc-editor.org/rfc/rfc2631.txt",
+          "title": "RFC 2631: Diffie-Hellman Key Agreement Method (IETF, 1999)",
+          "quote": "ZZ = (yb ^ xa) mod p = (ya ^ xb) mod p"
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Diffie%E2%80%93Hellman_key_exchange",
+          "title": "Diffie-Hellman key exchange (Wikipedia)",
+          "quote": "Alice and Bob publicly agree to use a modulus p = 23 and base g = 5"
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Diffie%E2%80%93Hellman_key_exchange",
+          "title": "Diffie-Hellman key exchange (Wikipedia)",
+          "quote": "Alice and Bob now share a secret (the number 18)"
+        },
+        {
+          "url": "https://www.rfc-editor.org/rfc/rfc2631.txt",
+          "title": "RFC 2631: Diffie-Hellman Key Agreement Method (IETF, 1999)",
+          "quote": "agree upon a shared secret in such a way that the secret will be unavailable to eavesdroppers"
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Diffie%E2%80%93Hellman_key_exchange",
+          "title": "Diffie-Hellman key exchange (Wikipedia)",
+          "quote": "This key can then be used to encrypt subsequent communications using a symmetric-key cipher."
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Diffie%E2%80%93Hellman_key_exchange",
+          "title": "Diffie-Hellman key exchange (Wikipedia)",
+          "quote": "If a third party listened to the exchange, they would only know the common color"
+        }
+      ]
+    },
+    {
+      "kind": "prose",
+      "heading": "Why Eve is stuck",
+      "body": "Eve sees p, g and both public values. Getting a secret exponent back from them is the discrete logarithm problem [1], which is currently considered difficult when the group is large enough [2]; Wikipedia recommends primes of at least 2048 bits [3]. A fast discrete log algorithm would break this and many other public key systems [4], and Shor's algorithm on a quantum computer is one [5]. The bare exchange also proves nothing about who is on the other end: it is non-authenticated, and serves as the basis for authenticated protocols [6].",
+      "sources": [
+        {
+          "url": "https://en.wikipedia.org/wiki/Diffie%E2%80%93Hellman_key_exchange",
+          "title": "Diffie-Hellman key exchange (Wikipedia)",
+          "quote": "Such a problem is called the discrete logarithm problem."
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Diffie%E2%80%93Hellman_key_exchange",
+          "title": "Diffie-Hellman key exchange (Wikipedia)",
+          "quote": "This is currently considered difficult for groups whose order is large enough."
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Diffie%E2%80%93Hellman_key_exchange",
+          "title": "Diffie-Hellman key exchange (Wikipedia)",
+          "quote": "it is recommended to use prime numbers of at least 2048 bits in length"
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Diffie%E2%80%93Hellman_key_exchange",
+          "title": "Diffie-Hellman key exchange (Wikipedia)",
+          "quote": "An efficient algorithm to solve the discrete logarithm problem would make it easy to compute a or b"
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Diffie%E2%80%93Hellman_key_exchange",
+          "title": "Diffie-Hellman key exchange (Wikipedia)",
+          "quote": "Quantum computers can break public-key cryptographic schemes, such as RSA, finite-field DH and elliptic-curve DH key-exchange protocols, using Shor's algorithm"
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Diffie%E2%80%93Hellman_key_exchange",
+          "title": "Diffie-Hellman key exchange (Wikipedia)",
+          "quote": "exchange itself is a non-authenticated key-agreement protocol, it provides the basis for a variety of authenticated protocols"
+        }
+      ]
+    },
+    {
+      "kind": "prose",
+      "heading": "Where it runs today",
+      "body": "TLS 1.3 lists (EC)DHE, Diffie-Hellman over finite fields or elliptic curves, as a key exchange mode [1]; implementations must support P-256 and should support X25519 [2]. Using fresh keys per session gives forward secrecy: the private keys are discarded once agreement is complete [3]. Signal's X3DH runs several elliptic curve Diffie-Hellman exchanges on X25519 or X448 [4]. The method was published by Whitfield Diffie and Martin Hellman in 1976 [5]; Hellman counts Ralph Merkle as a co-inventor of public key cryptography [6].",
+      "sources": [
+        {
+          "url": "https://www.rfc-editor.org/rfc/rfc8446.txt",
+          "title": "RFC 8446: The Transport Layer Security (TLS) Protocol Version 1.3 (IETF, 2018)",
+          "quote": "(EC)DHE (Diffie-Hellman over either finite fields or elliptic curves)"
+        },
+        {
+          "url": "https://www.rfc-editor.org/rfc/rfc8446.txt",
+          "title": "RFC 8446: The Transport Layer Security (TLS) Protocol Version 1.3 (IETF, 2018)",
+          "quote": "MUST support key exchange with secp256r1 (NIST P-256) and SHOULD support key exchange with X25519"
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Diffie%E2%80%93Hellman_key_exchange",
+          "title": "Diffie-Hellman key exchange (Wikipedia)",
+          "quote": "the private keys are discarded once key agreement is complete"
+        },
+        {
+          "url": "https://signal.org/docs/specifications/x3dh/",
+          "title": "The X3DH Key Agreement Protocol (Signal)",
+          "quote": "The Elliptic Curve Diffie-Hellman function will be either the X25519 or X448 function"
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Diffie%E2%80%93Hellman_key_exchange",
+          "title": "Diffie-Hellman key exchange (Wikipedia)",
+          "quote": "It is named after Whitfield Diffie and Martin Hellman who published it in 1976."
+        },
+        {
+          "url": "https://www-ee.stanford.edu/~hellman/",
+          "title": "Martin E. Hellman's home page (Stanford)",
+          "quote": "best known for his invention, with Diffie and Merkle, of public key cryptography"
+        }
+      ]
+    },
+    {
+      "kind": "figure",
+      "heading": "The worked example: p = 23, g = 5",
+      "body": "<style>\n.df{box-sizing:border-box;max-width:1040px;margin:0 auto;font-family:var(--ow-font);color:var(--ow-fg)}\n.df *{box-sizing:border-box}\n.df-g{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.9fr) minmax(0,1fr);gap:8px 10px;align-items:stretch}\n.df-h{font-size:15px;font-weight:750;text-align:center;padding:8px 4px;border-radius:12px;background:var(--ow-panel);border:1px solid var(--ow-line)}\n.df-h.eve{background:transparent;border-style:dashed}\n.df-c{display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:2px;min-height:58px;padding:8px 6px;border-radius:12px;font-family:var(--ow-mono);font-size:clamp(13px,2.6vw,17px);line-height:1.3}\n.df-c small{font-family:var(--ow-font);font-size:12px;color:var(--ow-muted)}\n.df-c.pub{background:color-mix(in oklch,oklch(0.6 0.15 250) 12%,transparent)}\n.df-c.sec{background:color-mix(in oklch,oklch(0.6 0.2 25) 12%,transparent)}\n.df-c.no{color:var(--ow-muted);font-size:clamp(18px,3.4vw,24px)}\n.df-c.win{background:var(--ow-accent);color:var(--ow-accent-ink);font-weight:700}\n.df-c.win small{color:var(--ow-accent-ink)}\n.df-c b{font-weight:800}\n.df-k{display:flex;flex-wrap:wrap;gap:8px 18px;margin:12px 0 0;font-size:13px;color:var(--ow-muted)}\n.df-k i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}\n</style>\n<div class=\"df\" role=\"img\" aria-label=\"Worked Diffie-Hellman example with p 23 and g 5: Alice's secret 4 and Bob's secret 3 give public values 4 and 10, and both compute the shared secret 18, which Eve never sees\">\n  <div class=\"df-g\">\n    <div class=\"df-h\">Alice</div><div class=\"df-h eve\">Eve sees</div><div class=\"df-h\">Bob</div>\n    <div class=\"df-c pub\"><span>g = 5, p = 23</span><small>agreed in public</small></div><div class=\"df-c pub\"><span>g = 5, p = 23</span></div><div class=\"df-c pub\"><span>g = 5, p = 23</span><small>agreed in public</small></div>\n    <div class=\"df-c sec\"><span>a = <b>4</b></span><small>secret</small></div><div class=\"df-c no\"><span>?</span></div><div class=\"df-c sec\"><span>b = <b>3</b></span><small>secret</small></div>\n    <div class=\"df-c pub\"><span>5<sup>4</sup> mod 23 = <b>4</b></span><small>sends A &rarr;</small></div><div class=\"df-c pub\"><span>A = 4, B = 10</span></div><div class=\"df-c pub\"><span>5<sup>3</sup> mod 23 = <b>10</b></span><small>&larr; sends B</small></div>\n    <div class=\"df-c win\"><span>10<sup>4</sup> mod 23 = 18</span><small>shared secret</small></div><div class=\"df-c no\"><span>?</span></div><div class=\"df-c win\"><span>4<sup>3</sup> mod 23 = 18</span><small>shared secret</small></div>\n  </div>\n  <p class=\"df-k\"><span><i style=\"background:color-mix(in oklch,oklch(0.6 0.15 250) 35%,transparent)\"></i>public</span><span><i style=\"background:color-mix(in oklch,oklch(0.6 0.2 25) 35%,transparent)\"></i>secret</span><span>Eve would need a or b: the discrete logarithm of 4 or 10.</span></p>\n</div>\n"
+    }
+  ],
+  "data": {
+    "tags": [
+      "cryptography",
+      "security",
+      "math",
+      "networking"
+    ],
+    "facts": [
+      {
+        "label": "Published",
+        "value": "1976, Diffie and Hellman"
+      },
+      {
+        "label": "Hard problem",
+        "value": "Discrete logarithm"
+      },
+      {
+        "label": "Recommended prime",
+        "value": "2048 bits or more"
+      },
+      {
+        "label": "Toy example",
+        "value": "p = 23, g = 5, secret 18"
+      },
+      {
+        "label": "In TLS 1.3",
+        "value": "(EC)DHE, P-256 and X25519"
+      },
+      {
+        "label": "Quantum threat",
+        "value": "Shor's algorithm"
+      }
+    ],
+    "see": [
+      "How Git stores data",
+      "TCP congestion control",
+      "Bloom filter",
+      "Raft consensus",
+      "Compound interest"
+    ]
+  }
+}

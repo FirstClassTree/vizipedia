@@ -1,0 +1,127 @@
+{
+  "title": "Reddit hot ranking",
+  "slug": "reddit-hot-ranking",
+  "hue": 14,
+  "lede": "Reddit's hot sort, in its released source, adds the log of a post's net votes to its posting time, so ten times the votes buys 12.5 hours of freshness.",
+  "sections": [
+    {
+      "kind": "experience",
+      "heading": "Which post is hotter",
+      "body": "<style>\n.rd{box-sizing:border-box;max-width:1040px;margin:0 auto;font-family:var(--ow-font);color:var(--ow-fg)}\n.rd *{box-sizing:border-box}\n.rd-q{margin:0 0 6px;font-size:18px;line-height:1.35;font-weight:600}\n.rd-try{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 14px;font-size:14px;color:var(--ow-muted)}\n.rd-chip{appearance:none;font:inherit;font-size:14px;min-height:36px;padding:6px 12px;border-radius:999px;border:1.5px solid var(--ow-line);background:var(--ow-panel);color:var(--ow-fg);cursor:pointer;touch-action:manipulation}\n.rd-chip:hover{border-color:color-mix(in oklch,var(--ow-accent) 55%,var(--ow-line))}\n.rd-posts{display:grid;grid-template-columns:1fr;gap:12px}\n@media (min-width:640px){.rd-posts{grid-template-columns:1fr 1fr;gap:16px}}\n.rd-post{position:relative;padding:12px 16px 10px;border-radius:14px;border:1.5px solid var(--ow-line);background:var(--ow-panel);transition:border-color .2s,box-shadow .2s}\n.rd-post.win{border-color:var(--ow-accent);box-shadow:0 0 0 3px color-mix(in oklch,var(--ow-accent) 18%,transparent)}\n.rd-top{display:flex;justify-content:space-between;align-items:center;gap:8px}\n.rd-name{font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px}\n.rd-name i{width:12px;height:12px;border-radius:50%;background:var(--c)}\n.rd-badge{font-size:12px;font-weight:750;letter-spacing:.05em;text-transform:uppercase;padding:3px 9px;border-radius:999px;background:var(--ow-accent);color:var(--ow-accent-ink);visibility:hidden}\n.rd-post.win .rd-badge{visibility:visible}\n.rd-lab{display:flex;justify-content:space-between;gap:12px;font-size:15px;font-weight:600;margin-top:8px}\n.rd-lab output{font-family:var(--ow-mono);font-variant-numeric:tabular-nums;color:var(--ow-muted);font-weight:500}\n.rd input[type=range]{width:100%;margin:6px 0 2px;height:28px;accent-color:var(--c);cursor:pointer}\n.rd input:focus-visible,.rd button:focus-visible{outline:3px solid color-mix(in oklch,var(--ow-accent) 55%,transparent);outline-offset:2px;border-radius:8px}\n.rd-math{margin:6px 0 0;font-family:var(--ow-mono);font-size:13.5px;font-variant-numeric:tabular-nums;color:var(--ow-muted)}\n.rd-math b{color:var(--ow-fg);font-weight:650}\n.rd-ruler{margin-top:14px;padding:12px 14px 6px;border-radius:14px;background:var(--ow-panel);border:1px solid var(--ow-line)}\n.rd-ruler svg{display:block;width:100%;height:auto}\n.rd-ruler text{font-family:var(--ow-font);font-size:12px;fill:var(--ow-muted)}\n.rd-ruler text.k{font-weight:650;fill:var(--ow-fg)}\n.rd-say{margin:12px 0 0;font-size:16px;line-height:1.45;min-height:2.9em}\n.rd-say b{color:var(--ow-accent)}\n@media (max-width:400px){.rd-q{font-size:17px}.rd-post{padding:12px}}\n@media (prefers-reduced-motion:reduce){.rd-post{transition:none}}\n</style>\n<div class=\"rd\">\n  <p class=\"rd-q\">Drag votes and age for two posts. The hotter one takes the top slot.</p>\n  <div class=\"rd-try\" role=\"group\" aria-label=\"Examples\"><span>Try:</span>\n    <button class=\"rd-chip\" type=\"button\" data-p=\"10,0,100,0\">10 vs 100 votes</button>\n    <button class=\"rd-chip\" type=\"button\" data-p=\"100,0,1000,12.5\">10&times; votes, 12.5 h older</button>\n    <button class=\"rd-chip\" type=\"button\" data-p=\"500,0,50000,48\">Old giant vs new post</button>\n  </div>\n  <div class=\"rd-posts\" id=\"rd-posts\"></div>\n  <div class=\"rd-ruler\"><svg id=\"rd-g\" viewBox=\"0 0 600 140\" role=\"img\" aria-label=\"Hot score of each post on a shared scale\"></svg></div>\n  <p class=\"rd-say\" id=\"rd-say\" aria-live=\"polite\"></p>\n</div>\n<script>\n(function(){\n  var posts=[{id:'A',v:200,age:3,c:'oklch(0.6 0.15 250)'},{id:'B',v:2000,age:20,c:'oklch(0.62 0.16 40)'}];\n  var wrap=document.getElementById('rd-posts'),svg=document.getElementById('rd-g'),say=document.getElementById('rd-say');\n  function nice(x){if(x<10)return Math.max(1,Math.round(x));var p=Math.pow(10,Math.floor(Math.log10(x))-1);return Math.round(x/p)*p}\n  function fmt(n){return n.toLocaleString('en-US')}\n  function hrs(h){return(Math.round(h*10)/10)+' h'}\n  function hot(p){return Math.log10(Math.max(p.v,1))-p.age/12.5}\n  posts.forEach(function(p){\n    var d=document.createElement('div');d.className='rd-post';d.style.setProperty('--c',p.c);\n    d.innerHTML='<div class=\"rd-top\"><span class=\"rd-name\"><i></i>Post '+p.id+'</span><span class=\"rd-badge\">Hotter</span></div>'+\n      '<label class=\"rd-lab\" for=\"rd-v'+p.id+'\"><span>Net upvotes</span><output></output></label>'+\n      '<input id=\"rd-v'+p.id+'\" type=\"range\" min=\"0\" max=\"5\" step=\"0.05\">'+\n      '<label class=\"rd-lab\" for=\"rd-a'+p.id+'\"><span>Posted</span><output></output></label>'+\n      '<input id=\"rd-a'+p.id+'\" type=\"range\" min=\"0\" max=\"48\" step=\"0.5\">'+\n      '<p class=\"rd-math\"></p>';\n    wrap.appendChild(d);p.el=d;p.vi=d.querySelector('#rd-v'+p.id);p.ai=d.querySelector('#rd-a'+p.id);\n    p.vi.value=Math.log10(p.v);p.ai.value=p.age;\n    p.vi.addEventListener('input',function(){p.v=nice(Math.pow(10,+p.vi.value));render()});\n    p.ai.addEventListener('input',function(){p.age=+p.ai.value;render()});\n  });\n  var NS='http://www.w3.org/2000/svg',W=600,H=140,L=16,R=22,MIN=-4,MAX=5;\n  function X(u){return L+(W-L-R)*(u-MIN)/(MAX-MIN)}\n  function el(n,a,t){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);if(t!=null)e.textContent=t;return e}\n  function draw(){\n    while(svg.firstChild)svg.removeChild(svg.firstChild);\n    W=Math.max(260,Math.round(svg.getBoundingClientRect().width)||600);MIN=Math.min(-1,Math.floor(Math.min(hot(posts[0]),hot(posts[1]))));var narrow=(W-L-R)/(MAX-MIN)<56;svg.setAttribute('viewBox','0 0 '+W+' '+H);\n    var VL=['1','10','100','1K','10K','100K'];\n    svg.appendChild(el('text',{x:X(0),y:13,'class':'k'},'votes \\u00d710 per step \\u2192'));\n    svg.appendChild(el('text',{x:W-R,y:H-4,'text-anchor':'end','class':'k'},'dotted: age, \\u22121 per 12.5 h'));\n    for(var u=MIN;u<=MAX;u++){\n      svg.appendChild(el('line',{x1:X(u),x2:X(u),y1:u<0?40:24,y2:u<0?108:96,stroke:'var(--ow-line)','stroke-width':u===0?2:1}));\n      if(u>=0)svg.appendChild(el('text',{x:X(u),y:34,'text-anchor':'middle'},VL[u]));\n      else if(!narrow||u%2===0||u===-1)svg.appendChild(el('text',{x:X(u),y:120,'text-anchor':'middle'},'\\u2212'+(narrow?(-u*12.5):hrs(-u*12.5))));\n    }\n    posts.forEach(function(p,i){\n      var y=54+i*30,lv=Math.log10(Math.max(p.v,1)),h=hot(p);\n      svg.appendChild(el('line',{x1:X(0),x2:X(lv),y1:y,y2:y,stroke:p.c,'stroke-width':10,'stroke-linecap':'round',opacity:.35}));\n      if(p.age>0)svg.appendChild(el('line',{x1:X(lv),x2:X(h),y1:y,y2:y,stroke:'var(--ow-muted)','stroke-width':3,'stroke-dasharray':'2 4','stroke-linecap':'round'}));\n      svg.appendChild(el('circle',{cx:X(h),cy:y,r:10,fill:p.c,stroke:'var(--ow-panel)','stroke-width':2.5}));\n      svg.appendChild(el('text',{x:X(h),y:y+4,'text-anchor':'middle',style:'fill:#fff;font-weight:750;font-size:11px'},p.id));\n    });\n  }\n  window.addEventListener('resize',draw);\n  function render(){\n    posts.forEach(function(p){\n      var o=p.el.querySelectorAll('output');o[0].textContent=fmt(p.v);o[1].textContent=p.age===0?'just now':hrs(p.age)+' ago';\n      p.vi.setAttribute('aria-valuetext',fmt(p.v)+' net upvotes');p.ai.setAttribute('aria-valuetext',p.age+' hours ago');\n      var lv=Math.log10(Math.max(p.v,1)),ag=p.age/12.5;\n      p.el.querySelector('.rd-math').innerHTML='log10 '+fmt(p.v)+' = '+lv.toFixed(2)+' − '+hrs(p.age)+'/12.5 = <b>'+hot(p).toFixed(2)+'</b>';\n    });\n    var a=posts[0],b=posts[1],ha=hot(a),hb=hot(b),diff=Math.abs(ha-hb);\n    var tie=diff<0.005,w=ha>=hb?a:b,l=w===a?b:a;\n    a.el.classList.toggle('win',!tie&&w===a);b.el.classList.toggle('win',!tie&&w===b);\n    var dv=Math.log10(Math.max(w.v,1))-Math.log10(Math.max(l.v,1)),da=(l.age-w.age)/12.5,why=[];\n    if(Math.abs(dv)>=0.005)why.push((dv>0?'+':'−')+Math.abs(dv).toFixed(2)+' from '+(dv>0?'more':'fewer')+' votes');\n    if(Math.abs(da)>=0.005)why.push((da>0?'+':'−')+Math.abs(da).toFixed(2)+' from being '+hrs(Math.abs(l.age-w.age))+(da>0?' newer':' older'));\n    say.innerHTML=tie?'<b>A tie.</b> Ten times the votes is worth exactly 12.5 hours of age.':'<b>Post '+w.id+' is hotter</b> by '+diff.toFixed(2)+': '+(why.join(', ')||'same votes and age')+'.';\n    draw();\n  }\n  document.querySelectorAll('.rd-chip').forEach(function(btn){btn.addEventListener('click',function(){\n    var v=btn.dataset.p.split(',').map(Number);posts[0].v=v[0];posts[0].age=v[1];posts[1].v=v[2];posts[1].age=v[3];\n    posts.forEach(function(p){p.vi.value=Math.log10(p.v);p.ai.value=p.age});render();\n  })});\n  render();\n})();\n</script>\n"
+    },
+    {
+      "kind": "prose",
+      "heading": "The hot formula",
+      "body": "In reddit's released source a post's score is upvotes minus downvotes [1]. Hot takes log10 of that score's size [2], gives it the score's sign, and adds the seconds between the post's creation and a fixed moment in December 2005, divided by 45,000 [3][4]. 45,000 seconds is 12.5 hours, so a post 12.5 hours newer ties one with ten times the net votes. Compare [[Hacker News ranking]], which divides by age instead.",
+      "sources": [
+        {
+          "url": "https://github.com/reddit-archive/reddit/blob/master/r2/r2/lib/db/_sorts.pyx",
+          "title": "r2/lib/db/_sorts.pyx, reddit's released source (reddit-archive on GitHub)",
+          "quote": "score(long ups, long downs): return ups - downs"
+        },
+        {
+          "url": "https://github.com/reddit-archive/reddit/blob/master/r2/r2/lib/db/_sorts.pyx",
+          "title": "r2/lib/db/_sorts.pyx, reddit's released source (reddit-archive on GitHub)",
+          "quote": "order = log10(max(abs(s), 1))"
+        },
+        {
+          "url": "https://github.com/reddit-archive/reddit/blob/master/r2/r2/lib/db/_sorts.pyx",
+          "title": "r2/lib/db/_sorts.pyx, reddit's released source (reddit-archive on GitHub)",
+          "quote": "seconds = date - 1134028003"
+        },
+        {
+          "url": "https://github.com/reddit-archive/reddit/blob/master/r2/r2/lib/db/_sorts.pyx",
+          "title": "r2/lib/db/_sorts.pyx, reddit's released source (reddit-archive on GitHub)",
+          "quote": "return round(sign * order + seconds / 45000, 7)"
+        }
+      ]
+    },
+    {
+      "kind": "prose",
+      "heading": "Why the log matters",
+      "body": "Because of log10, going from 1 to 10 net votes adds as much as going from 100 to 1,000 [1]. A post with a net negative score gets a sign of minus one, so its votes pull it down [2]. Hot never decays: a post keeps the number it has, and newer posts simply start higher, which is why old posts slide down the list [3].",
+      "sources": [
+        {
+          "url": "https://github.com/reddit-archive/reddit/blob/master/r2/r2/lib/db/_sorts.pyx",
+          "title": "r2/lib/db/_sorts.pyx, reddit's released source (reddit-archive on GitHub)",
+          "quote": "order = log10(max(abs(s), 1))"
+        },
+        {
+          "url": "https://github.com/reddit-archive/reddit/blob/master/r2/r2/lib/db/_sorts.pyx",
+          "title": "r2/lib/db/_sorts.pyx, reddit's released source (reddit-archive on GitHub)",
+          "quote": "elif s < 0: sign = -1"
+        },
+        {
+          "url": "https://github.com/reddit-archive/reddit/blob/master/r2/r2/lib/db/_sorts.pyx",
+          "title": "r2/lib/db/_sorts.pyx, reddit's released source (reddit-archive on GitHub)",
+          "quote": "return round(sign * order + seconds / 45000, 7)"
+        }
+      ]
+    },
+    {
+      "kind": "prose",
+      "heading": "Mixing subreddits, and today",
+      "body": "When the code merged several subreddits into one list, it divided each post's hot by a factor taken from its subreddit's top post [1][2]. This code is historical: the repository is archived and receives no updates [3], so it shows how hot worked when the code was released, not necessarily how reddit ranks today.",
+      "sources": [
+        {
+          "url": "https://raw.githubusercontent.com/reddit-archive/reddit/master/r2/r2/lib/normalized_hot.py",
+          "title": "r2/lib/normalized_hot.py, reddit's released source",
+          "quote": "effective_hot = hot / hot_factor"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/reddit-archive/reddit/master/r2/r2/lib/normalized_hot.py",
+          "title": "r2/lib/normalized_hot.py, reddit's released source",
+          "quote": "Recalculate the item's hot score as if it had been submitted"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/reddit-archive/reddit/master/README.md",
+          "title": "reddit-archive/reddit README",
+          "quote": "This repository is archived and will not receive any updates"
+        }
+      ]
+    },
+    {
+      "kind": "figure",
+      "heading": "The formula and equal steps",
+      "body": "<style>\n.rf{box-sizing:border-box;max-width:1040px;margin:0 auto;font-family:var(--ow-font);color:var(--ow-fg);display:grid;gap:18px;grid-template-columns:1fr}\n@media (min-width:760px){.rf{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px;align-items:center}}\n.rf-eq{padding:18px;border-radius:16px;background:var(--ow-panel);border:1px solid var(--ow-line)}\n.rf-f{display:grid;gap:6px;justify-items:center;font-family:var(--ow-mono);font-size:clamp(14px,2vw,17px);line-height:1.3;text-align:center}\n.rf-f span{display:block;padding:6px 10px;border-radius:10px;background:color-mix(in oklch,currentColor 8%,transparent)}\n.rf-f .op{padding:0;background:none;color:var(--ow-muted)}\n.rf-f .a{color:oklch(0.55 0.15 250);font-weight:700}.rf-f .t{color:oklch(0.58 0.16 40);font-weight:700}\n.rf-notes{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:8px;font-size:14.5px;line-height:1.4;color:var(--ow-muted)}\n.rf-notes li{display:grid;grid-template-columns:72px minmax(0,1fr);gap:10px}\n.rf-notes b{color:var(--ow-fg);font-family:var(--ow-mono);font-weight:600}\n.rf-h{margin:0 0 10px;font-size:13px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--ow-muted)}\n.rf-steps{list-style:none;margin:0;padding:0;display:grid;gap:8px}\n.rf ol li{display:grid;grid-template-columns:72px 28px minmax(0,1fr);align-items:center;gap:10px;font-size:15px;padding:8px 12px;border-radius:12px;background:var(--ow-panel);border:1px solid var(--ow-line)}\n.rf .v{font-family:var(--ow-mono);font-weight:650;text-align:right;font-variant-numeric:tabular-nums}\n.rf .eq{color:var(--ow-muted);text-align:center}\n.rf .h{color:var(--ow-muted)}\n</style>\n<div class=\"rf\" role=\"img\" aria-label=\"Reddit's hot formula: sign times log10 of the net score, plus seconds since December 2005 divided by 45,000; posts with 1, 10, 100 and 1,000 votes tie when each is 12.5 hours older than the next\">\n  <div class=\"rf-eq\">\n    <div class=\"rf-f\"><span class=\"op\">hot =</span><span class=\"a\">sign &times; log<sub>10</sub> |ups &minus; downs|</span><span class=\"op\">+</span><span class=\"t\">seconds since 8 Dec 2005 &divide; 45000</span></div>\n    <ul class=\"rf-notes\">\n      <li><b>log10</b> every tenfold jump in net votes adds 1</li>\n      <li><b>45000 s</b> = 12.5 hours of newness adds 1</li>\n      <li><b>sign</b> a net negative score counts against the post</li>\n    </ul>\n  </div>\n  <div>\n    <p class=\"rf-h\">These four posts are equally hot</p>\n    <ol class=\"rf-steps\">\n      <li><span class=\"v\">1,000</span><span class=\"eq\">=</span><span class=\"h\">votes, posted 37.5 h before the 1-vote post</span></li>\n      <li><span class=\"v\">100</span><span class=\"eq\">=</span><span class=\"h\">votes, posted 25 h before</span></li>\n      <li><span class=\"v\">10</span><span class=\"eq\">=</span><span class=\"h\">votes, posted 12.5 h before</span></li>\n      <li><span class=\"v\">1</span><span class=\"eq\">=</span><span class=\"h\">vote, posted last</span></li>\n    </ol>\n  </div>\n</div>\n"
+    }
+  ],
+  "data": {
+    "tags": [
+      "reddit",
+      "ranking",
+      "algorithm",
+      "time-decay"
+    ],
+    "facts": [
+      {
+        "label": "Votes term",
+        "value": "log10 of net votes"
+      },
+      {
+        "label": "Time unit",
+        "value": "45,000 s = 12.5 hours"
+      },
+      {
+        "label": "10× the votes equals",
+        "value": "12.5 hours newer"
+      },
+      {
+        "label": "Clock starts",
+        "value": "1134028003 (8 Dec 2005)"
+      },
+      {
+        "label": "Source",
+        "value": "reddit-archive, archived"
+      }
+    ],
+    "see": [
+      "Hacker News ranking",
+      "PageRank",
+      "X recommendation algorithm",
+      "Bluesky custom feeds",
+      "YouTube recommendations",
+      "instagram-ranking"
+    ]
+  }
+}

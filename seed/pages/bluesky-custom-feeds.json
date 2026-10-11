@@ -1,0 +1,139 @@
+{
+  "title": "Bluesky custom feeds",
+  "slug": "bluesky-custom-feeds",
+  "hue": 205,
+  "lede": "On Bluesky anyone can publish a feed generator, a service that picks and orders posts, so readers choose their timeline's algorithm instead of getting one master feed.",
+  "sections": [
+    {
+      "kind": "experience",
+      "heading": "Pick a feed",
+      "body": "<style>\n.bf{--sky:oklch(0.6 0.15 245);--fol:oklch(0.58 0.13 155);box-sizing:border-box;max-width:1040px;margin:0 auto;font-family:var(--ow-font);color:var(--ow-fg)}\n.bf *{box-sizing:border-box}\n.bf-q{margin:0 0 10px;font-size:18px;line-height:1.35;font-weight:600}\n.bf-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0 0 16px;padding:0;list-style:none}\n.bf-tab{appearance:none;font:inherit;width:100%;min-height:52px;padding:8px 10px;border-radius:14px;border:1.5px solid var(--ow-line);background:var(--ow-panel);color:var(--ow-fg);cursor:pointer;text-align:left;touch-action:manipulation;transition:background .15s,border-color .15s,color .15s}\n.bf-tab b{display:block;font-size:15.5px;font-weight:700;line-height:1.2}\n.bf-tab small{display:block;font-size:13px;color:var(--ow-muted);margin-top:2px;line-height:1.25}\n.bf-tab:hover{border-color:color-mix(in oklch,var(--ow-accent) 55%,var(--ow-line))}\n.bf-tab:focus-visible{outline:3px solid color-mix(in oklch,var(--ow-accent) 60%,transparent);outline-offset:2px}\n.bf-tab[aria-checked=\"true\"]{background:var(--ow-accent);border-color:var(--ow-accent);color:var(--ow-accent-ink)}\n.bf-tab[aria-checked=\"true\"] small{color:inherit;opacity:.85}\n.bf-main{display:grid;grid-template-columns:1fr;gap:16px}\n@media (min-width:740px){.bf-main{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:22px}}\n.bf-h{margin:0 0 8px;font-size:13px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--ow-muted)}\n.bf-pool{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:0;padding:0;list-style:none}\n.bf-p{position:relative;display:grid;grid-template-columns:26px minmax(0,1fr);gap:8px;align-items:center;padding:6px 8px;border-radius:10px;border:1px solid var(--ow-line);background:var(--ow-bg);transition:opacity .3s,filter .3s,box-shadow .3s;min-height:46px}\n.bf-p.out{opacity:.38;filter:grayscale(1)}\n.bf-p.in{box-shadow:0 0 0 2px var(--ow-accent)}\n.bf-e{font-size:20px;text-align:center;line-height:1}\n.bf-t{min-width:0;font-size:13.5px;line-height:1.25}\n.bf-t b{display:block;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}\n.bf-t span{display:block;color:var(--ow-muted);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}\n.bf-n{position:absolute;top:-7px;right:-5px;min-width:22px;height:22px;padding:0 5px;border-radius:99px;background:var(--ow-accent);color:var(--ow-accent-ink);font-size:12px;font-weight:750;display:grid;place-items:center;transform:scale(0);transition:transform .25s}\n.bf-p.in .bf-n{transform:scale(1)}\n.bf-feed{border-radius:16px;background:var(--ow-panel);border:1px solid var(--ow-line);padding:14px}\n.bf-list{margin:0;padding:0;list-style:none;display:grid;gap:6px}\n.bf-li{display:grid;grid-template-columns:20px 26px minmax(0,1fr);gap:8px;align-items:center;padding:6px 8px;border-radius:10px;background:var(--ow-bg);border:1px solid var(--ow-line);animation:bfin .35s ease both}\n.bf-li .r{font-weight:750;color:var(--ow-muted);text-align:center;font-variant-numeric:tabular-nums}\n@keyframes bfin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}\n.bf-why{margin:10px 0 0;font-size:14px;line-height:1.4;color:var(--ow-muted)}\n.bf-flow{margin-top:16px;display:grid;grid-template-columns:repeat(5,auto);align-items:center;justify-content:space-between;gap:6px;padding:12px;border-radius:14px;border:1px dashed var(--ow-line)}\n.bf-node{border-radius:10px;padding:7px 10px;background:var(--ow-panel);border:1px solid var(--ow-line);font-size:13.5px;line-height:1.25;text-align:center}\n.bf-node b{display:block;font-size:14px}\n.bf-node span{display:block;color:var(--ow-muted);font-size:12px}\n.bf-node.gen{border:2px solid var(--ow-accent)}\n.bf-arr{font-size:12px;color:var(--ow-muted);text-align:center;font-family:var(--ow-mono);line-height:1.2;max-width:150px;overflow-wrap:anywhere}\n.bf-arr::after{content:\"→\";display:block;font-size:18px;color:var(--ow-muted)}\n.bf-sk{color:var(--ow-fg)}\n.bf-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}\n@media (max-width:620px){.bf-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}.bf-flow{grid-template-columns:1fr;justify-items:stretch}.bf-arr::after{content:\"↓\"}.bf-arr{max-width:none}}\n@media (max-width:380px){.bf-pool{grid-template-columns:1fr}}\n@media (prefers-reduced-motion:reduce){.bf-p,.bf-n,.bf-tab{transition:none}.bf-li{animation:none}}\n</style>\n<div class=\"bf\">\n  <p class=\"bf-q\" id=\"bf-q\">Same 10 posts, four feeds. Pick a feed generator.</p>\n  <ul class=\"bf-tabs\" role=\"radiogroup\" aria-labelledby=\"bf-q\" id=\"bf-tabs\"></ul>\n  <div class=\"bf-main\">\n    <section aria-labelledby=\"bf-ph\"><p class=\"bf-h\" id=\"bf-ph\">The network's posts (one pool)</p><ul class=\"bf-pool\" id=\"bf-pool\"></ul></section>\n    <section class=\"bf-feed\" aria-labelledby=\"bf-fh\"><p class=\"bf-h\" id=\"bf-fh\">Your feed</p><ol class=\"bf-list\" id=\"bf-list\"></ol><p class=\"bf-why\" id=\"bf-why\"></p></section>\n  </div>\n  <div class=\"bf-flow\" aria-label=\"How the feed is served\">\n    <div class=\"bf-node\"><b>Relay</b><span>firehose of all posts</span></div>\n    <div class=\"bf-arr\">indexes</div>\n    <div class=\"bf-node gen\"><b id=\"bf-gn\">Following</b><span>feed generator</span></div>\n    <div class=\"bf-arr\">skeleton <span class=\"bf-sk\" id=\"bf-sk\"></span></div>\n    <div class=\"bf-node\"><b>AppView → your app</b><span>hydrates text, likes, authors</span></div>\n  </div>\n  <p class=\"bf-sr\" aria-live=\"polite\" id=\"bf-live\"></p>\n</div>\n<script>\n(function(){\n  // An illustrative pool. f = you follow the author, m = they follow you back, cat = has a cat photo.\n  var P=[\n    {id:'p1',e:'🐈',a:'@juno',t:'Cat on the keyboard again',f:true,m:true,cat:true,likes:40,age:5},\n    {id:'p2',e:'🚀',a:'@nasa-fan',t:'Launch window opens tonight',f:false,m:false,cat:false,likes:2100,age:30},\n    {id:'p3',e:'☕',a:'@ana',t:'New espresso grinder review',f:true,m:false,cat:false,likes:12,age:12},\n    {id:'p4',e:'😺',a:'@catsdaily',t:'Seven kittens, one box',f:false,m:false,cat:true,likes:5300,age:90},\n    {id:'p5',e:'🧪',a:'@ravi',t:'Our paper is out 🧪',f:true,m:true,cat:false,likes:85,age:45},\n    {id:'p6',e:'🏀',a:'@hoops',t:'Overtime! What a game',f:false,m:false,cat:false,likes:900,age:8},\n    {id:'p7',e:'📷',a:'@mei',t:'Sunset from the ferry',f:true,m:true,cat:false,likes:23,age:70},\n    {id:'p8',e:'🐱',a:'@ola',t:'Meet our new rescue cat',f:true,m:false,cat:true,likes:150,age:150},\n    {id:'p9',e:'📰',a:'@citydesk',t:'Transit fares change Monday',f:false,m:false,cat:false,likes:340,age:20},\n    {id:'p10',e:'🎨',a:'@tomas',t:'Open for commissions',f:true,m:true,cat:false,likes:9,age:200}\n  ];\n  function ago(m){return m<60?m+'m':Math.round(m/60)+'h'}\n  function newest(a,b){return a.age-b.age}\n  // Discover here: likes decayed by age, with a lift for people you follow. Illustrative, not Bluesky's code.\n  function hot(p){return Math.log10(p.likes+1)/Math.pow(p.age/60+2,.6)+(p.f?.35:0)}\n  var FEEDS=[\n    {k:'following',n:'Following',s:'chronological',why:'Only accounts you follow, newest first. No ranking.',pick:function(){return P.filter(function(p){return p.f}).sort(newest)}},\n    {k:'discover',n:'Discover',s:'algorithmic',why:'Trending posts mixed with your network, ranked by a score. Illustrative scoring.',pick:function(){return P.slice().sort(function(a,b){return hot(b)-hot(a)}).slice(0,6)}},\n    {k:'cats',n:'Cat pics',s:'by topic',why:'Any author, only posts with a cat. Newest first.',pick:function(){return P.filter(function(p){return p.cat}).sort(newest)}},\n    {k:'mutuals',n:'My mutuals',s:'by social graph',why:'Only people who follow you back. Newest first.',pick:function(){return P.filter(function(p){return p.m}).sort(newest)}}\n  ];\n  var tabs=document.getElementById('bf-tabs'),pool=document.getElementById('bf-pool'),list=document.getElementById('bf-list');\n  P.forEach(function(p){\n    var li=document.createElement('li');li.className='bf-p';\n    li.innerHTML='<span class=\"bf-e\" aria-hidden=\"true\">'+p.e+'</span><span class=\"bf-t\"><b>'+p.t+'</b><span>'+p.a+' · '+ago(p.age)+(p.f?' · following':'')+(p.m?' · mutual':'')+'</span></span><span class=\"bf-n\" aria-hidden=\"true\"></span>';\n    p.el=li;pool.appendChild(li);\n  });\n  var btns=FEEDS.map(function(f,i){\n    var li=document.createElement('li'),b=document.createElement('button');\n    b.type='button';b.className='bf-tab';b.setAttribute('role','radio');b.setAttribute('aria-checked','false');b.tabIndex=i?-1:0;\n    b.innerHTML='<b>'+f.n+'</b><small>'+f.s+'</small>';\n    b.addEventListener('click',function(){choose(i,true)});\n    b.addEventListener('keydown',function(ev){\n      var d=ev.key==='ArrowRight'||ev.key==='ArrowDown'?1:ev.key==='ArrowLeft'||ev.key==='ArrowUp'?-1:0;\n      if(d){ev.preventDefault();var j=(i+d+FEEDS.length)%FEEDS.length;choose(j,true);btns[j].focus();}\n    });\n    li.appendChild(b);tabs.appendChild(li);return b;\n  });\n  function choose(i,announce){\n    var f=FEEDS[i],picked=f.pick();\n    btns.forEach(function(b,j){b.setAttribute('aria-checked',String(j===i));b.tabIndex=j===i?0:-1});\n    P.forEach(function(p){var r=picked.indexOf(p);p.el.classList.toggle('in',r>=0);p.el.classList.toggle('out',r<0);p.el.querySelector('.bf-n').textContent=r>=0?r+1:''});\n    list.innerHTML='';\n    picked.forEach(function(p,r){\n      var li=document.createElement('li');li.className='bf-li';li.style.animationDelay=(r*40)+'ms';\n      li.innerHTML='<span class=\"r\">'+(r+1)+'</span><span class=\"bf-e\" aria-hidden=\"true\">'+p.e+'</span><span class=\"bf-t\"><b>'+p.t+'</b><span>'+p.a+' · '+ago(p.age)+(f.k==='discover'?' · '+p.likes.toLocaleString('en-US')+' likes':'')+'</span></span>';\n      list.appendChild(li);\n    });\n    document.getElementById('bf-why').textContent=f.why+' '+picked.length+' of 10 posts.';\n    document.getElementById('bf-gn').textContent=f.n;\n    document.getElementById('bf-sk').textContent='['+picked.map(function(p){return p.id}).join(', ')+']';\n    if(announce)document.getElementById('bf-live').textContent=f.n+' feed: '+picked.map(function(p){return p.t}).join('; ');\n  }\n  choose(0,false);\n})();\n</script>"
+    },
+    {
+      "heading": "A marketplace of algorithms",
+      "body": "Bluesky set out to replace one company's \"master algorithm\" with an open \"marketplace of algorithms\" [1]. Anyone can create a feed, and users can swap the defaults for ones others built [2]. Besides the chronological Following feed and the default Discover feed [3], people subscribe to feeds of only cat pictures or only posts from their mutuals [4]. Compare the single ranked stream of the [[X recommendation algorithm]] or the [[TikTok For You feed]].",
+      "sources": [
+        {
+          "url": "https://bsky.social/about/blog/3-30-2023-algorithmic-choice",
+          "title": "Algorithmic choice (Bluesky blog, March 2023)",
+          "quote": "We aim to replace the conventional \"master algorithm,\" controlled by a single company, with an open and diverse \"marketplace of algorithms.\""
+        },
+        {
+          "url": "https://bsky.social/about/blog/7-27-2023-custom-feeds",
+          "title": "Algorithmic Choice with Custom Feeds (Bluesky blog, July 2023)",
+          "quote": "On Bluesky, anyone can create a feed"
+        },
+        {
+          "url": "https://bsky.social/about/blog/09-04-2024-welcome",
+          "title": "Welcome to Bluesky! (Bluesky blog, September 2024)",
+          "quote": "Outside of your chronological Following feed and the default Discover feed, you can try out some new feeds!"
+        },
+        {
+          "url": "https://bsky.social/about/blog/7-27-2023-custom-feeds",
+          "title": "Algorithmic Choice with Custom Feeds (Bluesky blog, July 2023)",
+          "quote": "Whether you want to subscribe to a feed of only cat pictures or to posts from only your mutuals, this is possible."
+        }
+      ]
+    },
+    {
+      "heading": "How a feed generator works",
+      "body": "A feed generator receives a request from a user's server and answers with a list of post URIs [1]; that server then hydrates them into full posts [2]. The service is identified by a DID, and each algorithm it hosts is declared by a record in its creator's repository [3]. Most generators read the network's firehose, which sends every published record [4], and can drop anything older than 48 hours [5].",
+      "sources": [
+        {
+          "url": "https://atproto.com/guides/feeds",
+          "title": "Feeds (AT Protocol docs)",
+          "quote": "the server receives a request from a user's server and returns a list of post URIs with some optional metadata attached"
+        },
+        {
+          "url": "https://atproto.com/guides/feeds",
+          "title": "Feeds (AT Protocol docs)",
+          "quote": "Those posts are then hydrated into full views by the requesting server and sent back to the client."
+        },
+        {
+          "url": "https://atproto.com/guides/feeds",
+          "title": "Feeds (AT Protocol docs)",
+          "quote": "The service itself is identified by DID, while each algorithm that it hosts is declared by a record in the repo of the account that created it."
+        },
+        {
+          "url": "https://atproto.com/guides/feeds",
+          "title": "Feeds (AT Protocol docs)",
+          "quote": "This websocket will send you every record that is published on the network."
+        },
+        {
+          "url": "https://atproto.com/guides/feeds",
+          "title": "Feeds (AT Protocol docs)",
+          "quote": "you can likely garbage collect any data that is older than 48 hours from your feed"
+        }
+      ]
+    },
+    {
+      "heading": "Discover, the default",
+      "body": "Discover mixes what is trending across the network with posts from accounts you follow and accounts near your social graph [1]. If you don't like it, you can remove it and pin any other custom feed in its place [2]. Behind every feed, relays collect updates from many servers into a single firehose [3], the stream feed generators index.",
+      "sources": [
+        {
+          "url": "https://bsky.social/about/blog/7-27-2023-custom-feeds",
+          "title": "Algorithmic Choice with Custom Feeds (Bluesky blog, July 2023)",
+          "quote": "The initial version of Discover mixes in a global view of what's trending in the network with posts from accounts you follow and posts from accounts near your social graph."
+        },
+        {
+          "url": "https://bsky.social/about/blog/7-27-2023-custom-feeds",
+          "title": "Algorithmic Choice with Custom Feeds (Bluesky blog, July 2023)",
+          "quote": "If you don't like our default Discover feed, you can simply remove it and replace it with any other custom feed."
+        },
+        {
+          "url": "https://atproto.com/guides/overview",
+          "title": "Protocol overview (AT Protocol docs)",
+          "quote": "Relays collect data updates from many servers in to a single firehose."
+        }
+      ]
+    },
+    {
+      "kind": "figure",
+      "heading": "How a custom feed is served",
+      "body": "<style>\n.bg{box-sizing:border-box;max-width:1040px;margin:0 auto;font-family:var(--ow-font);color:var(--ow-fg)}\n.bg *{box-sizing:border-box}\n.bg ol{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;counter-reset:bg}\n.bg li{position:relative;padding:14px 14px 16px;border-radius:14px;background:var(--ow-panel);border:1px solid var(--ow-line);counter-increment:bg}\n.bg li.gen{border:2px solid var(--ow-accent)}\n.bg li::before{content:counter(bg);display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--ow-accent);color:var(--ow-accent-ink);font-weight:750;font-size:14px;margin-bottom:10px}\n.bg li:not(:last-child)::after{content:\"\";position:absolute;top:28px;right:-10px;width:9px;height:9px;border-top:2px solid var(--ow-muted);border-right:2px solid var(--ow-muted);transform:rotate(45deg);opacity:.6}\n.bg b{display:block;font-size:16px;line-height:1.3;margin-bottom:6px}\n.bg span{display:block;font-size:14px;line-height:1.45;color:var(--ow-muted)}\n.bg code{font-family:var(--ow-mono);font-size:12.5px;color:var(--ow-fg);overflow-wrap:anywhere}\n.bg .side{margin:12px 0 0;display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;padding:12px 14px;border-radius:14px;border:1px dashed var(--ow-line);font-size:14.5px;line-height:1.45}\n.bg .g{display:flex;align-items:center;gap:8px;color:var(--ow-muted)}\n.bg .side i{font-style:normal;color:var(--ow-muted)}\n.bg .pill{display:inline-block;margin:0;font-size:14px;padding:3px 10px;border-radius:99px;background:var(--ow-panel);border:1px solid var(--ow-line);font-weight:650;color:var(--ow-fg);white-space:nowrap}\n@media (max-width:600px){.bg .side{flex-direction:column;align-items:flex-start}.bg .side i{transform:rotate(90deg);margin-left:20px}}\n@media (max-width:860px){.bg ol{grid-template-columns:repeat(2,minmax(0,1fr))}.bg li::after{display:none}.bg li:last-child{grid-column:1/-1}}\n@media (max-width:440px){.bg ol{grid-template-columns:1fr}}\n</style>\n<div class=\"bg\" role=\"img\" aria-label=\"Serving a Bluesky custom feed: the app asks the AppView for a feed; the AppView looks up the feed generator's DID; it calls getFeedSkeleton; the generator returns post URIs; the AppView hydrates them and returns the feed. Feed generators build their index from the relay's firehose.\">\n  <ol>\n    <li><b>App asks</b><span>You open a feed. The app asks the AppView for it by the feed's <code>at://</code> URI.</span></li>\n    <li><b>AppView looks up</b><span>It resolves the URI to the feed generator's DID and service address.</span></li>\n    <li class=\"gen\"><b>Generator picks</b><span>A <code>getFeedSkeleton</code> call returns only a list of post URIs. Anyone can run this service.</span></li>\n    <li><b>AppView hydrates</b><span>It fills in post text, authors, likes and replies.</span></li>\n    <li><b>You scroll</b><span>The finished feed appears as one of your pinned feeds.</span></li>\n  </ol>\n  <div class=\"side\"><div class=\"g\"><b class=\"pill\">PDS</b>your posts</div><i aria-hidden=\"true\">→</i><div class=\"g\"><b class=\"pill\">Relay</b>one firehose</div><i aria-hidden=\"true\">→</i><div class=\"g\"><b class=\"pill\">Feed generators</b>index what they need</div></div>\n</div>"
+    }
+  ],
+  "data": {
+    "tags": [
+      "bluesky",
+      "at-protocol",
+      "feeds",
+      "algorithm",
+      "decentralized"
+    ],
+    "facts": [
+      {
+        "label": "Custom feeds launched",
+        "value": "May 2023"
+      },
+      {
+        "label": "Following feed",
+        "value": "Chronological"
+      },
+      {
+        "label": "Discover feed",
+        "value": "Default, algorithmic"
+      },
+      {
+        "label": "Who can build a feed",
+        "value": "Anyone"
+      },
+      {
+        "label": "A generator returns",
+        "value": "A list of post URIs"
+      },
+      {
+        "label": "Protocol",
+        "value": "AT Protocol"
+      }
+    ],
+    "see": [
+      "X recommendation algorithm",
+      "tiktok-for-you-feed",
+      "instagram-ranking",
+      "Reddit hot ranking",
+      "Hacker News ranking",
+      "LinkedIn feed ranking"
+    ]
+  }
+}

@@ -1,0 +1,125 @@
+{
+  "title": "YouTube recommendations",
+  "slug": "youtube-recommendations",
+  "hue": 6,
+  "lede": "YouTube's recommendation system picks the videos on your homepage and in Up Next, learning from clicks, watch time, survey answers, shares, likes and dislikes.",
+  "sections": [
+    {
+      "kind": "experience",
+      "heading": "Views, watch time or value",
+      "body": "<style>\n.yr{--you:oklch(0.58 0.2 25);box-sizing:border-box;max-width:1040px;margin:0 auto;display:grid;gap:20px;grid-template-columns:1fr;font-family:var(--ow-font);color:var(--ow-fg)}\n.yr *{box-sizing:border-box}\n@media (min-width:760px){.yr{grid-template-columns:minmax(0,.82fr) minmax(0,1.5fr);gap:26px;align-items:start}}\n.yr-q{margin:0 0 4px;font-size:18px;line-height:1.35;font-weight:650}\n.yr-sub{margin:0 0 14px;font-size:15px;line-height:1.4;color:var(--ow-muted)}\n.yr-you{display:flex;align-items:center;gap:12px;margin-bottom:12px}\n.yr-thumb{flex:none;width:64px;height:40px;border-radius:8px;display:grid;place-items:center;background:color-mix(in oklch,var(--c) 20%,var(--ow-panel));color:var(--c);border:1px solid color-mix(in oklch,var(--c) 35%,transparent)}\n.yr-thumb svg{width:22px;height:22px}\n.yr-you b{font-size:16px}\n.yr-sl{padding:12px 14px;border-radius:14px;background:var(--ow-panel);border:1px solid var(--ow-line);margin-bottom:10px}\n.yr-sl label{display:flex;justify-content:space-between;gap:10px;font-size:15px;font-weight:600}\n.yr-sl output{font-family:var(--ow-mono);font-variant-numeric:tabular-nums;color:var(--you);font-weight:700}\n.yr-sl input{width:100%;margin:8px 0 2px;height:28px;accent-color:var(--you);cursor:pointer}\n.yr-sl input:focus-visible{outline:3px solid color-mix(in oklch,var(--you) 50%,transparent);outline-offset:2px;border-radius:99px}\n.yr-sl small{display:block;font-size:13px;color:var(--ow-muted);line-height:1.35}\n.yr-cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}\n.yr-col{border-radius:16px;background:var(--ow-panel);border:1px solid var(--ow-line);padding:14px 12px 12px}\n.yr-era{margin:0;font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ow-muted)}\n.yr-goal{margin:2px 0 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:17px;font-weight:700;line-height:1.2}\n.yr-list{position:relative;list-style:none;margin:0;padding:0;height:calc(3*58px + 2*8px)}\n.yr-card{position:absolute;left:0;right:0;top:0;height:58px;padding:8px 10px;border-radius:12px;background:var(--ow-bg);border:1px solid var(--ow-line);display:grid;grid-template-columns:22px minmax(0,1fr);column-gap:8px;align-items:center;transition:transform .45s cubic-bezier(.2,.8,.2,1)}\n.yr-card.me{box-shadow:0 0 0 2px var(--you)}\n.yr-rank{grid-row:span 2;font-size:20px;font-weight:800;text-align:center;color:var(--ow-muted);font-variant-numeric:tabular-nums}\n.yr-card.me .yr-rank{color:var(--you)}\n.yr-name{display:block;font-size:14.5px;font-weight:650;line-height:1.2;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}\n.yr-meter{display:flex;align-items:center;gap:8px;margin-top:6px;min-width:0}\n.yr-num{flex:none;font-family:var(--ow-mono);font-size:12.5px;color:var(--ow-muted);font-variant-numeric:tabular-nums}\n.yr-bar{display:block;flex:1;min-width:0;height:7px;border-radius:99px;background:color-mix(in oklch,var(--ow-line) 70%,transparent);overflow:hidden}\n.yr-bar i{display:block;height:100%;width:0;border-radius:inherit;background:var(--c);transition:width .45s cubic-bezier(.2,.8,.2,1)}\n.yr-say{margin:14px 0 0;font-size:16px;line-height:1.45;font-weight:600;min-height:2.9em}\n.yr-say em{font-style:normal;color:var(--you)}\n.yr-key{margin:6px 0 0;font-size:13.5px;line-height:1.45;color:var(--ow-muted)}\n.yr-legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin:0 0 10px;padding:0;list-style:none;font-size:13.5px;color:var(--ow-muted)}\n.yr-legend li{display:flex;align-items:center;gap:6px}\n.yr-legend i{width:10px;height:10px;border-radius:3px;background:var(--c)}\n.yr-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}\n@media (prefers-reduced-motion:reduce){.yr-card,.yr-bar i{transition:none}}\n@media (max-width:620px){.yr-cols{gap:8px}.yr-col{padding:10px 8px 8px}.yr-era{font-size:10.5px;letter-spacing:.04em}.yr-goal{font-size:14px;white-space:normal;min-height:2.4em}.yr-list{height:calc(3*44px + 2*8px)}.yr-card{height:44px;padding:6px 6px;grid-template-columns:16px minmax(0,1fr);column-gap:6px}.yr-rank{font-size:16px;grid-row:auto}.yr-name{display:none}.yr-meter{flex-direction:column;align-items:stretch;gap:4px;margin:0}.yr-num{font-size:10.5px;letter-spacing:-.02em;white-space:nowrap}.yr-bar{flex:none;width:100%}}\n</style>\n<div class=\"yr\">\n  <div>\n    <p class=\"yr-q\" id=\"yr-q\">Tune your video. Watch three versions of YouTube rank it.</p>\n    <p class=\"yr-sub\">Same video, same 1,000 impressions. Only the goal changes.</p>\n    <div class=\"yr-you\"><span class=\"yr-thumb\" style=\"--c:oklch(0.58 0.2 25)\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M8 5.5v13l11-6.5z\"/></svg></span><b>Your video</b></div>\n    <div class=\"yr-sl\"><label for=\"yr-ctr\"><span>Click-through rate</span><output id=\"yr-ctro\">14%</output></label>\n      <input id=\"yr-ctr\" type=\"range\" min=\"1\" max=\"20\" step=\"0.5\" value=\"14\"><small>Share of people shown it who click.</small></div>\n    <div class=\"yr-sl\"><label for=\"yr-avd\"><span>Average view duration</span><output id=\"yr-avdo\">1:00</output></label>\n      <input id=\"yr-avd\" type=\"range\" min=\"10\" max=\"480\" step=\"10\" value=\"60\"><small>How long a viewer stays, on average.</small></div>\n    <div class=\"yr-sl\"><label for=\"yr-sat\"><span>Survey: rated 4 or 5 stars</span><output id=\"yr-sato\">30%</output></label>\n      <input id=\"yr-sat\" type=\"range\" min=\"0\" max=\"100\" step=\"5\" value=\"30\"><small>Only 4 and 5 star ratings count as valued.</small></div>\n  </div>\n  <div>\n    <ul class=\"yr-legend\" aria-hidden=\"true\">\n      <li><i style=\"--c:oklch(0.58 0.2 25)\"></i>Your video</li>\n      <li><i style=\"--c:oklch(0.62 0.15 75)\"></i>Clickbait: high clicks, quick exits</li>\n      <li><i style=\"--c:oklch(0.55 0.13 240)\"></i>Full highlights: fewer clicks, long, loved</li>\n    </ul>\n    <div class=\"yr-cols\" id=\"yr-cols\"></div>\n    <p class=\"yr-say\" id=\"yr-say\" aria-live=\"polite\"></p>\n    <p class=\"yr-key\">Illustrative numbers per 1,000 impressions. YouTube names these signals but publishes no formula; the real system also predicts each viewer's own survey answers.</p>\n  </div>\n</div>\n<script>\n(function(){\n  var goals=[\n    {id:'views',era:'Until 2012',goal:'Views',unit:function(v){return Math.round(v)+' views'},f:function(x){return x.ctr*10}},\n    {id:'wt',era:'From 2012',goal:'Watch time',unit:function(v){return fmtH(v)},f:function(x){return x.ctr*10*x.avd/60}},\n    {id:'vwt',era:'Surveys',goal:'Valued watch time',unit:function(v){return fmtH(v)},f:function(x){return x.ctr*10*x.avd/60*x.sat/100}}\n  ];\n  function fmtH(min){return min>=60?(min/60).toFixed(1)+' h':Math.round(min)+' min'}\n  var vids=[\n    {id:'you',name:'Your video',c:'oklch(0.58 0.2 25)',ctr:14,avd:60,sat:30},\n    {id:'bait',name:'Clickbait',c:'oklch(0.62 0.15 75)',ctr:12,avd:40,sat:20},\n    {id:'full',name:'Full highlights',c:'oklch(0.55 0.13 240)',ctr:5,avd:360,sat:80}\n  ];\n  var cols=document.getElementById('yr-cols');\n  goals.forEach(function(g){\n    var col=document.createElement('section');col.className='yr-col';col.setAttribute('aria-label',g.goal);\n    col.innerHTML='<p class=\"yr-era\">'+g.era+'</p><p class=\"yr-goal\">'+g.goal+'</p><ol class=\"yr-list\"></ol>';\n    var ol=col.querySelector('ol');g.cards={};\n    vids.forEach(function(v){\n      var li=document.createElement('li');li.className='yr-card'+(v.id==='you'?' me':'');li.style.setProperty('--c',v.c);\n      li.innerHTML='<span class=\"yr-rank\"></span><span class=\"yr-name\">'+v.name+'</span><span class=\"yr-meter\"><span class=\"yr-bar\"><i></i></span><span class=\"yr-num\"></span></span>';\n      ol.appendChild(li);g.cards[v.id]=li;\n    });\n    cols.appendChild(col);\n  });\n  var ctr=document.getElementById('yr-ctr'),avd=document.getElementById('yr-avd'),sat=document.getElementById('yr-sat'),say=document.getElementById('yr-say');\n  function mmss(s){return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')}\n  var ORD=['1st','2nd','3rd'];\n  function render(){\n    var y=vids[0];y.ctr=+ctr.value;y.avd=+avd.value;y.sat=+sat.value;\n    document.getElementById('yr-ctro').textContent=y.ctr+'%';\n    document.getElementById('yr-avdo').textContent=mmss(y.avd);avd.setAttribute('aria-valuetext',mmss(y.avd)+' minutes');\n    document.getElementById('yr-sato').textContent=y.sat+'%';\n    var places=[];\n    goals.forEach(function(g){\n      var ranked=vids.slice().sort(function(a,b){return g.f(b)-g.f(a)}),top=g.f(ranked[0])||1;\n      var h=g.cards.you.offsetHeight||58;\n      ranked.forEach(function(v,i){\n        var el=g.cards[v.id];el.style.transform='translateY('+(i*(h+8))+'px)';\n        el.querySelector('.yr-rank').textContent=i+1;\n        el.querySelector('.yr-num').textContent=g.unit(g.f(v));\n        el.querySelector('.yr-bar i').style.width=Math.max(2,g.f(v)/top*100)+'%';\n        if(v.id==='you')places.push(i);\n      });\n    });\n    var t='Your video is <em>'+ORD[places[0]]+'</em> by views, <em>'+ORD[places[1]]+'</em> by watch time, <em>'+ORD[places[2]]+'</em> by valued watch time.';\n    if(places[0]===0&&places[2]>0)t+=' Clicks alone no longer win.';\n    else if(places[2]===0&&places[0]>0)t+=' Fewer clicks, but the time people value wins.';\n    else if(places[0]===0&&places[1]===0&&places[2]===0)t+=' First under every goal.';\n    say.innerHTML=t;\n  }\n  [ctr,avd,sat].forEach(function(i){i.addEventListener('input',render)});\n  window.addEventListener('resize',render);\n  render();\n})();\n</script>"
+    },
+    {
+      "heading": "Where recommendations show up",
+      "body": "Recommendations work in two main places: the homepage, a mix of personalized picks, subscriptions and news, and the Up Next panel beside the video you are watching [1]. YouTube says they drive more of its viewing than subscriptions or search [1]. Each surface leans on different signals: Up Next uses the current video as its main signal, the homepage mostly your watch history [2]. Short videos get their own feed, see [[YouTube Shorts recommendations]].",
+      "sources": [
+        {
+          "url": "https://blog.youtube/inside-youtube/on-youtubes-recommendation-system/",
+          "title": "On YouTube's recommendation system (YouTube Blog, September 2021)",
+          "quote": "You can find recommendations at work in two main places: your homepage and the “Up Next” panel."
+        },
+        {
+          "url": "https://blog.youtube/inside-youtube/on-youtubes-recommendation-system/",
+          "title": "On YouTube's recommendation system (YouTube Blog, September 2021)",
+          "quote": "Recommendations drive a significant amount of the overall viewership on YouTube, even more than channel subscriptions or search."
+        },
+        {
+          "url": "https://support.google.com/youtube/answer/16089387?hl=en",
+          "title": "How YouTube recommendations work (YouTube Help)",
+          "quote": "our system uses the video you’re currently watching as the main signal when suggesting a video to play next"
+        }
+      ]
+    },
+    {
+      "heading": "From views to watch time",
+      "body": "Until 2012 related and recommended videos were served by clicks, which rewarded thumbnails over videos people actually watched [1]. In March 2012 YouTube made time watched the leading indicator [1], and in October search followed [2]. YouTube later said views dropped 20% right after the change [3]. That is why [[Watch time]] became the number creators chase.",
+      "sources": [
+        {
+          "url": "https://blog.youtube/news-and-events/changes-to-related-and-recommended/",
+          "title": "Changes to Related and Recommended Videos (YouTube Blog, March 2012)",
+          "quote": "this system serves videos based on the number of clicks they receive"
+        },
+        {
+          "url": "https://blog.youtube/news-and-events/changes-to-related-and-recommended/",
+          "title": "Changes to Related and Recommended Videos (YouTube Blog, March 2012)",
+          "quote": "While we'll still be looking at clicks, engagement will become the leading indicator for serving these videos."
+        },
+        {
+          "url": "https://blog.youtube/news-and-events/youtube-search-now-optimized-for-time/",
+          "title": "YouTube search, now optimized for time watched (YouTube Blog, October 2012)",
+          "quote": "We've started adjusting the ranking of videos in YouTube search to reward engaging videos that keep viewers watching."
+        },
+        {
+          "url": "https://blog.youtube/inside-youtube/on-youtubes-recommendation-system/",
+          "title": "On YouTube's recommendation system (YouTube Blog, September 2021)",
+          "quote": "When we first incorporated watchtime into recommendations, we saw an immediate 20% drop in views."
+        }
+      ]
+    },
+    {
+      "heading": "Valued watch time",
+      "body": "Not all watch time is equal, so YouTube asks viewers to rate videos from one to five stars, and only four or five stars count as valued watch time [1]. A model trained on those answers predicts how everyone else would rate a video [1]. YouTube's own creator help lists the same chain: did people choose to watch, how long they stayed, and whether they liked it or rated it well afterwards [2].",
+      "sources": [
+        {
+          "url": "https://blog.youtube/inside-youtube/on-youtubes-recommendation-system/",
+          "title": "On YouTube's recommendation system (YouTube Blog, September 2021)",
+          "quote": "Only videos that you rate highly with four or five stars are counted as valued watchtime."
+        },
+        {
+          "url": "https://blog.youtube/inside-youtube/on-youtubes-recommendation-system/",
+          "title": "On YouTube's recommendation system (YouTube Blog, September 2021)",
+          "quote": "we’ve trained a machine learning model to predict potential survey responses for everyone"
+        },
+        {
+          "url": "https://support.google.com/youtube/answer/11914225?hl=en",
+          "title": "Search & discovery tips (YouTube Help)",
+          "quote": "Our systems use both avg. view duration and avg. % viewed as signals to inform ranking."
+        }
+      ]
+    },
+    {
+      "kind": "figure",
+      "heading": "What recommendations rewarded",
+      "body": "<style>\n.yt{box-sizing:border-box;max-width:1040px;margin:0 auto;font-family:var(--ow-font);color:var(--ow-fg)}\n.yt ol{position:relative;list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}\n.yt ol::before{content:\"\";position:absolute;left:4%;right:4%;top:15px;height:3px;border-radius:3px;background:linear-gradient(90deg,var(--ow-line),var(--ow-accent))}\n.yt li{position:relative;padding-top:42px}\n.yt li::before{content:\"\";position:absolute;top:6px;left:0;width:21px;height:21px;border-radius:50%;background:var(--ow-bg);border:3px solid var(--ow-accent)}\n.yt time{display:block;font-family:var(--ow-mono);font-size:14px;font-weight:700;color:var(--ow-accent)}\n.yt b{display:block;font-size:17px;line-height:1.25;margin:4px 0 6px}\n.yt span{display:block;font-size:14.5px;line-height:1.45;color:var(--ow-muted)}\n.yt .m{display:inline-block;margin-top:6px;padding:2px 8px;border-radius:99px;font-family:var(--ow-mono);font-size:12.5px;font-weight:700;color:var(--ow-fg);background:color-mix(in oklch,var(--ow-accent) 16%,transparent)}\n@media (max-width:820px){.yt ol{grid-template-columns:1fr;gap:16px}.yt ol::before{left:9px;right:auto;top:8px;bottom:8px;width:3px;height:auto;background:linear-gradient(180deg,var(--ow-line),var(--ow-accent))}.yt li{padding:0 0 0 38px}.yt li::before{top:2px}}\n</style>\n<div class=\"yt\" role=\"img\" aria-label=\"Timeline of what YouTube's recommendations rewarded: 2008 popularity, 2011 clicks, March 2012 watch time in recommendations, October 2012 watch time in search, then survey based valued watch time\">\n  <ol>\n    <li><time>2008</time><b>Popularity</b><span>One big Trending page ranked by views, the same for everyone.</span></li>\n    <li><time>2011</time><b>Clicks</b><span>YouTube learns that a click does not mean the video was watched.</span></li>\n    <li><time>Mar 2012</time><b>Watch time</b><span>Related and Recommended videos shift to time watched.</span><em class=\"m\">views −20% at once</em></li>\n    <li><time>Oct 2012</time><b>Search too</b><span>Search ranking starts rewarding videos that keep viewers watching.</span></li>\n    <li><time>Later</time><b>Valued watch time</b><span>1 to 5 star surveys; only 4 and 5 stars count as valued.</span></li>\n  </ol>\n</div>"
+    }
+  ],
+  "data": {
+    "tags": [
+      "youtube",
+      "recommendation",
+      "watch-time",
+      "algorithm",
+      "reach"
+    ],
+    "facts": [
+      {
+        "label": "Signals it learns from",
+        "value": "80 billion+"
+      },
+      {
+        "label": "Watch time added",
+        "value": "March 2012"
+      },
+      {
+        "label": "Views right after",
+        "value": "Dropped 20%"
+      },
+      {
+        "label": "Valued watch time",
+        "value": "4 or 5 star survey ratings"
+      },
+      {
+        "label": "Main surfaces",
+        "value": "Homepage and Up Next"
+      }
+    ],
+    "see": [
+      "YouTube Shorts recommendations",
+      "Watch time",
+      "TikTok For You feed",
+      "instagram-ranking",
+      "Hook (short video)",
+      "X recommendation algorithm"
+    ]
+  }
+}
