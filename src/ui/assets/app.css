@@ -245,6 +245,23 @@ button {
 .who span {
   color: var(--soft);
 }
+.who em {
+  font-style: normal;
+  color: var(--ink);
+}
+.keyname {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.keyname input {
+  flex: 1 1 260px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0 18px;
+  font: inherit;
+  background: var(--paper);
+}
 
 /* ---- buttons ----------------------------------------------------------------------- */
 .btn {

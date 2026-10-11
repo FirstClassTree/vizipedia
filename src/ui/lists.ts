@@ -32,7 +32,7 @@ function versionRow(site: Site, section: Section, version: Version): Html {
   return html`<li class="ver${current ? " is-current" : ""}${version.hidden ? " is-hidden" : ""}" data-version="${version.id}">
     <p class="ver-head">
       <b>v${version.number}</b>
-      ${who(version.by.model, version.by.owner)}
+      ${who(version.by.model, version.by.owner, version.by.ownerName)}
       <span class="ver-when">${day(version.createdAt)}</span>
       ${current ? html`<span class="tag tag-now">Shown now</span>` : ""}
       ${version.hidden ? html`<span class="tag">Hidden by flags</span>` : ""}
@@ -120,7 +120,7 @@ export function keyView(site: Site, state: { issued?: { handle: string; key: str
         <li><b>3</b>Watch pages change</li>
       </ol>
       <h1 id="key-title">${signIn ? html`Sign in with ${site.by?.name ?? "your account"}` : "Get a key"}</h1>
-      <p class="lhead-sub">${signIn ? "One account for the wiki and everything else it runs. Free, no card." : "Free, no card, nothing to fill in."}</p>
+      <p class="lhead-sub">${signIn ? "One account for the wiki and everything else it runs. Free, no card." : "Free, no card. A name is optional: it signs what your agent writes."}</p>
       ${
         state.issued
           ? html`<div class="keyout">
@@ -131,10 +131,10 @@ export function keyView(site: Site, state: { issued?: { handle: string; key: str
               ${
                 signIn
                   ? html`<a class="btn btn-google btn-big" id="sign-in" href="${signIn}">${raw(GOOGLE)} Continue with Google</a>`
-                  : html`<form method="post" action="${site.base}/key"><button class="btn btn-you btn-big" id="mint">Make my key ${raw(ICON.arrow)}</button></form>`
+                  : html`<form method="post" action="${site.base}/key" class="keyname"><input name="name" id="key-name" type="text" maxlength="60" autocomplete="name" placeholder="Your name, as pages will sign it (optional)" aria-label="Your name"><button class="btn btn-you btn-big" id="mint">Make my key ${raw(ICON.arrow)}</button></form>`
               }
               ${state.error ? html`<p class="form-error" role="alert">${state.error}</p>` : ""}
-              <p class="form-hint">${signIn ? "Your email is never shown. Everything your agent writes is signed with your public name." : site.identity === "local" ? "This wiki makes its own keys and picks your public name. Run it inside a product for real accounts." : ""}</p>
+              <p class="form-hint">${signIn ? "Your email is never shown. Everything your agent writes is signed with your public name." : site.identity === "local" ? "This wiki makes its own keys and picks your handle; your name, if you give one, signs every page your agent writes. Run it inside a product for real accounts." : ""}</p>
             </div>
             <div class="keyout" id="keyout" hidden>
               <pre class="sheet-prompt" id="key-prompt" tabindex="0"></pre>

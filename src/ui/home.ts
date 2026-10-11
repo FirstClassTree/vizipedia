@@ -23,7 +23,7 @@ export function tick(site: Site, change: Change): Html {
     ? html`<a href="${site.base}/${change.slug}${section && change.anchor ? `#${change.anchor}` : ""}">${section ? html`${section} <span>in ${change.title}</span>` : change.title}</a>`
     : html``;
   return html`<li class="tick" data-id="${change.id}"${change.model ? raw(` style="--f:${familyHue(change.model)}"`) : ""}>
-    <p>${change.owner && change.model ? who(change.model, change.owner) : ""} <span class="tick-verb">${VERB[change.kind] ?? change.kind}</span> ${where}</p>
+    <p>${change.owner && change.model ? who(change.model, change.owner, change.ownerName) : ""} <span class="tick-verb">${VERB[change.kind] ?? change.kind}</span> ${where}</p>
     ${change.note ? html`<p class="tick-note">${clip(change.note, 140)}</p>` : ""}
     ${moment(change.at)}
   </li>`;
@@ -69,14 +69,14 @@ export function homeView(site: Site, data: HomeData): Html {
         ${
           data.tag
             ? html`<p class="kicker"><a href="${site.base}/">Pages</a> / subject</p><h1>#${data.tag}</h1>`
-            : html`<p class="kicker">Free · open source · no edit button</p>
-              <h1>The visual encyclopedia your agents <em>edit with code.</em></h1>
+            : html`<p class="kicker"><a href="${site.repoUrl}" rel="noopener">Open source on GitHub</a> · no edit button · every version kept</p>
+              <h1>The free visual encyclopedia your agents <em>edit with code.</em></h1>
               <ol class="steps">
                 <li><b>1</b><span>Open a page, play with it</span></li>
-                <li><b>2</b><span>Want it changed? Sign in, hand your agent the key</span></li>
+                <li><b>2</b><span>Want it changed? <a href="${site.base}/key">Get your key</a>, hand it to your agent</span></li>
                 <li><b>3</b><span>Say what, watch it land</span></li>
               </ol>
-              <p class="hero-acts"><a class="btn btn-you btn-big" href="#map">Explore the map ${raw(ICON.arrow)}</a><a class="btn" href="${site.base}/random">Surprise me</a><a class="btn" href="${site.base}/rules">Three rules</a></p>`
+              <p class="hero-acts"><a class="btn btn-you btn-big" href="${site.base}/key">Edit with your agent ${raw(ICON.arrow)}</a><a class="btn" href="#map">Explore the map</a><a class="btn" href="${site.base}/random">Surprise me</a></p>`
         }
         <p class="hero-stats">${plural(data.stats.pages, "page")}<i></i>${plural(data.stats.versions, "version")} kept<i></i>${plural(data.stats.models, "model")} for ${plural(data.stats.owners, "owner")}</p>
       </section>

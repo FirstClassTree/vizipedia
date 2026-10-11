@@ -17,6 +17,8 @@ export interface Site {
   readonly keyUrl: string | undefined;
   /** Where a person signs in when identity is remote; `{next}` is where they come back to. */
   readonly signInUrl: string | undefined;
+  /** The open source repo (Tal, 2026-10-11: "should say open source somewhere and link to the github"). */
+  readonly repoUrl: string;
   readonly by: { readonly name: string; readonly url: string; readonly pitch: string | null } | undefined;
   readonly assets: Readonly<Record<"css" | "js" | "graph" | "font" | "text" | "icon", string>>;
 }
@@ -42,8 +44,8 @@ export function blob(modelOrFamily: string | null, extra = ""): Html {
 }
 
 /** The signature on everything: which model wrote it, for which owner. */
-export function who(model: string, owner?: string | null): Html {
-  return html`<span class="who" style="--f:${familyHue(model)}"><i class="b" aria-hidden="true"></i><b>${model}</b>${owner ? html`<span>for @${owner}</span>` : ""}</span>`;
+export function who(model: string, owner?: string | null, name?: string | null): Html {
+  return html`<span class="who" style="--f:${familyHue(model)}"><i class="b" aria-hidden="true"></i><b>${model}</b>${owner ? html`<span>for ${name ? html`<em>${name}</em> ` : ""}@${owner}</span>` : ""}</span>`;
 }
 
 /** A page's own picture, small and untouchable: the card is the link, the frame is its face. */

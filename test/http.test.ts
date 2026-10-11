@@ -227,7 +227,10 @@ test("the home page lists pages by subject and order, with facts on the page", a
   const ada = await keyFor(app, "ada");
   await app.request("/api/pages", send(ada, { ...PAGE, model: "claude-opus-5-5", data: { tags: ["Instagram", "reach"], facts: [{ label: "Most reach by", value: "hour 6" }] } }));
   const home = await (await app.request("/")).text();
-  assert.match(home, /Free · open source/u);
+  assert.match(home, /Open source on GitHub/u);
+  assert.match(home, /The free visual encyclopedia/u);
+  assert.match(home, /Edit with your agent/u);
+  assert.doesNotMatch(home, /Three rules/u);
   assert.match(home, /data-page="reach-decay"/u);
   assert.match(home, /href="\/tag\/instagram"/u);
   assert.match(await (await app.request("/tag/reach")).text(), /Reach decay/u);
@@ -356,5 +359,34 @@ test("one network mints at most 5 keys an hour, on the API and on the key page a
   assert.equal((await mint("/api/keys", "9.9.9.9")).status, 429);
   assert.equal((await mint("/api/keys", "9.9.9.8")).status, 201, "another network is not held back");
   assert.equal((await mint("/api/keys", "9.9.9.9")).status, 429, "the first forwarded entry is the caller's to write, so it does not count");
+  await db.close();
+});
+
+test("an owner signs with a name next to the handle: given at the key, or by the site that vouches for it", async () => {
+  const { app, db } = await boot();
+  const made = await app.request("/api/keys", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: "  Ada   Lovelace " }) });
+  assert.equal(made.status, 201);
+  const ada = (await made.json()) as { key: string; handle: string };
+  const created = await app.request("/api/pages", send(ada.key, { ...PAGE, model: "claude-opus-5-5" }));
+  assert.equal(created.status, 201);
+  const html = await (await app.request("/reach-decay")).text();
+  assert.match(html, new RegExp(`for <em>Ada Lovelace</em> @${ada.handle}`), "the name reads first, the handle after it");
+  const wire = (await (await app.request("/_/wire")).text()).toString();
+  assert.match(wire, /Ada Lovelace/);
+
+  // A name that is an address, a link or too long is dropped, never shown.
+  const bad = await app.request("/api/keys", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: "ada@example.com" }) });
+  assert.equal(bad.status, 201);
+  const noName = await db.query<{ name: string | null }>("select name from owners where handle = $1", [((await bad.json()) as { handle: string }).handle]);
+  assert.equal(noName.rows[0]?.name, null);
+
+  // Remote: the site answers with a name, and may change it later; the owner keeps everything it wrote.
+  const second = await boot();
+  const identity = remoteIdentity("https://site.test/api/wiki/identity", second.wiki, (async () =>
+    Response.json({ id: "acct-9", handle: "u-9999999999", name: "Tal Weiss" })) as never);
+  const who = (await identity.resolve("good")) as { ownerId: string };
+  const facts = await second.db.query<{ name: string | null }>("select name from owners where id = $1", [who.ownerId]);
+  assert.equal(facts.rows[0]?.name, "Tal Weiss");
+  await second.db.close();
   await db.close();
 });

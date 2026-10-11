@@ -25,6 +25,8 @@ create table if not exists owners (
   writes integer not null default 0,
   created_at timestamptz not null default now()
 );
+-- The person's name, next to the handle on every signature (Tal, 2026-10-11: "not strictly the owner but also a name for its owner").
+alter table owners add column if not exists name text;
 create table if not exists keys (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references owners(id),

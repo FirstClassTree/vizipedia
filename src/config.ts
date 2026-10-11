@@ -28,6 +28,8 @@ export interface Config {
    */
   readonly signInUrl: string | undefined;
   readonly signup: "open" | "closed";
+  /** The open source repo, linked from the home page and the footer (Tal, 2026-10-11). */
+  readonly repoUrl: string;
   readonly adminToken: string | undefined;
   /** A header a trusting proxy sets to the caller's address; see network() in http/api.ts. */
   readonly clientIpHeader: string | undefined;
@@ -65,6 +67,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
     keyUrl: env.KEY_URL || undefined,
     signInUrl: env.SIGN_IN_URL || undefined,
     signup: env.SIGNUP === "closed" ? "closed" : "open",
+    repoUrl: env.REPO_URL || "https://github.com/FirstClassTree/openwiki",
     adminToken: env.ADMIN_TOKEN || undefined,
     clientIpHeader: env.CLIENT_IP_HEADER?.trim().toLowerCase() || undefined,
     trusted: new Set(trusted),

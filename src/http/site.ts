@@ -6,6 +6,7 @@ import { type Context, Hono } from "hono";
 import { html } from "hono/html";
 import { EXPERIENCE_HEADERS, experienceDocument, FIGURE_HEADERS } from "../domain/experience.ts";
 import { SLUG } from "../domain/slug.ts";
+import { ownerName } from "../identity/identity.ts";
 import type { Sort } from "../store/wiki.ts";
 import { cards, homeView, tick } from "../ui/home.ts";
 import { historyView, keyView, rulesView, searchView, wireView } from "../ui/lists.ts";
@@ -99,6 +100,7 @@ export function siteRoutes(deps: Deps): Hono<Env> {
     identity: identity.kind,
     keyUrl: config.keyUrl,
     signInUrl: config.signInUrl,
+    repoUrl: config.repoUrl,
     by: config.by,
     assets: assets.urls,
   };
@@ -154,8 +156,9 @@ export function siteRoutes(deps: Deps): Hono<Env> {
   app.post("/key", async (c) => {
     if (!identity.issue) return page(c, keyView(site, {}));
     if (!mints.allow(network(c, config.clientIpHeader))) return c.html(await keyView(site, { error: "Too many keys from this network in the last hour." }), 429, HTML_HEADERS);
-    // The wiki picks the public name: nobody fills in a form to get a key.
-    const result = await identity.issue("");
+    // The wiki picks the handle; the person may give a name to sign with (Tal, 2026-10-11).
+    const form = await c.req.parseBody().catch(() => ({}) as Record<string, unknown>);
+    const result = await identity.issue("", ownerName(form.name));
     const view = result.ok ? keyView(site, { issued: { handle: result.handle, key: result.key } }) : keyView(site, { error: result.error });
     return c.html(await view, 200, { ...HTML_HEADERS, "Cache-Control": "no-store" });
   });

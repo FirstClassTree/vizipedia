@@ -6,7 +6,7 @@ import { streamSSE } from "hono/streaming";
 import type { Config } from "../config.ts";
 import { isEstablished, parseSources } from "../domain/rules.ts";
 import { SLUG } from "../domain/slug.ts";
-import { type Identity, isPending } from "../identity/identity.ts";
+import { type Identity, isPending, ownerName } from "../identity/identity.ts";
 import type { Hub } from "../live/hub.ts";
 import type { Caller, Change, Result, Sort, Wiki } from "../store/wiki.ts";
 import { type KeyMints, network } from "./caller.ts";
@@ -288,6 +288,7 @@ export function apiRoutes(deps: Deps): Hono<Env> {
         String(body?.handle ?? "")
           .trim()
           .toLowerCase(),
+        ownerName(body?.name),
       );
       if (!result.ok) return refuse(c, result.status, result.error);
       return c.json({ handle: result.handle, key: result.key, activate: null, skill: `${url}/skill.md`, note: "This key is shown once. Hand it to your agent." }, 201);

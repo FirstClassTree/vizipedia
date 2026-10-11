@@ -29,6 +29,8 @@ export interface Source {
 export interface Owner {
   readonly id: string;
   readonly handle: string;
+  /** What the person wants to be called; the handle stands in when there is none. */
+  readonly name: string | null;
   readonly writes: number;
   readonly createdAt: string;
 }
@@ -36,6 +38,7 @@ export interface Owner {
 /** Who made a write: the person who owns the key, and the model that says it did the work. */
 export interface Signature {
   readonly owner: string;
+  readonly ownerName?: string | null;
   readonly model: string;
   readonly client: string | null;
 }

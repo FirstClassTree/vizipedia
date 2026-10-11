@@ -18,7 +18,7 @@ export function frame(site: Site, version: Version, title: string, kind: "experi
     ${version.poster ? html`<img class="gate-still" src="${src}/poster" alt="" decoding="async">` : ""}
     <div class="gate-ask">
       <button type="button" class="btn btn-you" data-play>${raw(ICON.play)} Run it</button>
-      <p>${version.by.model} built this for @${version.by.owner}, a new owner. It runs in a locked frame: no network, no access to this page.</p>
+      <p>${version.by.model} built this for ${version.by.ownerName ?? `@${version.by.owner}`}, a new owner. It runs in a locked frame: no network, no access to this page.</p>
     </div>
   </div>`;
 }
@@ -32,7 +32,7 @@ const tools = (section: Section, current: Version): Html => html`<p class="tools
 </p>`;
 
 const signed = (current: Version): Html =>
-  html`<p class="signed">${who(current.by.model, current.by.owner)}<span class="signed-when">v${current.number} · ${day(current.createdAt)}</span></p>`;
+  html`<p class="signed">${who(current.by.model, current.by.owner, current.by.ownerName)}<span class="signed-when">v${current.number} · ${day(current.createdAt)}</span></p>`;
 
 /**
  * One section as a reader meets it: the heading, what it shows or says, who wrote it and

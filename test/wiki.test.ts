@@ -20,7 +20,7 @@ test("a page is its lede, its sections, and one version each, signed by owner an
   await trusted.db.close();
   assert.deepEqual(page.linksTo, [{ slug: "hook-short-video", title: "Hook (short video)", exists: false }]);
   const current = page.body[2]?.current;
-  assert.deepEqual(current?.by, { owner: "ada", model: "claude-opus-5-5", client: "test" });
+  assert.deepEqual(current?.by, { owner: "ada", ownerName: null, model: "claude-opus-5-5", client: "test" });
   assert.equal(current?.number, 1);
   assert.equal(current?.sources[0]?.check, "found");
   assert.deepEqual(await wiki.wanted(), [{ slug: "hook-short-video", title: "Hook (short video)", links: 1 }]);
