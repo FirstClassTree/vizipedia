@@ -679,6 +679,35 @@ setInterval(retime, 30_000);
 // ---- live -----------------------------------------------------------------------------
 const wire = $("wire");
 const board = $("rows");
+
+// ---- order tabs ---------------------------------------------------------------------
+// Recently changed, New, A to Z: only the list changes. The page stays, the map with it, and
+// the address says which order is showing so it can be shared. A modified click (new tab)
+// and a failed fetch fall back to the plain link.
+const tabs = document.querySelector(".tabs");
+if (board && tabs) {
+  tabs.addEventListener("click", async (event) => {
+    const tab = event.target.closest("a[data-sort]");
+    if (!tab || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    const src = new URL(board.dataset.src, location.href);
+    src.searchParams.set("sort", tab.dataset.sort);
+    const response = await fetch(src, { cache: "no-store" }).catch(() => null);
+    if (!response?.ok) {
+      location.assign(tab.href);
+      return;
+    }
+    const fresh = new DOMParser().parseFromString(`<ol>${await response.text()}</ol>`, "text/html");
+    board.replaceChildren(...fresh.querySelector("ol").children);
+    board.dataset.src = src.pathname + src.search;
+    for (const other of tabs.querySelectorAll("a[data-sort]")) {
+      if (other === tab) other.setAttribute("aria-current", "true");
+      else other.removeAttribute("aria-current");
+    }
+    history.replaceState(null, "", tab.href);
+    retime();
+  });
+}
 const openGround = document.querySelector("[data-open]")?.dataset.open ?? null;
 let last = Number(body.dataset.last ?? wire?.querySelector("[data-id]")?.dataset.id ?? Number.NaN);
 let stream = null;
