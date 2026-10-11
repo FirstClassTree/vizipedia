@@ -1,0 +1,165 @@
+{
+  "title": "TCP congestion control",
+  "slug": "tcp-congestion-control",
+  "hue": 255,
+  "lede": "TCP congestion control is how a sender decides how much data to keep in flight: grow the window until a packet is lost, then cut it, which draws a sawtooth.",
+  "sections": [
+    {
+      "kind": "experience",
+      "heading": "Drop a packet",
+      "body": "<style>\n.tc{box-sizing:border-box;max-width:1040px;margin:0 auto;display:grid;gap:18px;grid-template-columns:1fr;font-family:var(--ow-font);color:var(--ow-fg);--bad:oklch(0.62 0.17 28);--ss:oklch(0.62 0.14 150)}\n.tc *{box-sizing:border-box}\n@media (min-width:760px){.tc{grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:26px;align-items:start}}\n.tc-q{margin:0 0 12px;font-size:18px;line-height:1.35;font-weight:600}\n.tc-q b{color:var(--ow-accent)}\n.tc-box{padding:12px 14px;border-radius:14px;border:1px solid var(--ow-line);background:var(--ow-panel)}\n.tc-box+.tc-box{margin-top:10px}\n.tc-lab{display:flex;justify-content:space-between;gap:12px;font-size:15px;font-weight:600}\n.tc-lab output{font-variant-numeric:tabular-nums;color:var(--ow-muted);font-weight:500;font-size:14px;white-space:nowrap}\n.tc input[type=range]{width:100%;margin:6px 0 8px;height:28px;accent-color:var(--ow-accent);cursor:pointer}\n.tc-btns{display:flex;flex-wrap:wrap;gap:8px}\n.tc-b{appearance:none;font:inherit;font-size:14.5px;font-weight:600;min-height:42px;padding:8px 14px;border-radius:999px;border:1.5px solid var(--ow-line);background:var(--ow-bg);color:var(--ow-fg);cursor:pointer;touch-action:manipulation}\n.tc-b.main{background:var(--ow-accent);border-color:var(--ow-accent);color:var(--ow-accent-ink)}\n.tc-b.pp{width:42px;padding:0;display:grid;place-items:center}\n.tc-b svg{width:16px;height:16px;display:block}\n.tc-b:focus-visible,.tc input:focus-visible{outline:3px solid color-mix(in oklch,var(--ow-accent) 55%,transparent);outline-offset:2px}\n.tc-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}\n.tc-st{padding:8px 10px;border-radius:12px;background:var(--ow-bg);border:1px solid var(--ow-line)}\n.tc-st span{display:block;font-size:12px;color:var(--ow-muted);font-weight:600}\n.tc-st b{display:block;font-family:var(--ow-mono);font-size:20px;font-variant-numeric:tabular-nums;font-weight:600;margin-top:2px}\n.tc-st small{font-size:12px;color:var(--ow-muted);font-family:var(--ow-font)}\n.tc-chartbox{border-radius:18px;background:var(--ow-panel);border:1px solid var(--ow-line);padding:14px 14px 12px}\n.tc-top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}\n.tc-h{margin:0;font-size:12.5px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--ow-muted)}\n.tc-phase{font-size:13px;font-weight:700;padding:4px 10px;border-radius:999px;color:#fff;background:var(--c)}\n.tc-svg{display:block;width:100%;height:auto;margin-top:8px}\n.tc-svg text{font-family:var(--ow-font);font-size:11px;fill:var(--ow-muted)}\n.tc-say{margin:8px 0 0;font-size:15px;line-height:1.4;min-height:2.8em}\n.tc-say b{color:var(--ow-accent)}\n.tc-leg{display:flex;flex-wrap:wrap;gap:4px 14px;margin:6px 0 0;padding:0;list-style:none;font-size:12.5px;color:var(--ow-muted)}\n.tc-leg i{display:inline-block;width:16px;height:0;border-top:3px solid var(--c);vertical-align:3px;margin-right:5px}\n.tc-leg i.d{border-top-style:dashed;border-top-width:2px}\n.tc-leg i.f{height:10px;border:0;background:color-mix(in oklch,var(--ow-accent) 22%,transparent);vertical-align:-1px}\n@media (max-width:420px){.tc-q{font-size:16.5px}.tc-st b{font-size:17px}.tc-chartbox{padding:12px 10px}}\n</style>\n<div class=\"tc\">\n  <div>\n    <p class=\"tc-q\">Drag the <b>link</b>, add <b>loss</b>, or <b>drop a packet</b>, and watch the sender's window react.</p>\n    <div class=\"tc-box\">\n      <label class=\"tc-lab\" for=\"tc-c\"><span>Link capacity</span><output id=\"tc-co\" for=\"tc-c\">24 packets/RTT</output></label>\n      <input id=\"tc-c\" type=\"range\" min=\"8\" max=\"100\" step=\"1\" value=\"24\">\n      <label class=\"tc-lab\" for=\"tc-l\"><span>Random loss</span><output id=\"tc-lo\" for=\"tc-l\">0%</output></label>\n      <input id=\"tc-l\" type=\"range\" min=\"0\" max=\"30\" step=\"1\" value=\"0\">\n      <div class=\"tc-btns\">\n        <button class=\"tc-b main\" type=\"button\" id=\"tc-d\">Drop a packet</button>\n        <button class=\"tc-b\" type=\"button\" id=\"tc-t\">Timeout</button>\n        <button class=\"tc-b\" type=\"button\" id=\"tc-r\">Restart</button>\n        <button class=\"tc-b pp\" type=\"button\" id=\"tc-p\" aria-label=\"Pause\"><svg viewBox=\"0 0 20 20\" fill=\"currentColor\" aria-hidden=\"true\"><path id=\"tc-pi\" d=\"M5 3h3.5v14H5zM11.5 3H15v14h-3.5z\"/></svg></button>\n      </div>\n    </div>\n    <div class=\"tc-stats\">\n      <div class=\"tc-st\"><span>Window</span><b id=\"tc-sw\">1</b><small>packets</small></div>\n      <div class=\"tc-st\"><span>ssthresh</span><b id=\"tc-ss\">&infin;</b><small>packets</small></div>\n      <div class=\"tc-st\"><span>Throughput</span><b id=\"tc-th\">0%</b><small>of the link</small></div>\n    </div>\n  </div>\n  <section class=\"tc-chartbox\" aria-labelledby=\"tc-hh\">\n    <div class=\"tc-top\"><p class=\"tc-h\" id=\"tc-hh\">Congestion window, one point per round trip</p><span class=\"tc-phase\" id=\"tc-ph\" style=\"--c:var(--ss)\">slow start</span></div>\n    <svg class=\"tc-svg\" id=\"tc-g\" viewBox=\"0 0 560 260\" role=\"img\" aria-label=\"Congestion window over time\"></svg>\n    <ul class=\"tc-leg\" aria-hidden=\"true\">\n      <li><i style=\"--c:var(--ss)\"></i>slow start</li>\n      <li><i style=\"--c:var(--ow-accent)\"></i>congestion avoidance</li>\n      <li><i class=\"d\" style=\"--c:var(--ow-fg)\"></i>link capacity</li>\n      <li><i class=\"d\" style=\"--c:var(--bad)\"></i>ssthresh</li>\n      <li><i class=\"f\"></i>what gets through</li>\n    </ul>\n    <p class=\"tc-say\" id=\"tc-say\" aria-live=\"polite\"></p>\n  </section>\n</div>\n<script>\n(function(){\n  var NS='http://www.w3.org/2000/svg',svg=document.getElementById('tc-g'),say=document.getElementById('tc-say'),ph=document.getElementById('tc-ph');\n  var Cs=document.getElementById('tc-c'),Ls=document.getElementById('tc-l'),PP=document.getElementById('tc-p'),PI=document.getElementById('tc-pi');\n  var reduce=!!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches);\n  var WIN=50,RATE=reduce?2:5;\n  var cap=24,loss=0,cwnd=1,ss=Infinity,hist=[],t=0,pending=null,playing=!reduce,frac=0,lastMsg='';\n  function phase(){return cwnd<ss?'ss':'ca'}\n  function msg(s){if(s!==lastMsg){say.innerHTML=s;lastMsg=s}}\n  function stepRTT(){\n    var prev=cwnd,ev=null;\n    var over=cwnd>cap,rand=loss>0&&Math.random()<1-Math.pow(1-loss,cwnd);\n    if(pending==='timeout'){ev='to'}\n    else if(pending==='drop'||over||rand){ev='fr'}\n    var why=pending==='drop'?'you dropped a packet':over?'the window outgrew the link, so a queue overflowed':'a packet was lost at random';\n    pending=null;\n    if(ev==='to'){\n      ss=Math.max(Math.floor(cwnd/2),2);cwnd=1;\n      msg('<b>Timeout</b>: no ACKs came back at all. ssthresh = half the window ('+ss+'), and the window falls to <b>1 packet</b>: slow start again.');\n    }else if(ev==='fr'){\n      ss=Math.max(Math.floor(cwnd/2),2);cwnd=ss;\n      msg('Loss: '+why+'. Three duplicate ACKs trigger <b>fast retransmit</b>, and the window is <b>halved</b> to '+cwnd+'.');\n    }else if(cwnd<ss){\n      cwnd=Math.min(cwnd*2,ss);\n      msg('<b>Slow start</b>: every ACK adds a packet, so the window <b>doubles</b> each round trip.');\n    }else{\n      cwnd=cwnd+1;\n      msg('<b>Congestion avoidance</b>: one more packet per round trip, a gentle probe for spare room.');\n    }\n    hist.push({t:++t,w:cwnd,ss:ss,cap:cap,ev:ev,ph:ev==='to'?'ss':phase(),thr:Math.min(prev,cap)});\n    if(hist.length>WIN+2)hist.shift();\n  }\n  function restart(){cwnd=1;ss=Infinity;hist=[{t:t,w:1,ss:ss,cap:cap,ev:null,ph:'ss',thr:0}];frac=0;msg('A new connection starts with a small window and <b>doubles</b> it every round trip until something is lost.')}\n  var W=560,H=260,L=34,R=10,T=14,B=24;\n  function el(n,a,p){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);(p||svg).appendChild(e);return e}\n  function draw(){\n    while(svg.firstChild)svg.removeChild(svg.firstChild);\n    W=Math.max(260,Math.round(svg.getBoundingClientRect().width)||560);H=W<480?220:260;svg.setAttribute('viewBox','0 0 '+W+' '+H);\n    var t1=Math.max(WIN,t+frac),t0=t1-WIN;\n    var ymax=Math.max(12,cap*1.3);hist.forEach(function(p){if(p.t>=t0-1)ymax=Math.max(ymax,p.w*1.1)});\n    function X(x){return L+(W-L-R)*(x-t0)/WIN}function Y(y){return T+(H-T-B)*(1-y/ymax)}\n    var step=ymax>150?50:ymax>60?20:ymax>30?10:5;\n    for(var y=0;y<=ymax;y+=step){el('line',{x1:L,x2:W-R,y1:Y(y),y2:Y(y),stroke:'var(--ow-line)','stroke-width':1});var tx=el('text',{x:L-6,y:Y(y)+4,'text-anchor':'end'});tx.textContent=y}\n    var xs=W<400?20:10;\n    for(var x=Math.ceil(t0/xs)*xs;x<=t1;x+=xs){var px=X(x),tt=el('text',{x:px,y:H-6,'text-anchor':px>W-R-24?'end':px<L+16?'start':'middle'});tt.textContent=x+' RTT'}\n    var pts=hist.filter(function(p){return p.t>=t0-1});\n    if(pts.length<1)return;\n    var last=pts[pts.length-1];\n    // live tip: interpolate toward the next round trip\n    var tip=null;\n    if(frac>0&&pts.length){tip={t:last.t+frac,w:last.w}}\n    // throughput fill\n    var f='M'+X(pts[0].t).toFixed(1)+' '+Y(0).toFixed(1);\n    pts.forEach(function(p){f+='L'+X(p.t).toFixed(1)+' '+Y(Math.min(p.w,p.cap)).toFixed(1)});\n    if(tip)f+='L'+X(tip.t).toFixed(1)+' '+Y(Math.min(tip.w,cap)).toFixed(1);\n    f+='L'+X(tip?tip.t:last.t).toFixed(1)+' '+Y(0).toFixed(1)+'Z';\n    el('path',{d:f,fill:'color-mix(in oklch,var(--ow-accent) 18%,transparent)'});\n    // capacity (step line)\n    var c='';pts.forEach(function(p,i){c+=(i?'L'+X(p.t).toFixed(1)+' '+Y(pts[i-1].cap).toFixed(1)+'L':'M')+X(p.t).toFixed(1)+' '+Y(p.cap).toFixed(1)});\n    c+='L'+X(t1).toFixed(1)+' '+Y(cap).toFixed(1);\n    el('path',{d:c,fill:'none',stroke:'var(--ow-fg)','stroke-width':1.5,'stroke-dasharray':'6 4',opacity:.7});\n    // ssthresh\n    var s='',on=false;pts.forEach(function(p){if(p.ss<1e9){s+=(on?'L':'M')+X(p.t).toFixed(1)+' '+Y(p.ss).toFixed(1);on=true}else on=false});\n    if(s)el('path',{d:s,fill:'none',stroke:'var(--bad)','stroke-width':1.5,'stroke-dasharray':'3 4'});\n    // the window, colored by phase\n    for(var i=1;i<pts.length;i++){var a=pts[i-1],b=pts[i];\n      el('line',{x1:X(a.t),y1:Y(a.w),x2:X(b.t),y2:Y(b.w),stroke:b.ev?'var(--bad)':b.ph==='ss'?'var(--ss)':'var(--ow-accent)','stroke-width':3,'stroke-linecap':'round'});}\n    if(tip){var nx=cwnd<ss?Math.min(cwnd*2,ss):cwnd+1;el('line',{x1:X(last.t),y1:Y(last.w),x2:X(tip.t),y2:Y(last.w+(nx-last.w)*frac),stroke:cwnd<ss?'var(--ss)':'var(--ow-accent)','stroke-width':3,'stroke-linecap':'round'})}\n    pts.forEach(function(p,i){if(p.ev&&p.t>=t0){\n      el('circle',{cx:X(p.t),cy:Y(p.w),r:5,fill:'var(--bad)',stroke:'var(--ow-panel)','stroke-width':2});\n      var q=pts[i-1]||p,lb=el('text',{x:X(q.t),y:Math.max(12,Y(q.w)-9),'text-anchor':'middle','font-weight':700,'font-size':12,style:'fill:var(--bad)'});lb.textContent=p.ev==='to'?'timeout':'\\u00f72';}});\n    var ex=X(tip?tip.t:last.t),ey=Y(tip?last.w+((cwnd<ss?Math.min(cwnd*2,ss):cwnd+1)-last.w)*frac:last.w);\n    el('circle',{cx:ex,cy:ey,r:6,fill:cwnd<ss?'var(--ss)':'var(--ow-accent)',stroke:'var(--ow-panel)','stroke-width':2.5});\n  }\n  function stats(){\n    document.getElementById('tc-sw').textContent=cwnd;\n    document.getElementById('tc-ss').textContent=ss>1e9?'∞':ss;\n    var rec=hist.slice(-20),sum=0,cs=0;rec.forEach(function(p){sum+=p.thr;cs+=p.cap});\n    document.getElementById('tc-th').textContent=cs?Math.round(100*sum/cs)+'%':'0%';\n    var p=phase();ph.textContent=p==='ss'?'slow start':'congestion avoidance';ph.style.setProperty('--c',p==='ss'?'var(--ss)':'var(--ow-accent)');\n  }\n  function syncSliders(){\n    cap=+Cs.value;loss=+Ls.value/1000;\n    document.getElementById('tc-co').textContent=cap+' packets/RTT';Cs.setAttribute('aria-valuetext',cap+' packets per round trip');\n    var lp=(loss*100).toFixed(1).replace(/\\.0$/,'')+'%';document.getElementById('tc-lo').textContent=lp;Ls.setAttribute('aria-valuetext',lp+' of packets lost');\n  }\n  Cs.addEventListener('input',function(){syncSliders();draw()});\n  Ls.addEventListener('input',function(){syncSliders();draw()});\n  document.getElementById('tc-d').addEventListener('click',function(){pending='drop';if(!playing){stepRTT();stats();draw()}});\n  document.getElementById('tc-t').addEventListener('click',function(){pending='timeout';if(!playing){stepRTT();stats();draw()}});\n  document.getElementById('tc-r').addEventListener('click',function(){restart();stats();draw()});\n  function setPlay(on){playing=on;PI.setAttribute('d',on?'M5 3h3.5v14H5zM11.5 3H15v14h-3.5z':'M5 3l12 7-12 7z');PP.setAttribute('aria-label',on?'Pause':'Play')}\n  PP.addEventListener('click',function(){setPlay(!playing)});\n  syncSliders();restart();\n  for(var i=0;i<34;i++)stepRTT();\n  stats();setPlay(playing);draw();\n  var lt=null;\n  function frame(ts){\n    if(lt===null)lt=ts;var dt=Math.min(100,ts-lt)/1000;lt=ts;\n    if(playing){frac+=dt*RATE;while(frac>=1){frac-=1;stepRTT();stats()}draw()}\n    requestAnimationFrame(frame);\n  }\n  window.addEventListener('resize',draw);\n  requestAnimationFrame(frame);\n})();\n</script>"
+    },
+    {
+      "kind": "prose",
+      "heading": "Slow start, then a straight line",
+      "body": "A new connection knows nothing about the path, so TCP has to slowly probe the network to determine the available capacity [1]. In slow start the window grows by up to one segment for every ACK [2], roughly doubling each round trip, and it ends when the window passes ssthresh or a loss is seen [3]. Then congestion avoidance adds about one full-sized segment per round trip [4], and keeps going until congestion is detected [5].",
+      "sources": [
+        {
+          "url": "https://www.rfc-editor.org/rfc/rfc5681.txt",
+          "title": "RFC 5681: TCP Congestion Control (2009)",
+          "quote": "requires TCP to slowly probe the network to determine the available capacity"
+        },
+        {
+          "url": "https://www.rfc-editor.org/rfc/rfc5681.txt",
+          "title": "RFC 5681: TCP Congestion Control (2009)",
+          "quote": "During slow start, a TCP increments cwnd by at most SMSS bytes for each ACK received that cumulatively acknowledges new data."
+        },
+        {
+          "url": "https://www.rfc-editor.org/rfc/rfc5681.txt",
+          "title": "RFC 5681: TCP Congestion Control (2009)",
+          "quote": "Slow start ends when cwnd exceeds ssthresh"
+        },
+        {
+          "url": "https://www.rfc-editor.org/rfc/rfc5681.txt",
+          "title": "RFC 5681: TCP Congestion Control (2009)",
+          "quote": "During congestion avoidance, cwnd is incremented by roughly 1 full"
+        },
+        {
+          "url": "https://www.rfc-editor.org/rfc/rfc5681.txt",
+          "title": "RFC 5681: TCP Congestion Control (2009)",
+          "quote": "Congestion avoidance continues until congestion is detected."
+        }
+      ]
+    },
+    {
+      "kind": "prose",
+      "heading": "Why loss halves the window",
+      "body": "TCP reads a lost packet as a sign of congestion [1]. After 3 duplicate ACKs, fast retransmit resends the missing segment without waiting for the retransmission timer [2][3], ssthresh drops to half the data in flight [4], and the window is set to ssthresh [5]: that drop and the slow climb after it are the sawtooth. If the timer fires instead, the window falls to 1 full-sized segment and slow start begins again [6].",
+      "sources": [
+        {
+          "url": "https://www.rfc-editor.org/rfc/rfc5681.txt",
+          "title": "RFC 5681: TCP Congestion Control (2009)",
+          "quote": "since loss is an indication of congestion"
+        },
+        {
+          "url": "https://www.rfc-editor.org/rfc/rfc5681.txt",
+          "title": "RFC 5681: TCP Congestion Control (2009)",
+          "quote": "The fast retransmit algorithm uses the arrival of 3 duplicate ACKs"
+        },
+        {
+          "url": "https://www.rfc-editor.org/rfc/rfc5681.txt",
+          "title": "RFC 5681: TCP Congestion Control (2009)",
+          "quote": "without waiting for the retransmission timer to expire"
+        },
+        {
+          "url": "https://www.rfc-editor.org/rfc/rfc5681.txt",
+          "title": "RFC 5681: TCP Congestion Control (2009)",
+          "quote": "ssthresh = max (FlightSize / 2, 2*SMSS)"
+        },
+        {
+          "url": "https://www.rfc-editor.org/rfc/rfc5681.txt",
+          "title": "RFC 5681: TCP Congestion Control (2009)",
+          "quote": "a TCP MUST set cwnd to ssthresh"
+        },
+        {
+          "url": "https://www.rfc-editor.org/rfc/rfc5681.txt",
+          "title": "RFC 5681: TCP Congestion Control (2009)",
+          "quote": "cwnd MUST be set to no more than the loss window, LW, which equals 1 full-sized segment"
+        }
+      ]
+    },
+    {
+      "kind": "figure",
+      "heading": "Anatomy of the sawtooth",
+      "body": "<style>\n.tf{box-sizing:border-box;max-width:1040px;margin:0 auto;font-family:var(--ow-font);color:var(--ow-fg);--bad:oklch(0.62 0.17 28);--ss:oklch(0.62 0.14 150)}\n.tf *{box-sizing:border-box}\n.tf-wrap{display:grid;grid-template-columns:1fr;gap:18px}\n@media (min-width:760px){.tf-wrap{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:28px;align-items:center}}\n.tf-card{padding:12px 16px 10px;border-radius:16px;background:var(--ow-panel);border:1px solid var(--ow-line);position:relative}\n.tf-plot{position:relative;height:230px;margin:6px 6px 0 0}\n.tf-plot svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}\n.tf-y{display:block;font-size:12px;color:var(--ow-muted)}\n.tf-x{margin:6px 0 0;font-size:12px;color:var(--ow-muted);text-align:right}\n.tf-cap{position:absolute;right:0;font-size:12px;color:var(--ow-muted);transform:translateY(-120%)}\n.tf-m{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;display:grid;place-items:center;font-size:14px;font-weight:750;color:#fff;background:var(--c);box-shadow:0 0 0 2.5px var(--ow-panel)}\n.tf ol{list-style:none;margin:0;padding:0;display:grid;gap:10px}\n.tf li{display:grid;grid-template-columns:26px minmax(0,1fr);gap:10px;align-items:start;font-size:14.5px;line-height:1.4}\n.tf li i{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:14px;font-weight:750;color:#fff;background:var(--c)}\n.tf li b{font-weight:650}\n.tf li span{color:var(--ow-muted)}\n</style>\n<div class=\"tf\" role=\"img\" aria-label=\"A TCP Reno congestion window over time: slow start doubling, a loss that halves the window, linear congestion avoidance making a sawtooth, and a timeout that drops the window to one packet\">\n  <div class=\"tf-wrap\">\n    <div class=\"tf-card\">\n      <span class=\"tf-y\">&uarr; window (packets in flight)</span>\n      <div class=\"tf-plot\">\n        <svg viewBox=\"0 0 100 100\" preserveAspectRatio=\"none\" aria-hidden=\"true\">\n          <path d=\"M0.00 97.50 L1.59 95.00 L3.17 90.00 L4.76 80.00 L6.35 60.00 L7.94 20.00 L9.52 60.00 L11.11 57.50 L12.70 55.00 L14.29 52.50 L15.87 50.00 L17.46 47.50 L19.05 45.00 L20.63 42.50 L22.22 40.00 L23.81 37.50 L25.40 35.00 L26.98 32.50 L28.57 30.00 L30.16 27.50 L31.75 25.00 L33.33 22.50 L34.92 62.50 L36.51 60.00 L38.10 57.50 L39.68 55.00 L41.27 52.50 L42.86 50.00 L44.44 47.50 L46.03 45.00 L47.62 42.50 L49.21 40.00 L50.79 37.50 L52.38 35.00 L53.97 32.50 L55.56 30.00 L57.14 27.50 L58.73 25.00 L60.32 22.50 L61.90 62.50 L63.49 60.00 L65.08 57.50 L66.67 55.00 L68.25 52.50 L69.84 50.00 L71.43 97.50 L73.02 95.00 L74.60 90.00 L76.19 80.00 L77.78 75.00 L79.37 72.50 L80.95 70.00 L82.54 67.50 L84.13 65.00 L85.71 62.50 L87.30 60.00 L88.89 57.50 L90.48 55.00 L92.06 52.50 L93.65 50.00 L95.24 47.50 L96.83 45.00 L98.41 42.50 L100.00 40.00 L100 100 L0 100Z\" fill=\"color-mix(in oklch,var(--ow-accent) 14%,transparent)\"/>\n          <line x1=\"0\" x2=\"100\" y1=\"25\" y2=\"25\" stroke=\"var(--ow-fg)\" stroke-width=\"1.5\" stroke-dasharray=\"6 4\" opacity=\".6\" vector-effect=\"non-scaling-stroke\"/>\n          <line x1=\"71.43\" x2=\"100\" y1=\"75\" y2=\"75\" stroke=\"var(--bad)\" stroke-width=\"1.5\" stroke-dasharray=\"3 4\" vector-effect=\"non-scaling-stroke\"/>\n          <line x1=\"0\" x2=\"100\" y1=\"100\" y2=\"100\" stroke=\"var(--ow-line)\" stroke-width=\"1.5\" vector-effect=\"non-scaling-stroke\"/>\n          <path d=\"M0.00 97.50 L1.59 95.00 L3.17 90.00 L4.76 80.00 L6.35 60.00 L7.94 20.00 L9.52 60.00 L11.11 57.50 L12.70 55.00 L14.29 52.50 L15.87 50.00 L17.46 47.50 L19.05 45.00 L20.63 42.50 L22.22 40.00 L23.81 37.50 L25.40 35.00 L26.98 32.50 L28.57 30.00 L30.16 27.50 L31.75 25.00 L33.33 22.50 L34.92 62.50 L36.51 60.00 L38.10 57.50 L39.68 55.00 L41.27 52.50 L42.86 50.00 L44.44 47.50 L46.03 45.00 L47.62 42.50 L49.21 40.00 L50.79 37.50 L52.38 35.00 L53.97 32.50 L55.56 30.00 L57.14 27.50 L58.73 25.00 L60.32 22.50 L61.90 62.50 L63.49 60.00 L65.08 57.50 L66.67 55.00 L68.25 52.50 L69.84 50.00 L71.43 97.50 L73.02 95.00 L74.60 90.00 L76.19 80.00 L77.78 75.00 L79.37 72.50 L80.95 70.00 L82.54 67.50 L84.13 65.00 L85.71 62.50 L87.30 60.00 L88.89 57.50 L90.48 55.00 L92.06 52.50 L93.65 50.00 L95.24 47.50 L96.83 45.00 L98.41 42.50 L100.00 40.00\" fill=\"none\" stroke=\"var(--ow-accent)\" stroke-width=\"3\" stroke-linejoin=\"round\" vector-effect=\"non-scaling-stroke\"/>\n          <path d=\"M0.00 97.50 L1.59 95.00 L3.17 90.00 L4.76 80.00 L6.35 60.00 L7.94 20.00\" fill=\"none\" stroke=\"var(--ss)\" stroke-width=\"3\" stroke-linejoin=\"round\" vector-effect=\"non-scaling-stroke\"/>\n          <path d=\"M71.43 97.50 L73.02 95.00 L74.60 90.00 L76.19 80.00 L77.78 75.00\" fill=\"none\" stroke=\"var(--ss)\" stroke-width=\"3\" stroke-linejoin=\"round\" vector-effect=\"non-scaling-stroke\"/>\n        </svg>\n        <span class=\"tf-cap\" style=\"top:25%\">link capacity</span>\n        <span class=\"tf-m\" style=\"left:3%;top:72%;--c:var(--ss)\">1</span>\n        <span class=\"tf-m\" style=\"left:7.94%;top:11%;--c:var(--bad)\">2</span>\n        <span class=\"tf-m\" style=\"left:22%;top:31%;--c:var(--ow-accent)\">3</span>\n        <span class=\"tf-m\" style=\"left:71.43%;top:86%;--c:var(--bad)\">4</span>\n      </div>\n      <p class=\"tf-x\">time, in round trips &rarr;</p>\n    </div>\n    <ol>\n      <li><i style=\"--c:var(--ss)\">1</i><div><b>Slow start.</b> <span>Each ACK adds one packet, so the window doubles every round trip.</span></div></li>\n      <li><i style=\"--c:var(--bad)\">2</i><div><b>Loss, seen as 3 duplicate ACKs.</b> <span>Fast retransmit resends the packet and the window is cut in half.</span></div></li>\n      <li><i style=\"--c:var(--ow-accent)\">3</i><div><b>Congestion avoidance.</b> <span>One packet more per round trip until the next loss: the sawtooth.</span></div></li>\n      <li><i style=\"--c:var(--bad)\">4</i><div><b>Timeout.</b> <span>No ACKs at all: back to one packet, slow start up to ssthresh (dashed), half the old window.</span></div></li>\n    </ol>\n  </div>\n</div>"
+    },
+    {
+      "kind": "prose",
+      "heading": "What runs today: CUBIC and BBR",
+      "body": "The halving above is classic Reno. CUBIC, the default in the Linux, Windows and Apple stacks, grows the window along a cubic curve instead of a straight line, and cuts it to 0.7 of its size where Reno uses 0.5 [1][2][3]. Google's BBR stops treating loss as the signal and considers how fast the network is delivering data [4], because loss-based control overreacts, halving the sending rate upon packet loss [5].",
+      "sources": [
+        {
+          "url": "https://www.rfc-editor.org/rfc/rfc9438.txt",
+          "title": "RFC 9438: CUBIC for Fast and Long-Distance Networks (2023)",
+          "quote": "CUBIC has been adopted as the default TCP congestion control algorithm by the Linux, Windows, and Apple stacks."
+        },
+        {
+          "url": "https://www.rfc-editor.org/rfc/rfc9438.txt",
+          "title": "RFC 9438: CUBIC for Fast and Long-Distance Networks (2023)",
+          "quote": "uses a cubic function instead of a linear congestion window increase function"
+        },
+        {
+          "url": "https://www.rfc-editor.org/rfc/rfc9438.txt",
+          "title": "RFC 9438: CUBIC for Fast and Long-Distance Networks (2023)",
+          "quote": "CUBIC sets the multiplicative window decrease factor to 0.7, whereas Reno uses 0.5."
+        },
+        {
+          "url": "https://cloud.google.com/blog/products/networking/tcp-bbr-congestion-control-comes-to-gcp-your-internet-just-got-faster",
+          "title": "TCP BBR congestion control comes to GCP, Google Cloud blog",
+          "quote": "BBR considers how fast the network is delivering data"
+        },
+        {
+          "url": "https://cloud.google.com/blog/products/networking/tcp-bbr-congestion-control-comes-to-gcp-your-internet-just-got-faster",
+          "title": "TCP BBR congestion control comes to GCP, Google Cloud blog",
+          "quote": "halving the sending rate upon packet loss"
+        }
+      ]
+    }
+  ],
+  "data": {
+    "tags": [
+      "networking",
+      "tcp",
+      "algorithm",
+      "internet"
+    ],
+    "facts": [
+      {
+        "label": "Standard",
+        "value": "RFC 5681 (2009)"
+      },
+      {
+        "label": "Fast retransmit trigger",
+        "value": "3 duplicate ACKs"
+      },
+      {
+        "label": "ssthresh after a loss",
+        "value": "Half the data in flight"
+      },
+      {
+        "label": "Congestion avoidance",
+        "value": "About +1 segment per round trip"
+      },
+      {
+        "label": "CUBIC cut on loss",
+        "value": "×0.7 (Reno ×0.5)"
+      },
+      {
+        "label": "Default in Linux, Windows, Apple",
+        "value": "CUBIC"
+      }
+    ],
+    "see": [
+      "Raft consensus",
+      "Compound interest",
+      "Bloom filter",
+      "Diffie-Hellman key exchange",
+      "Fourier transform",
+      "BBR congestion control",
+      "Bufferbloat",
+      "Slow start",
+      "QUIC",
+      "Round-trip time"
+    ]
+  }
+}

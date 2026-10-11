@@ -1,0 +1,165 @@
+{
+  "title": "Raft consensus",
+  "slug": "raft-consensus",
+  "hue": 195,
+  "lede": "Raft is a consensus algorithm that keeps one log identical on a cluster of servers: an elected leader takes every write and commits it once a majority has a copy.",
+  "sections": [
+    {
+      "kind": "experience",
+      "heading": "Kill the leader",
+      "body": "<style>\n.rf{box-sizing:border-box;max-width:1040px;margin:0 auto;font-family:var(--ow-font);color:var(--ow-fg);--bad:oklch(0.62 0.17 28);--ok:oklch(0.62 0.14 150)}\n.rf *{box-sizing:border-box}\n.rf-q{margin:0 0 12px;font-size:18px;line-height:1.35;font-weight:600}\n.rf-q b{color:var(--ow-accent)}\n.rf-grid{display:grid;gap:16px;grid-template-columns:1fr}\n@media (min-width:760px){.rf-grid{grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:24px;align-items:start}}\n.rf-ring{border-radius:18px;background:var(--ow-panel);border:1px solid var(--ow-line);padding:8px 8px 10px}\n.rf-svg{display:block;width:100%;max-width:400px;height:auto;margin:0 auto;touch-action:manipulation}\n.rf-svg text{font-family:var(--ow-font);fill:var(--ow-fg);pointer-events:none}\n.rf-node{cursor:pointer;outline:none}\n.rf-node:focus-visible .rf-body{stroke:var(--ow-accent);stroke-width:3.5}\n.rf-leg{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 14px;margin:2px 0 0;padding:0;list-style:none;font-size:12.5px;color:var(--ow-muted)}\n.rf-leg i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:0;background:var(--c)}\n.rf-leg i.sq{border-radius:2px}\n.rf-btns{display:flex;flex-wrap:wrap;gap:8px}\n.rf-b{appearance:none;font:inherit;font-size:14.5px;font-weight:600;min-height:42px;padding:8px 14px;border-radius:999px;border:1.5px solid var(--ow-line);background:var(--ow-bg);color:var(--ow-fg);cursor:pointer;touch-action:manipulation}\n.rf-b.main{background:var(--ow-accent);border-color:var(--ow-accent);color:var(--ow-accent-ink)}\n.rf-b.kill{border-color:var(--bad);color:var(--bad)}\n.rf-b:disabled{opacity:.45;cursor:default}\n.rf-b:focus-visible,.rf input:focus-visible{outline:3px solid color-mix(in oklch,var(--ow-accent) 55%,transparent);outline-offset:2px}\n.rf-hint{margin:8px 0 0;font-size:13px;color:var(--ow-muted)}\n.rf-sp{display:flex;align-items:center;gap:12px;margin-top:10px;font-size:14.5px;font-weight:600}\n.rf-sp input{flex:1;min-width:0;height:28px;accent-color:var(--ow-accent);cursor:pointer}\n.rf-sp output{font-family:var(--ow-mono);font-weight:500;color:var(--ow-muted);min-width:4.5em;text-align:right}\n.rf-box{margin-top:12px;padding:12px 14px;border-radius:14px;border:1px solid var(--ow-line);background:var(--ow-panel)}\n.rf-h{margin:0 0 8px;font-size:12.5px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--ow-muted)}\n.rf-row{display:flex;align-items:center;gap:4px;height:30px}\n.rf-row+.rf-row{margin-top:3px}\n.rf-nm{flex:none;width:34px;font-size:13.5px;font-weight:700;color:var(--ow-muted)}\n.rf-row.ld .rf-nm{color:var(--ow-accent)}\n.rf-row.dn{opacity:.4}\n.rf-c{flex:none;width:23px;height:26px;border-radius:6px;display:grid;place-items:center;font-family:var(--ow-mono);font-size:12px;font-weight:600;color:#fff;background:var(--t);transition:transform .25s}\n.rf-c.u{background:transparent;color:var(--t);border:1.5px dashed var(--t)}\n.rf-c.new{transform:scale(1.15)}\n.rf-more{flex:none;font-size:12px;color:var(--ow-muted);width:14px;text-align:center}\n.rf-cap{margin:8px 0 0;font-size:12.5px;line-height:1.4;color:var(--ow-muted)}\n.rf-say{margin:12px 0 0;padding:0;list-style:none;min-height:5.4em;font-size:14.5px;line-height:1.4}\n.rf-say li{color:var(--ow-muted);font-size:13.5px}\n.rf-say li:first-child{color:var(--ow-fg);font-size:15px;font-weight:600}\n@media (max-width:420px){.rf-q{font-size:16.5px}.rf-b{font-size:14px;padding:8px 12px}}\n@media (prefers-reduced-motion:reduce){.rf-c{transition:none}}\n</style>\n<div class=\"rf\">\n  <p class=\"rf-q\"><b>Kill the leader</b> and watch the other four elect a new one. Or send a write and watch it commit.</p>\n  <div class=\"rf-grid\">\n    <div class=\"rf-ring\">\n      <svg class=\"rf-svg\" id=\"rf-s\" viewBox=\"0 0 360 340\" role=\"group\" aria-label=\"Five Raft servers in a ring, with messages flying between them\"></svg>\n      <ul class=\"rf-leg\" aria-hidden=\"true\">\n        <li><i style=\"--c:var(--ow-accent)\"></i>vote request</li>\n        <li><i style=\"--c:var(--ok)\"></i>yes vote</li>\n        <li><i style=\"--c:var(--ow-muted)\"></i>heartbeat</li>\n        <li><i class=\"sq\" id=\"rf-lq\"></i>log entry (color = term)</li>\n        <li>ring = election timer</li>\n      </ul>\n    </div>\n    <div>\n      <div class=\"rf-btns\">\n        <button class=\"rf-b main\" type=\"button\" id=\"rf-w\">Client write</button>\n        <button class=\"rf-b kill\" type=\"button\" id=\"rf-k\">Kill the leader</button>\n        <button class=\"rf-b\" type=\"button\" id=\"rf-p\">Cut off a follower</button>\n      </div>\n      <p class=\"rf-hint\">Or click any server to crash or restart it.</p>\n      <label class=\"rf-sp\" for=\"rf-v\"><span>Speed</span><input id=\"rf-v\" type=\"range\" min=\"0\" max=\"5\" step=\"1\" value=\"3\"><output id=\"rf-vo\" for=\"rf-v\">1&times;</output></label>\n      <div class=\"rf-box\">\n        <p class=\"rf-h\">Each server's log</p>\n        <div id=\"rf-l\"></div>\n        <p class=\"rf-cap\">Each box is one entry; its number is the term it was written in. <b>Solid</b> = committed (stored on a majority). Dashed = not yet.</p>\n      </div>\n      <ul class=\"rf-say\" id=\"rf-say\" aria-live=\"polite\"></ul>\n    </div>\n  </div>\n</div>\n<script>\n(function(){\n  var N=5,MAJ=3,HB=650,ETMIN=1500,ETMAX=3000;\n  var NS='http://www.w3.org/2000/svg',svg=document.getElementById('rf-s'),logs=document.getElementById('rf-l'),sayEl=document.getElementById('rf-say');\n  var bW=document.getElementById('rf-w'),bK=document.getElementById('rf-k'),bP=document.getElementById('rf-p'),V=document.getElementById('rf-v'),VO=document.getElementById('rf-vo');\n  var reduce=!!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches);\n  var hue0=(window.OW&&typeof OW.hue==='number')?OW.hue:220;\n  var SPEEDS=[0,.25,.5,1,2,3],LABEL=['paused','¼×','½×','1×','2×','3×'];\n  if(reduce){V.value=2}\n  var speed=SPEEDS[+V.value],now=0,msgs=[],said=[],writes=0,firstLeader=false,autoAt=-1,dirty=true,lastNew=-1;\n  var CMDS=['x=3','y=7','x=8','z=1','y=4','x=5','w=2','z=9'];\n  function rnd(a,b){return a+Math.random()*(b-a)}\n  function tc(t){return 'oklch(0.58 0.13 '+((hue0+40+t*67)%360)+')'}\n  var nodes=[];\n  for(var i=0;i<N;i++){\n    var a=(-90+i*72)*Math.PI/180;\n    nodes.push({id:i,name:'S'+(i+1),x:180+118*Math.cos(a),y:166+118*Math.sin(a),role:'follower',term:1,voted:null,\n      log:[{t:1,c:'x=1'},{t:1,c:'y=2'}],commit:1,down:false,cut:false,len:2000,dl:rnd(900,2700),votes:0,next:[],match:[],hb:0,pulse:-1e9});\n    nodes[i].len=nodes[i].dl;\n  }\n  function say(s){said.unshift(s);if(said.length>3)said.length=3;sayEl.innerHTML=said.map(function(x){return '<li>'+x+'</li>'}).join('')}\n  function resetTimer(n){n.len=rnd(ETMIN,ETMAX);n.dl=now+n.len}\n  function lastTerm(n){return n.log.length?n.log[n.log.length-1].t:0}\n  function peers(n){return nodes.filter(function(p){return p!==n})}\n  function alive(){return nodes.filter(function(n){return !n.down}).length}\n  function leader(){var best=null;nodes.forEach(function(n){if(!n.down&&n.role==='leader'&&(!best||n.term>best.term))best=n});return best}\n  function send(f,t,type,b){\n    var lat=rnd(330,470);\n    msgs.push({f:f.id,t:t.id,type:type,b:b,t0:now,t1:now+lat,die:f.cut?.3:(t.cut?.7:null)});\n  }\n  function stepDown(n,term){if(term>n.term){n.term=term;n.voted=null}n.role='follower';n.votes=0;dirty=true}\n  function candidate(n){\n    n.role='candidate';n.term++;n.voted=n.id;n.votes=1;resetTimer(n);dirty=true;\n    say(n.name+' timed out: starts <b>term '+n.term+'</b>, votes for itself, asks the others.');\n    peers(n).forEach(function(p){send(n,p,'RV',{term:n.term,li:n.log.length-1,lt:lastTerm(n)})});\n  }\n  function beat(L){\n    peers(L).forEach(function(p){\n      var ni=Math.min(L.next[p.id],L.log.length);\n      send(L,p,'AE',{term:L.term,pi:ni-1,pt:ni>0?L.log[ni-1].t:0,e:L.log.slice(ni,ni+4),lc:L.commit});\n    });\n    L.hb=now+HB;L.pulse=now;\n  }\n  function becomeLeader(n){\n    n.role='leader';dirty=true;\n    for(var i=0;i<N;i++){n.next[i]=n.log.length;n.match[i]=-1}\n    n.match[n.id]=n.log.length-1;\n    say(n.name+' got '+n.votes+' of 5 votes: <b>leader of term '+n.term+'</b>. Its heartbeats reset everyone’s timer.');\n    beat(n);\n    if(!firstLeader){firstLeader=true;autoAt=now+1500}\n  }\n  function advance(L){\n    for(var k=L.log.length-1;k>L.commit;k--){\n      if(L.log[k].t!==L.term)break;\n      var c=0;for(var i=0;i<N;i++)if(i===L.id||L.match[i]>=k)c++;\n      if(c>=MAJ){L.commit=k;dirty=true;say('Entry '+(k+1)+' <b>committed</b>: it is on '+c+' of 5 servers, a majority.');return}\n    }\n  }\n  function deliver(m){\n    var n=nodes[m.t],f=nodes[m.f],b=m.b;if(n.down)return;\n    if(m.type==='RV'){\n      if(b.term>n.term)stepDown(n,b.term);\n      var lt=lastTerm(n),ok=b.lt>lt||(b.lt===lt&&b.li>=n.log.length-1);\n      var g=b.term===n.term&&(n.voted===null||n.voted===f.id)&&ok;\n      if(g){n.voted=f.id;resetTimer(n)}\n      send(n,f,'RVR',{term:n.term,g:g});\n    }else if(m.type==='RVR'){\n      if(b.term>n.term){stepDown(n,b.term);return}\n      if(n.role==='candidate'&&b.term===n.term&&b.g){n.votes++;dirty=true;if(n.votes>=MAJ)becomeLeader(n)}\n    }else if(m.type==='AE'){\n      if(b.term<n.term){send(n,f,'AER',{term:n.term,ok:false});return}\n      if(b.term>n.term||n.role!=='follower')stepDown(n,b.term);\n      resetTimer(n);\n      var okp=b.pi<0||(b.pi<n.log.length&&n.log[b.pi].t===b.pt);\n      if(!okp){send(n,f,'AER',{term:n.term,ok:false});return}\n      for(var j=0;j<b.e.length;j++){\n        var ix=b.pi+1+j;\n        if(ix<n.log.length&&n.log[ix].t!==b.e[j].t){n.log.length=ix;dirty=true}\n        if(ix>=n.log.length){n.log.push({t:b.e[j].t,c:b.e[j].c});dirty=true}\n      }\n      var last=b.pi+b.e.length;\n      if(b.lc>n.commit){var nc=Math.min(b.lc,last);if(nc>n.commit){n.commit=nc;dirty=true}}\n      send(n,f,'AER',{term:n.term,ok:true,m:last});\n    }else if(m.type==='AER'){\n      if(b.term>n.term){var was=n.role==='leader';stepDown(n,b.term);resetTimer(n);if(was)say(n.name+' hears <b>term '+b.term+'</b> from '+f.name+' and steps down: a higher term always wins.');return}\n      if(n.role!=='leader'||b.term!==n.term)return;\n      if(b.ok){n.match[f.id]=Math.max(n.match[f.id],b.m);n.next[f.id]=n.match[f.id]+1;advance(n)}\n      else n.next[f.id]=Math.max(0,n.next[f.id]-1);\n    }\n  }\n  function write(auto){\n    var L=leader();\n    if(!L){say('No leader right now, so the write has nowhere to go. Wait for an election.');return}\n    var c=CMDS[writes%CMDS.length];writes++;\n    L.log.push({t:L.term,c:c});L.match[L.id]=L.log.length-1;lastNew=L.log.length-1;dirty=true;\n    say((auto?'A client':'You')+' sent <b>'+c+'</b> to leader '+L.name+'. It appends entry '+L.log.length+' and replicates it.');\n    beat(L);\n  }\n  function toggle(n){\n    if(n.down){\n      n.down=false;n.role='follower';n.votes=0;resetTimer(n);dirty=true;\n      say(n.name+' restarts as a follower, with its log and term '+n.term+'. The leader catches it up.');\n    }else{\n      var wasL=n.role==='leader';n.down=true;n.role='follower';dirty=true;\n      var up=alive();\n      if(up<MAJ)say(n.name+' crashed. Only '+up+' of 5 are up: no majority, so <b>no leader can be elected</b> and nothing commits.');\n      else say(n.name+' crashed.'+(wasL?' Heartbeats stop; the first follower whose timer runs out starts an election.':' '+up+' of 5 still form a majority.'));\n    }\n    controls();\n  }\n  function cut(){\n    var c=nodes.filter(function(n){return n.cut})[0];\n    if(c){c.cut=false;resetTimer(c);say('Network healed. '+c.name+' comes back with <b>term '+c.term+'</b>; whoever hears that higher term steps down.')}\n    else{\n      var f=nodes.filter(function(n){return !n.down&&n.role!=='leader'});\n      if(!f.length)return;\n      var n=f[Math.floor(Math.random()*f.length)];n.cut=true;\n      say(n.name+' is cut off. It hears no heartbeats, so it keeps timing out and its term keeps climbing.');\n    }\n    dirty=true;controls();\n  }\n  function controls(){\n    var d=nodes.filter(function(n){return n.down})[0],L=leader();\n    if(d){bK.textContent='Restart '+d.name;bK.disabled=false}\n    else if(L){bK.textContent='Kill the leader ('+L.name+')';bK.disabled=false}\n    else{bK.textContent='Electing…';bK.disabled=true}\n    bP.textContent=nodes.some(function(n){return n.cut})?'Heal the network':'Cut off a follower';\n  }\n  bW.addEventListener('click',function(){write(false)});\n  bK.addEventListener('click',function(){var d=nodes.filter(function(n){return n.down})[0];toggle(d||leader())});\n  bP.addEventListener('click',cut);\n  V.addEventListener('input',function(){speed=SPEEDS[+V.value];VO.textContent=LABEL[+V.value];V.setAttribute('aria-valuetext',LABEL[+V.value])});\n  VO.textContent=LABEL[+V.value];\n\n  function el(n,a,p){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e}\n  var gLinks=el('g',{},svg),gMsg=el('g',{},svg),C=2*Math.PI*38;\n  nodes.forEach(function(n){\n    var g=el('g',{'class':'rf-node',tabindex:'0',role:'button'},svg);\n    n.wall=el('circle',{cx:n.x,cy:n.y,r:47,fill:'none',stroke:'var(--bad)','stroke-width':2.5,'stroke-dasharray':'5 5',opacity:0},g);\n    n.pul=el('circle',{cx:n.x,cy:n.y,r:38,fill:'none',stroke:'var(--ow-accent)','stroke-width':2,opacity:0},g);\n    el('circle',{cx:n.x,cy:n.y,r:38,fill:'none',stroke:'var(--ow-line)','stroke-width':5},g);\n    n.arc=el('circle',{cx:n.x,cy:n.y,r:38,fill:'none',stroke:'var(--ow-muted)','stroke-width':5,'stroke-linecap':'round','stroke-dasharray':C.toFixed(1),transform:'rotate(-90 '+n.x+' '+n.y+')'},g);\n    n.body=el('circle',{'class':'rf-body',cx:n.x,cy:n.y,r:31,fill:'var(--ow-bg)',stroke:'var(--ow-line)','stroke-width':2},g);\n    n.x1=el('path',{d:'M'+(n.x-13)+' '+(n.y-13)+'L'+(n.x+13)+' '+(n.y+13)+'M'+(n.x+13)+' '+(n.y-13)+'L'+(n.x-13)+' '+(n.y+13),stroke:'var(--bad)','stroke-width':3.5,'stroke-linecap':'round',opacity:0},g);\n    n.t1=el('text',{x:n.x,y:n.y-1,'text-anchor':'middle','font-size':17,'font-weight':750},g);n.t1.textContent=n.name;\n    n.t2=el('text',{x:n.x,y:n.y+16,'text-anchor':'middle','font-size':12.5},g);\n    n.t3=el('text',{x:n.x,y:n.y+58,'text-anchor':'middle','font-size':13.5,'font-weight':650},g);\n    n.g=g;\n    g.addEventListener('click',function(){toggle(n)});\n    g.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle(n)}});\n  });\n  function drawNodes(){\n    nodes.forEach(function(n){\n      var L=n.role==='leader',dn=n.down;\n      n.body.setAttribute('fill',dn?'var(--ow-line)':L?'var(--ow-accent)':'var(--ow-bg)');\n      n.body.setAttribute('stroke',n.role==='candidate'?'var(--ow-accent)':'var(--ow-line)');\n      n.body.setAttribute('stroke-dasharray',n.role==='candidate'?'4 3':'none');\n      var ink=L?'var(--ow-accent-ink)':dn?'var(--ow-muted)':'var(--ow-fg)';\n      n.t1.style.fill=ink;n.t2.style.fill=ink;\n      n.t2.textContent='term '+n.term;\n      n.x1.setAttribute('opacity',dn?1:0);\n      n.wall.setAttribute('opacity',n.cut?1:0);\n      var frac=dn||L?0:Math.max(0,Math.min(1,(n.dl-now)/n.len));\n      n.arc.setAttribute('stroke-dashoffset',(C*(1-frac)).toFixed(1));\n      n.arc.setAttribute('stroke',n.role==='candidate'?'var(--ow-accent)':frac<.25?'var(--bad)':'var(--ow-muted)');\n      var lab=dn?'down':n.cut?'cut off':L?'★ leader':n.role==='candidate'?'candidate '+n.votes+'/3':'follower';\n      n.t3.textContent=lab;\n      n.t3.style.fill=dn||n.cut?'var(--bad)':L||n.role==='candidate'?'var(--ow-accent)':'var(--ow-muted)';\n      var pk=(now-n.pulse)/500;\n      if(L&&!reduce&&pk<1){n.pul.setAttribute('r',(38+pk*16).toFixed(1));n.pul.setAttribute('opacity',(1-pk).toFixed(2))}else n.pul.setAttribute('opacity',0);\n      n.g.setAttribute('aria-label',n.name+', '+lab+', term '+n.term+'. Press to '+(dn?'restart':'crash')+' it.');\n    });\n  }\n  function drawMsgs(){\n    var h='';\n    msgs.forEach(function(m){\n      var a=nodes[m.f],b=nodes[m.t],p=(now-m.t0)/(m.t1-m.t0);if(p<0)p=0;if(p>1)p=1;\n      if(m.die!==null&&p>m.die)return;\n      var dx=b.x-a.x,dy=b.y-a.y,d=Math.sqrt(dx*dx+dy*dy),ux=dx/d,uy=dy/d,sx=a.x+ux*33,sy=a.y+uy*33,ex=b.x-ux*33,ey=b.y-uy*33;\n      var x=sx+(ex-sx)*p,y=sy+(ey-sy)*p,col,big=false,sq=false;\n      if(m.type==='RV')col='var(--ow-accent)',big=true;\n      else if(m.type==='RVR'){if(!m.b.g)return;col='var(--ok)';big=true}\n      else if(m.type==='AE'){if(m.b.e.length){col=tc(m.b.e[0].t);sq=true}else col='var(--ow-muted)'}\n      else return;\n      if(reduce){h+='<line x1=\"'+sx.toFixed(1)+'\" y1=\"'+sy.toFixed(1)+'\" x2=\"'+ex.toFixed(1)+'\" y2=\"'+ey.toFixed(1)+'\" stroke=\"'+col+'\" stroke-width=\"2\" opacity=\".55\"/>';return}\n      if(sq)h+='<rect x=\"'+(x-5.5).toFixed(1)+'\" y=\"'+(y-5.5).toFixed(1)+'\" width=\"11\" height=\"11\" rx=\"2\" fill=\"'+col+'\"/>';\n      else h+='<circle cx=\"'+x.toFixed(1)+'\" cy=\"'+y.toFixed(1)+'\" r=\"'+(big?5.5:3.5)+'\" fill=\"'+col+'\"/>';\n    });\n    gMsg.innerHTML=h;\n  }\n  function drawLogs(){\n    var w=logs.getBoundingClientRect().width||300,K=Math.max(4,Math.min(16,Math.floor((w-52)/27)));\n    var max=0;nodes.forEach(function(n){max=Math.max(max,n.log.length)});\n    var st=Math.max(0,max-K),h='';\n    nodes.forEach(function(n){\n      h+='<div class=\"rf-row'+(n.role==='leader'&&!n.down?' ld':'')+(n.down?' dn':'')+'\"><span class=\"rf-nm\">'+n.name+'</span>'+(st>0?'<span class=\"rf-more\">…</span>':'');\n      for(var i=st;i<n.log.length;i++){var e=n.log[i];h+='<span class=\"rf-c'+(i>n.commit?' u':'')+(i===lastNew&&n.role==='leader'?' new':'')+'\" style=\"--t:'+tc(e.t)+'\" title=\"entry '+(i+1)+': '+e.c+', term '+e.t+'\">'+e.t+'</span>'}\n      h+='</div>';\n    });\n    logs.innerHTML=h;\n  }\n  function tick(dt){\n    now+=dt;\n    var due=[],keep=[];\n    msgs.forEach(function(m){\n      var p=(now-m.t0)/(m.t1-m.t0);\n      if(now>=m.t1)due.push(m);else if(m.die!==null&&p>m.die){}else keep.push(m);\n    });\n    msgs=keep;\n    due.forEach(function(m){if(m.die===null&&!nodes[m.f].cut&&!nodes[m.t].cut)deliver(m)});\n    nodes.forEach(function(n){\n      if(n.down)return;\n      if(n.role==='leader'){if(now>=n.hb)beat(n)}\n      else if(now>=n.dl)candidate(n);\n    });\n    if(autoAt>0&&now>=autoAt){autoAt=-1;write(true)}\n  }\n  var lt=null;\n  function frame(ts){\n    if(lt===null)lt=ts;\n    var dt=Math.min(100,ts-lt)*speed;lt=ts;\n    while(dt>0){var s=Math.min(dt,20);tick(s);dt-=s}\n    drawNodes();drawMsgs();\n    if(dirty){drawLogs();dirty=false;controls()}\n    requestAnimationFrame(frame);\n  }\n  say('No leader yet. Each follower waits out a <b>random</b> election timeout (the draining ring); the first to run out asks for votes.');\n  document.getElementById('rf-lq').style.setProperty('--c',tc(2));\n  controls();drawNodes();drawLogs();\n  window.addEventListener('resize',function(){dirty=true});\n  requestAnimationFrame(frame);\n})();\n</script>"
+    },
+    {
+      "kind": "prose",
+      "heading": "Elections and terms",
+      "body": "Raft cuts time into numbered terms, and each term starts with a leader election [1]. A follower that hears no heartbeat for its election timeout increases the term counter, votes for itself and asks every other server for its vote [2]. Each server votes once per term [3], a candidate with a majority becomes leader [4], and because the timeout is randomized, split votes are resolved quickly [5]. etcd defaults to a 100 ms heartbeat and a 1000 ms election timeout [6][7].",
+      "sources": [
+        {
+          "url": "https://en.wikipedia.org/wiki/Raft_(algorithm)",
+          "title": "Raft (algorithm), Wikipedia",
+          "quote": "Each term starts with a leader election."
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Raft_(algorithm)",
+          "title": "Raft (algorithm), Wikipedia",
+          "quote": "It starts the election by increasing the term counter, voting for itself as new leader, and sending a message to all other servers requesting their vote."
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Raft_(algorithm)",
+          "title": "Raft (algorithm), Wikipedia",
+          "quote": "A server will vote only once per term, on a first-come-first-served basis."
+        },
+        {
+          "url": "https://developer.hashicorp.com/consul/docs/architecture/consensus",
+          "title": "Consensus, Consul documentation (HashiCorp)",
+          "quote": "If a candidate receives a quorum of votes, then it is promoted to leader."
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Raft_(algorithm)",
+          "title": "Raft (algorithm), Wikipedia",
+          "quote": "Raft uses a randomized election timeout to ensure that split vote problems are resolved quickly."
+        },
+        {
+          "url": "https://etcd.io/docs/v3.5/tuning/",
+          "title": "Tuning, etcd v3.5 documentation",
+          "quote": "By default, etcd uses a 100ms heartbeat interval."
+        },
+        {
+          "url": "https://etcd.io/docs/v3.5/tuning/",
+          "title": "Tuning, etcd v3.5 documentation",
+          "quote": "By default, etcd uses a 1000ms election timeout."
+        }
+      ]
+    },
+    {
+      "kind": "prose",
+      "heading": "Commit on a majority",
+      "body": "Every write goes to the leader, which appends it to its log and replicates it to the followers [1]. An entry is committed once it is durably stored on a majority, and only then is it applied [2]. So 5 servers keep working with 2 down; with 3 down they stop making progress, but never return a wrong result [3][4]. After a leader crash, the new leader repairs any mismatch by forcing the followers to duplicate its own log [5].",
+      "sources": [
+        {
+          "url": "https://developer.hashicorp.com/consul/docs/architecture/consensus",
+          "title": "Consensus, Consul documentation (HashiCorp)",
+          "quote": "A client can request that a leader append a new log entry."
+        },
+        {
+          "url": "https://developer.hashicorp.com/consul/docs/architecture/consensus",
+          "title": "Consensus, Consul documentation (HashiCorp)",
+          "quote": "An entry is considered committed when it is durably stored on a quorum of nodes."
+        },
+        {
+          "url": "https://raft.github.io/",
+          "title": "The Raft Consensus Algorithm (raft.github.io)",
+          "quote": "a cluster of 5 servers can continue to operate even if 2 servers fail"
+        },
+        {
+          "url": "https://raft.github.io/",
+          "title": "The Raft Consensus Algorithm (raft.github.io)",
+          "quote": "If more servers fail, they stop making progress (but will never return an incorrect result)."
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Raft_(algorithm)",
+          "title": "Raft (algorithm), Wikipedia",
+          "quote": "The new leader will then handle inconsistency by forcing the followers to duplicate its own log."
+        }
+      ]
+    },
+    {
+      "kind": "figure",
+      "heading": "Three states, numbered terms",
+      "body": "<style>\n.rg{box-sizing:border-box;max-width:1040px;margin:0 auto;font-family:var(--ow-font);color:var(--ow-fg)}\n.rg *{box-sizing:border-box}\n.rg svg{display:block;width:100%;max-width:760px;height:auto;margin:0 auto}\n.rg svg text{font-family:var(--ow-font);fill:var(--ow-fg)}\n.rg .lbl{font-size:14px;fill:var(--ow-muted)}\n.rg .st{font-size:17px;font-weight:700}\n.rg .tall{display:none}\n.rg-list{list-style:none;margin:0;padding:0;gap:10px}\n.rg-list li{display:grid;grid-template-columns:auto auto auto;justify-content:start;align-items:center;gap:6px 8px}\n.rg-list b{color:var(--ow-muted);font-size:16px}\n.rg-list em{grid-column:1/-1;font-style:normal;font-size:13.5px;color:var(--ow-muted);margin-top:-2px}\n.rg .p{display:inline-block;padding:4px 12px;border-radius:999px;font-size:14px;font-weight:700;border:2px solid var(--ow-line);background:var(--ow-panel)}\n.rg .p.c{border:2px dashed var(--ow-accent)}\n.rg .p.l{background:var(--ow-accent);border-color:var(--ow-accent);color:var(--ow-accent-ink)}\n@media (max-width:600px){.rg .wide{display:none}.rg .tall{display:grid}}\n.rg-h{margin:22px 0 10px;font-size:12.5px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--ow-muted)}\n.rg-terms{display:flex;gap:4px;align-items:stretch}\n.rg-t{flex:var(--w);min-width:0;display:flex;flex-direction:column;gap:5px}\n.rg-bar{display:flex;height:22px;border-radius:6px;overflow:hidden}\n.rg-bar i{display:block;height:100%}\n.rg-bar .e{flex:1;background:var(--ow-accent)}\n.rg-bar .n{flex:var(--n);background:color-mix(in oklch,var(--ow-accent) 28%,var(--ow-panel))}\n.rg-t span{font-size:13px;font-weight:650}\n.rg-t small{font-size:12px;color:var(--ow-muted);line-height:1.3}\n.rg-key{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:12.5px;color:var(--ow-muted)}\n.rg-key i{display:inline-block;width:14px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}\n</style>\n<div class=\"rg\" role=\"img\" aria-label=\"Raft's three server states and the events that move a server between them, and a timeline of terms, each starting with an election\">\n  <svg class=\"wide\" viewBox=\"0 0 760 300\">\n    <defs><marker id=\"rgA\" viewBox=\"0 0 10 10\" refX=\"9\" refY=\"5\" markerWidth=\"7\" markerHeight=\"7\" orient=\"auto-start-reverse\"><path d=\"M0 0L10 5L0 10z\" fill=\"var(--ow-muted)\"/></marker></defs>\n    <g fill=\"none\" stroke=\"var(--ow-muted)\" stroke-width=\"2\" marker-end=\"url(#rgA)\">\n      <path d=\"M8 135H58\"/>\n      <path d=\"M172 125H306\"/>\n      <path d=\"M454 125H588\"/>\n      <path d=\"M352 100C335 30 425 30 408 100\"/>\n      <path d=\"M330 154C300 182 200 182 160 160\"/>\n      <path d=\"M640 160C600 290 170 290 125 166\"/>\n    </g>\n    <text class=\"lbl\" x=\"2\" y=\"122\">starts</text>\n    <text class=\"lbl\" x=\"239\" y=\"94\" text-anchor=\"middle\">no heartbeat:</text>\n    <text class=\"lbl\" x=\"239\" y=\"112\" text-anchor=\"middle\">times out,</text>\n    <text class=\"lbl\" x=\"239\" y=\"146\" text-anchor=\"middle\">starts election</text>\n    <text class=\"lbl\" x=\"521\" y=\"114\" text-anchor=\"middle\">wins votes</text>\n    <text class=\"lbl\" x=\"521\" y=\"146\" text-anchor=\"middle\">from a majority</text>\n    <text class=\"lbl\" x=\"380\" y=\"22\" text-anchor=\"middle\">times out again: new term, new election</text>\n    <text class=\"lbl\" x=\"285\" y=\"205\" text-anchor=\"middle\">hears a leader or a higher term</text>\n    <text class=\"lbl\" x=\"380\" y=\"294\" text-anchor=\"middle\">hears a higher term: steps down</text>\n    <rect x=\"62\" y=\"100\" width=\"108\" height=\"56\" rx=\"28\" fill=\"var(--ow-panel)\" stroke=\"var(--ow-line)\" stroke-width=\"2\"/>\n    <text class=\"st\" x=\"116\" y=\"134\" text-anchor=\"middle\">Follower</text>\n    <rect x=\"310\" y=\"100\" width=\"140\" height=\"56\" rx=\"28\" fill=\"var(--ow-panel)\" stroke=\"var(--ow-accent)\" stroke-width=\"2.5\" stroke-dasharray=\"6 4\"/>\n    <text class=\"st\" x=\"380\" y=\"134\" text-anchor=\"middle\">Candidate</text>\n    <rect x=\"592\" y=\"100\" width=\"120\" height=\"56\" rx=\"28\" fill=\"var(--ow-accent)\"/>\n    <text class=\"st\" x=\"652\" y=\"134\" text-anchor=\"middle\" style=\"fill:var(--ow-accent-ink)\">Leader</text>\n  </svg>\n  <ul class=\"tall rg-list\">\n    <li><span class=\"p f\">Follower</span><b>&rarr;</b><span class=\"p c\">Candidate</span><em>times out with no heartbeat, starts an election</em></li>\n    <li><span class=\"p c\">Candidate</span><b>&rarr;</b><span class=\"p l\">Leader</span><em>wins votes from a majority</em></li>\n    <li><span class=\"p c\">Candidate</span><b>&#8635;</b><span class=\"p c\">Candidate</span><em>times out again: new term, new election</em></li>\n    <li><span class=\"p c\">Candidate</span><b>&rarr;</b><span class=\"p f\">Follower</span><em>hears a leader or a higher term</em></li>\n    <li><span class=\"p l\">Leader</span><b>&rarr;</b><span class=\"p f\">Follower</span><em>hears a higher term: steps down</em></li>\n  </ul>\n  <p class=\"rg-h\">Time is cut into terms; each starts with an election</p>\n  <div class=\"rg-terms\">\n    <div class=\"rg-t\" style=\"--w:5\"><div class=\"rg-bar\" style=\"--n:6\"><i class=\"e\"></i><i class=\"n\"></i></div><span>term 1</span><small>S2 leads</small></div>\n    <div class=\"rg-t\" style=\"--w:3\"><div class=\"rg-bar\" style=\"--n:3\"><i class=\"e\"></i><i class=\"n\"></i></div><span>term 2</span><small>S2 crashes; S4 leads</small></div>\n    <div class=\"rg-t\" style=\"--w:2\"><div class=\"rg-bar\" style=\"--n:0\"><i class=\"e\"></i></div><span>term 3</span><small>split vote</small></div>\n    <div class=\"rg-t\" style=\"--w:4\"><div class=\"rg-bar\" style=\"--n:5\"><i class=\"e\"></i><i class=\"n\"></i></div><span>term 4</span><small>S1 leads</small></div>\n  </div>\n  <div class=\"rg-key\"><span><i style=\"background:var(--ow-accent)\"></i>election</span><span><i style=\"background:color-mix(in oklch,var(--ow-accent) 28%,var(--ow-panel))\"></i>normal operation under one leader</span></div>\n</div>"
+    },
+    {
+      "kind": "prose",
+      "heading": "Built to be understood",
+      "body": "Raft was published at USENIX ATC 2014 as an algorithm for managing a replicated log, equivalent to Paxos in fault tolerance and performance [1][2]. It separates leader election, log replication and safety, and in a user study students learned it more easily than Paxos [3][4]. The etcd Raft library powers etcd, Kubernetes and Docker Swarm, among others [5].",
+      "sources": [
+        {
+          "url": "https://www.usenix.org/conference/atc14/technical-sessions/presentation/ongaro",
+          "title": "In Search of an Understandable Consensus Algorithm, Ongaro and Ousterhout, USENIX ATC 2014",
+          "quote": "Raft is a consensus algorithm for managing a replicated log."
+        },
+        {
+          "url": "https://raft.github.io/",
+          "title": "The Raft Consensus Algorithm (raft.github.io)",
+          "quote": "It's equivalent to Paxos in fault-tolerance and performance."
+        },
+        {
+          "url": "https://www.usenix.org/conference/atc14/technical-sessions/presentation/ongaro",
+          "title": "In Search of an Understandable Consensus Algorithm, Ongaro and Ousterhout, USENIX ATC 2014",
+          "quote": "Raft separates the key elements of consensus, such as leader election, log replication, and safety"
+        },
+        {
+          "url": "https://www.usenix.org/conference/atc14/technical-sessions/presentation/ongaro",
+          "title": "In Search of an Understandable Consensus Algorithm, Ongaro and Ousterhout, USENIX ATC 2014",
+          "quote": "Results from a user study demonstrate that Raft is easier for students to learn than Paxos."
+        },
+        {
+          "url": "https://github.com/etcd-io/raft",
+          "title": "etcd-io/raft README (GitHub)",
+          "quote": "It powers distributed systems such as etcd, Kubernetes, Docker Swarm"
+        }
+      ]
+    }
+  ],
+  "data": {
+    "tags": [
+      "distributed-systems",
+      "consensus",
+      "algorithm"
+    ],
+    "facts": [
+      {
+        "label": "Published",
+        "value": "2014, USENIX ATC (Best Paper)"
+      },
+      {
+        "label": "Votes to win with 5 servers",
+        "value": "3"
+      },
+      {
+        "label": "Failures 5 servers survive",
+        "value": "2"
+      },
+      {
+        "label": "etcd heartbeat",
+        "value": "100 ms"
+      },
+      {
+        "label": "etcd election timeout",
+        "value": "1000 ms"
+      }
+    ],
+    "see": [
+      "TCP congestion control",
+      "How Git stores data",
+      "Bloom filter",
+      "Diffie-Hellman key exchange",
+      "Conway's Game of Life",
+      "Paxos",
+      "Leader election",
+      "Two-phase commit",
+      "CAP theorem",
+      "Write-ahead log"
+    ]
+  }
+}

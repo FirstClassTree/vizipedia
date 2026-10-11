@@ -1,34 +1,29 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { leadingTake, standingOf } from "../src/domain/rules.ts";
 import { freshWiki, ok, PAGE, SOURCE } from "./helpers.ts";
 
-test("a page is its lede, its sections, and one take each, signed by owner and model", async () => {
+test("a page is its lede, its sections, and one version each, signed by owner and model", async () => {
   const { wiki, as, db } = await freshWiki();
   const page = ok(await wiki.createPage(await as("ada"), PAGE));
-  assert.equal(page.slug, "monty-hall-problem");
+  assert.equal(page.slug, "reach-decay");
   assert.deepEqual(
     page.body.map((section) => section.kind),
     ["lede", "experience", "prose"],
   );
   assert.equal(page.lede, PAGE.lede);
   assert.equal(page.playable, true);
-  assert.deepEqual(page.linksTo, [{ slug: "bayes-theorem", title: "Bayes theorem", exists: false }]);
-  const take = leadingTake(page.body[2]!);
-  assert.deepEqual(take?.by, { owner: "ada", model: "claude-opus-5-5", client: "test" });
-  assert.equal(take?.backers.length, 1, "writing a take is backing it");
-  assert.equal(take?.sources[0]?.check, "found");
-  assert.deepEqual(await wiki.wanted(), [{ slug: "bayes-theorem", title: "Bayes theorem", links: 1 }]);
-  const graph = await wiki.graph();
-  assert.deepEqual(
-    graph.nodes.map((node) => [node.title, node.written]),
-    [
-      ["Monty Hall problem", true],
-      ["Bayes theorem", false],
-    ],
-    "a wanted page is a node too",
-  );
-  assert.deepEqual(graph.edges, [["monty-hall-problem", "bayes-theorem"]]);
+  assert.equal(page.cover?.kind, "experience", "the first visual is the cover");
+  assert.equal(page.cover?.gated, true, "a new owner's code waits for a click, so lists do not frame it");
+  const trusted = await freshWiki({ trusted: ["ada"] });
+  ok(await trusted.wiki.createPage(await trusted.as("ada"), PAGE));
+  assert.equal((await trusted.wiki.listPages({ limit: 5 }))[0]?.cover?.gated, false, "an established owner's cover runs on cards");
+  await trusted.db.close();
+  assert.deepEqual(page.linksTo, [{ slug: "hook-short-video", title: "Hook (short video)", exists: false }]);
+  const current = page.body[2]?.current;
+  assert.deepEqual(current?.by, { owner: "ada", model: "claude-opus-5-5", client: "test" });
+  assert.equal(current?.number, 1);
+  assert.equal(current?.sources[0]?.check, "found");
+  assert.deepEqual(await wiki.wanted(), [{ slug: "hook-short-video", title: "Hook (short video)", links: 1 }]);
   await db.close();
 });
 
@@ -45,105 +40,93 @@ test("a page without a quoted source is refused with reasons an agent can fix", 
   await db.close();
 });
 
-test("a second owner's edit is a rival take, never an overwrite; backers decide which leads", async () => {
-  const { wiki, as, db } = await freshWiki({ trusted: ["ada", "lin", "sol"] });
-  const page = ok(await wiki.createPage(await as("ada"), PAGE));
-  const answer = page.body[2]!;
-  const original = leadingTake(answer)!;
-
-  const rival = ok(await wiki.putTake(await as("lin", "gpt-6"), answer.id, { body: "Only if the host knows where the car is [1].", sources: [SOURCE] }));
-  assert.equal(rival.section.takes.length, 2, "both takes stand");
-  assert.equal(leadingTake(rival.section)?.by.owner, "lin", "between established owners a tie goes to the newest");
-  assert.equal(standingOf(rival.section), "contested");
-
-  const backed = ok(await wiki.back(await as("sol", "gemini-3"), original.id, "matches the cited source"));
-  assert.equal(leadingTake(backed.section)?.id, original.id, "two backers beat one");
-
-  const moved = ok(await wiki.back(await as("sol", "gemini-3"), rival.take, null));
-  assert.equal(leadingTake(moved.section)?.by.owner, "lin", "one owner, one backing per section: backing the rival moves it");
-  assert.equal(moved.section.takes.find((take) => take.id === original.id)?.backers.length, 1);
-
-  const reloaded = await wiki.getPage(page.slug);
-  assert.equal(reloaded?.contested, 1);
-  assert.equal((await wiki.wars()).length, 1);
-  await db.close();
-});
-
-test("a new key cannot displace an established owner's take without backers", async () => {
-  const { wiki, as, db } = await freshWiki({ trusted: ["ada"] });
-  const page = ok(await wiki.createPage(await as("ada"), PAGE));
-  const answer = page.body[2]!;
-  const result = ok(await wiki.putTake(await as("newcomer"), answer.id, { body: "Vandalised [1].", sources: [SOURCE] }));
-  assert.equal(leadingTake(result.section)?.by.owner, "ada");
-  await db.close();
-});
-
-test("revising your own take keeps its backers and marks what they read", async () => {
+test("a write is a new version on top; every earlier one is kept and can be brought back", async () => {
   const { wiki, as, db } = await freshWiki({ trusted: ["ada", "lin"] });
   const page = ok(await wiki.createPage(await as("ada"), PAGE));
-  const answer = page.body[2]!;
-  const take = leadingTake(answer)!;
-  ok(await wiki.back(await as("lin"), take.id, null));
-  const revised = ok(await wiki.putTake(await as("ada"), answer.id, { body: "Switching wins two times in three [1].", sources: [SOURCE], note: "plainer wording" }));
-  const now = leadingTake(revised.section)!;
-  assert.equal(now.revision, 2);
-  assert.deepEqual(now.backers.map((backing) => [backing.owner, backing.revision]).sort(), [
-    ["ada", 2],
-    ["lin", 1],
-  ]);
-  const same = await wiki.putTake(await as("ada"), answer.id, { body: "Switching wins two times in three [1].", sources: [SOURCE] });
-  assert.equal(!same.ok && same.status, 409);
-  const patrol = await wiki.patrol((await as("lin")).ownerId);
-  assert.equal(patrol.find((item) => item.section.id === answer.id)?.why, "revised");
+  const curve = page.body[2]!;
+  const first = curve.current!;
+
+  const second = ok(await wiki.writeSection(await as("lin", "gpt-6"), curve.id, { body: "Most reach arrives in six hours [1].", sources: [SOURCE], note: "said six" }));
+  assert.equal(second.section.current?.by.owner, "lin", "the newest version shows, whoever wrote it");
+  assert.equal(second.section.current?.number, 2);
+  assert.equal(second.section.versions, 2, "the first version is kept");
+
+  const same = await wiki.writeSection(await as("lin", "gpt-6"), curve.id, { body: "Most reach arrives in six hours [1].", sources: [SOURCE] });
+  assert.equal(!same.ok && same.status, 409, "writing what is already shown changes nothing");
+
+  const history = await wiki.sectionVersions(curve.id);
+  assert.deepEqual(
+    history?.versions.map((version) => [version.number, version.by.owner]),
+    [
+      [2, "lin"],
+      [1, "ada"],
+    ],
+  );
+
+  const back = ok(await wiki.revert(await as("ada"), curve.id, first.id, "the source says hours, not six"));
+  assert.equal(back.section.current?.number, 3, "a revert is a new version, so the history stays whole");
+  assert.equal(back.section.current?.body, first.body);
+  assert.equal(back.section.current?.revertOf, first.id);
+  const again = await wiki.revert(await as("ada"), curve.id, back.section.current!.id, null);
+  assert.equal(!again.ok && again.status, 409, "the version shown cannot be brought back");
+
+  assert.deepEqual(
+    (await wiki.changes(10)).map((change) => change.kind),
+    ["version.revert", "version.write", "page.create"],
+  );
   await db.close();
 });
 
-test("three revisions a day per section, then the brake", async () => {
+test("three writes a day per section per owner, reverts included, then the brake", async () => {
   const { wiki, as, db } = await freshWiki();
   const page = ok(await wiki.createPage(await as("ada"), PAGE));
-  const answer = page.body[2]!;
-  for (const n of [1, 2, 3]) ok(await wiki.putTake(await as("ada"), answer.id, { body: `Revision ${n} [1].`, sources: [SOURCE] }));
-  const fourth = await wiki.putTake(await as("ada"), answer.id, { body: "Revision 4 [1].", sources: [SOURCE] });
+  const curve = page.body[2]!;
+  const first = curve.current!;
+  for (const n of [1, 2]) ok(await wiki.writeSection(await as("ada"), curve.id, { body: `Version ${n} [1].`, sources: [SOURCE] }));
+  ok(await wiki.revert(await as("ada"), curve.id, first.id, null));
+  const fourth = await wiki.writeSection(await as("ada"), curve.id, { body: "Version 4 [1].", sources: [SOURCE] });
   assert.equal(!fourth.ok && fourth.status, 429);
+  const other = ok(await wiki.writeSection(await as("lin"), curve.id, { body: "Version 4 [1].", sources: [SOURCE] }));
+  assert.equal(other.section.current?.by.owner, "lin", "the brake is per owner");
   await db.close();
 });
 
-test("flags from established owners hide a take; fresh keys cannot censor", async () => {
+test("flags from established owners hide a version and the one before it shows; fresh keys cannot censor", async () => {
   const { wiki, as, db } = await freshWiki({ trusted: ["ada", "e1", "e2", "e3"] });
   const page = ok(await wiki.createPage(await as("ada"), PAGE));
-  const answer = page.body[2]!;
-  const spam = ok(await wiki.putTake(await as("lin"), answer.id, { body: "Buy pills [1].", sources: [SOURCE] }));
+  const curve = page.body[2]!;
+  const spam = ok(await wiki.writeSection(await as("lin"), curve.id, { body: "Buy pills [1].", sources: [SOURCE] }));
   for (const fresh of ["f1", "f2", "f3"]) {
-    const flagged = ok(await wiki.flag(await as(fresh), leadingTake(answer)!.id, "spam", null, false));
+    const flagged = ok(await wiki.flag(await as(fresh), spam.version, "spam", null, false));
     assert.equal(flagged.hidden, false);
   }
+  const own = await wiki.flag(await as("lin"), spam.version, "spam", null, false);
+  assert.equal(!own.ok && own.status, 422, "you cannot flag your own version");
   let last = { hidden: false, flags: 0 };
-  for (const established of ["e1", "e2", "e3"]) last = ok(await wiki.flag(await as(established), spam.take, "spam", "sells pills", true));
+  for (const established of ["e1", "e2", "e3"]) last = ok(await wiki.flag(await as(established), spam.version, "spam", "sells pills", true));
   assert.equal(last.hidden, true);
   const after = await wiki.getPage(page.slug);
-  assert.equal(after?.body[2]?.takes.find((take) => take.id === spam.take)?.hidden, true);
-  assert.equal(after?.contested, 0);
+  assert.equal(after?.body[2]?.current?.by.owner, "ada", "the version before the hidden one shows");
+  assert.equal(after?.body[2]?.versions, 2, "the hidden version is kept, unshown");
+  const revived = await wiki.revert(await as("ada"), curve.id, spam.version, null);
+  assert.equal(!revived.ok && revived.status, 409, "a hidden version cannot be brought back");
   await db.close();
 });
 
-test("a page is indexable only once earned: owners, found quotes, words, age, playable, no flags", async () => {
-  let now = new Date();
-  const { wiki, as, db } = await freshWiki({ trusted: ["ada"], now: () => now });
-  const long = Array.from({ length: 320 }, (_, index) => `word${index}`).join(" ");
-  const sources = [SOURCE, { ...SOURCE, url: "https://example.org/b" }, { ...SOURCE, url: "https://example.org/c" }];
-  const page = ok(await wiki.createPage(await as("ada"), { ...PAGE, sections: [PAGE.sections[0]!, { heading: "The answer", body: `${long} [1][2][3]`, sources }] }));
-  assert.equal(page.indexable, false, "one owner is not enough");
-  ok(await wiki.back(await as("lin"), leadingTake(page.body[2]!)!.id, null));
-  assert.equal((await wiki.getPage(page.slug))?.indexable, false, "and not before it has aged");
-  now = new Date(Date.now() + 8 * 86_400_000);
-  await wiki.refreshAll();
-  const earned = await wiki.getPage(page.slug);
-  assert.equal(earned?.verified, 3);
-  assert.equal(earned?.indexable, true);
+test("a page is offered to search once it has something to play with, a found quote and no open flag", async () => {
+  const { wiki, as, db } = await freshWiki({ trusted: ["ada", "e1", "e2", "e3"] });
+  const text = ok(await wiki.createPage(await as("ada"), { ...PAGE, title: "Text only", sections: [PAGE.sections[1]!] }));
+  assert.equal(text.indexable, false, "no experience, no index");
+  const page = ok(await wiki.createPage(await as("ada"), PAGE));
+  assert.equal(page.verified, 1);
+  assert.equal(page.indexable, true);
   assert.deepEqual(
     (await wiki.sitemap()).map((entry) => entry.slug),
     [page.slug],
   );
+  const curve = page.body[2]!;
+  ok(await wiki.flag(await as("e1"), curve.current!.id, "false", null, true));
+  assert.equal((await wiki.getPage(page.slug))?.indexable, false, "an open flag takes it out until resolved");
   await db.close();
 });
 
@@ -155,28 +138,29 @@ test("rate limit: a new key creates five pages a day", async () => {
   await db.close();
 });
 
-test("standings, graph, changes and stats read from the same takes", async () => {
+test("lists, tags, changes and stats read from the same versions", async () => {
   const { wiki, as, db } = await freshWiki({ trusted: ["ada"] });
-  ok(await wiki.createPage(await as("ada"), PAGE));
+  ok(await wiki.createPage(await as("ada"), { ...PAGE, data: { tags: ["Instagram", "reach"], facts: [{ label: "Most reach by", value: "hour 6" }] } }));
   ok(
     await wiki.createPage(await as("ada", "gpt-6"), {
-      title: "Bayes theorem",
-      lede: "A rule for updating belief when evidence arrives.",
-      sections: [{ heading: "Rule", body: "Posterior is prior times likelihood [1]. Used in [[Monty Hall problem]].", sources: [SOURCE] }],
+      title: "Hook (short video)",
+      lede: "The first seconds of a short video, and what they decide.",
+      sections: [{ heading: "Rule", body: "The first second decides [1]. Used in [[Reach decay]].", sources: [SOURCE] }],
     }),
   );
-  const graph = await wiki.graph();
+  assert.deepEqual(await wiki.tags(), [
+    { tag: "instagram", pages: 1 },
+    { tag: "reach", pages: 1 },
+  ]);
   assert.deepEqual(
-    graph.nodes.map((node) => [node.slug, node.written]),
-    [
-      ["bayes-theorem", true],
-      ["monty-hall-problem", true],
-    ],
+    (await wiki.listPages({ tag: "reach" })).map((page) => page.slug),
+    ["reach-decay"],
   );
-  assert.deepEqual(graph.edges.map((edge) => edge.join(">")).sort(), ["bayes-theorem>monty-hall-problem", "monty-hall-problem>bayes-theorem"]);
-  const { models, owners } = await wiki.standings();
-  assert.deepEqual(models.map((row) => row.name).sort(), ["claude-opus-5-5", "gpt-6"]);
-  assert.equal(owners[0]?.name, "ada");
+  assert.equal((await wiki.listPages({ q: "seconds" }))[0]?.slug, "hook-short-video");
+  assert.deepEqual(
+    (await wiki.listPages({ sort: "title" })).map((page) => page.slug),
+    ["hook-short-video", "reach-decay"],
+  );
   assert.equal((await wiki.stats()).pages, 2);
   assert.deepEqual(
     (await wiki.changes(5)).map((change) => change.kind),
@@ -184,8 +168,61 @@ test("standings, graph, changes and stats read from the same takes", async () =>
     "a new page is one line on the feed, not one per section",
   );
   assert.deepEqual(await wiki.wanted(), []);
-  await wiki.recordView("bayes-theorem");
-  assert.equal((await wiki.listPages({ sort: "trending" })).length, 2);
-  assert.equal((await wiki.listPages({ q: "belief" }))[0]?.slug, "bayes-theorem");
+  assert.deepEqual((await wiki.getPage("reach-decay"))?.facts, [{ label: "Most reach by", value: "hour 6" }]);
+  await db.close();
+});
+
+test("the map: a page's see list and its [[links]] are edges, an unwritten page is a ring, a page never links itself", async () => {
+  const { wiki, as, db } = await freshWiki({ trusted: ["ada"] });
+  ok(await wiki.createPage(await as("ada"), { ...PAGE, data: { see: ["Watch time", "reach-decay", "hook-short-video"] } }));
+  const bad = await wiki.createPage(await as("ada"), { ...PAGE, title: "Other page", data: { see: [42] } });
+  assert.equal(!bad.ok && bad.status, 422, "see holds titles or slugs");
+  const graph = await wiki.graph();
+  assert.deepEqual(
+    graph.nodes.map((node) => [node.slug, node.written]),
+    [
+      ["reach-decay", true],
+      ["hook-short-video", false],
+      ["watch-time", false],
+    ],
+  );
+  assert.deepEqual(graph.edges, [
+    ["reach-decay", "hook-short-video"],
+    ["reach-decay", "watch-time"],
+  ]);
+  assert.deepEqual(
+    (await wiki.wanted()).map((entry) => entry.slug),
+    ["hook-short-video", "watch-time"],
+  );
+  await db.close();
+});
+
+test("a figure may not take its frame elsewhere: links, forms, frames and meta tags are refused", async () => {
+  const { wiki, as, db } = await freshWiki();
+  const figure = (body: string) => wiki.createPage(await_as, { ...PAGE, title: "Fig", sections: [{ kind: "figure", heading: "Figure", body }, ...PAGE.sections] });
+  const await_as = await as("ada");
+  const linked = await figure('<svg><a href="https://evil.test"><text>go</text></a></svg>');
+  assert.equal(!linked.ok && linked.problems?.some((p) => p.includes("no links")), true);
+  const refresh = await figure('<meta http-equiv="refresh" content="0;url=https://evil.test"><p>x</p>');
+  assert.equal(!refresh.ok && refresh.problems?.some((p) => p.includes("no links")), true);
+  ok(await figure('<svg viewBox="0 0 10 10"><circle r="4" cx="5" cy="5"/></svg>'));
+  await db.close();
+});
+
+test("the render check's picture stays with the version: cards, the gate and a revert all have it", async () => {
+  const picture = new Uint8Array([255, 216, 255, 1, 2, 3]);
+  const { wiki, as, db } = await freshWiki({ render: async () => ({ trouble: null, poster: picture }) });
+  const ada = await as("ada");
+  const page = ok(await wiki.createPage(ada, PAGE));
+  const cover = page.body.find((section) => section.kind === "experience");
+  assert.ok(cover?.current);
+  assert.equal(cover.current.poster, true);
+  assert.deepEqual(Array.from((await wiki.poster(cover.current.id)) ?? []), Array.from(picture));
+  const listed = (await wiki.listPages({ limit: 5 }))[0];
+  assert.equal(listed?.cover?.poster, true, "a list shows the picture, so a new owner's page is never a blank tile");
+  const second = ok(await wiki.writeSection(ada, cover.id, { body: "<svg viewBox='0 0 10 10'><rect width='10' height='10'/></svg>" }));
+  const back = ok(await wiki.revert(ada, cover.id, cover.current.id, "back"));
+  assert.notEqual(back.version, second.version);
+  assert.deepEqual(Array.from((await wiki.poster(back.version)) ?? []), Array.from(picture), "a revert brings the picture back too");
   await db.close();
 });

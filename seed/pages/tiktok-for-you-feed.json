@@ -1,0 +1,127 @@
+{
+  "title": "TikTok For You feed",
+  "slug": "tiktok-for-you-feed",
+  "hue": 345,
+  "lede": "The For You feed is TikTok's main stream of recommended videos, ranked separately for each viewer by how likely they are to be interested, using signals TikTok has described in its own posts.",
+  "sections": [
+    {
+      "kind": "experience",
+      "heading": "Signal mixer",
+      "body": "<style>\n.tk{--pad:20px;--card:76px;--gap:10px;box-sizing:border-box;max-width:1040px;margin:0 auto;display:grid;gap:20px;grid-template-columns:1fr;font-family:var(--ow-font);color:var(--ow-fg)}\n.tk *{box-sizing:border-box}\n@media (min-width:720px){.tk{grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:28px;align-items:start}}\n.tk-h{margin:0 0 4px;font-size:13px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--ow-muted)}\n.tk-q{margin:0 0 14px;font-size:18px;line-height:1.35;font-weight:600}\n.tk-q b{color:var(--c-cook);font-weight:700}\n.tk-chips{display:flex;flex-wrap:wrap;gap:8px;margin:0;padding:0;list-style:none}\n.tk-chip{appearance:none;font:inherit;font-size:16px;line-height:1.2;display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:9px 14px;border-radius:999px;border:1.5px solid var(--ow-line);background:var(--ow-panel);color:var(--ow-fg);cursor:pointer;transition:background .15s,border-color .15s,color .15s;touch-action:manipulation}\n.tk-chip:hover{border-color:color-mix(in oklch,var(--ow-accent) 55%,var(--ow-line))}\n.tk-chip:focus-visible{outline:3px solid color-mix(in oklch,var(--ow-accent) 60%,transparent);outline-offset:2px}\n.tk-chip[aria-pressed=\"true\"]{background:var(--ow-accent);border-color:var(--ow-accent);color:var(--ow-accent-ink)}\n.tk-chip[data-neg][aria-pressed=\"true\"]{background:var(--ow-fg);border-color:var(--ow-fg);color:var(--ow-bg)}\n.tk-tick{width:16px;height:16px;flex:none;border-radius:50%;border:1.5px solid currentColor;opacity:.55;display:grid;place-items:center}\n.tk-chip[aria-pressed=\"true\"] .tk-tick{opacity:1;background:currentColor}\n.tk-chip[aria-pressed=\"true\"] .tk-tick::after{content:\"\";width:6px;height:3px;border:solid var(--ow-accent);border-width:0 0 2px 2px;transform:translateY(-1px) rotate(-45deg)}\n.tk-chip[data-neg][aria-pressed=\"true\"] .tk-tick::after{border-color:var(--ow-fg)}\n.tk-badge{font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:color-mix(in oklch,currentColor 12%,transparent)}\n.tk-fol{margin-top:18px;padding:14px 16px;border-radius:14px;border:1px dashed var(--ow-line);background:color-mix(in oklch,var(--ow-panel) 70%,transparent)}\n.tk-fol label{display:flex;justify-content:space-between;gap:12px;font-size:16px;font-weight:600}\n.tk-fol output{font-family:var(--ow-mono);font-variant-numeric:tabular-nums;color:var(--ow-muted);font-weight:500}\n.tk-fol input:focus-visible{outline:3px solid color-mix(in oklch,var(--ow-accent) 55%,transparent);outline-offset:2px;border-radius:99px}\n.tk-fol input{width:100%;margin:10px 0 8px;accent-color:var(--ow-muted);height:28px;cursor:pointer}\n.tk-fol p{margin:0;font-size:15px;line-height:1.4;color:var(--ow-muted);min-height:2.8em}\n.tk-fol p.on{color:var(--ow-fg)}\n.tk-feed{border-radius:18px;background:var(--ow-panel);border:1px solid var(--ow-line);padding:var(--pad)}\n.tk-stack{position:relative;margin:12px 0 0;padding:0;list-style:none;height:calc(var(--card)*3 + var(--gap)*2)}\n.tk-card{position:absolute;left:0;right:0;top:0;height:var(--card);display:grid;grid-template-columns:28px 52px minmax(0,1fr);align-items:center;gap:12px;padding:10px 14px 10px 10px;border-radius:14px;background:var(--ow-bg);border:1px solid var(--ow-line);transition:transform .45s cubic-bezier(.2,.8,.2,1),box-shadow .3s}\n.tk-card.lead{box-shadow:0 0 0 2px var(--ow-accent)}\n.tk-rank{font-size:22px;font-weight:750;text-align:center;font-variant-numeric:tabular-nums;color:var(--ow-muted)}\n.tk-card.lead .tk-rank{color:var(--ow-accent)}\n.tk-thumb{width:52px;height:56px;border-radius:10px;display:grid;place-items:center;background:color-mix(in oklch,var(--c) 18%,var(--ow-panel));color:var(--c)}\n.tk-thumb svg{width:30px;height:30px;display:block}\n.tk-meta{display:block;min-width:0}\n.tk-title{display:flex;align-items:baseline;justify-content:space-between;gap:8px;font-size:16px;font-weight:650;line-height:1.25}\n.tk-title span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}\n.tk-move{flex:none;font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ow-muted)}\n.tk-move.up{color:oklch(0.62 0.15 150)}.tk-move.down{color:oklch(0.6 0.17 25)}\n.tk-bar{display:block;margin-top:9px;height:8px;border-radius:99px;background:color-mix(in oklch,var(--ow-line) 70%,transparent);overflow:hidden}\n.tk-bar i{display:block;height:100%;width:0;border-radius:inherit;background:var(--c);transition:width .45s cubic-bezier(.2,.8,.2,1)}\n.tk-key{margin:14px 0 0;font-size:14px;line-height:1.45;color:var(--ow-muted)}\n.tk-row{display:flex;justify-content:space-between;align-items:baseline;gap:12px}\n.tk-reset{appearance:none;font:inherit;font-size:14px;font-weight:600;color:var(--ow-muted);background:none;border:0;padding:6px 2px;cursor:pointer;text-decoration:underline;text-underline-offset:3px}\n.tk-reset:focus-visible{outline:2px solid var(--ow-accent);outline-offset:2px;border-radius:4px}\n.tk-flash{animation:tkflash .9s ease}\n@keyframes tkflash{0%{box-shadow:0 0 0 0 color-mix(in oklch,var(--ow-muted) 50%,transparent)}100%{box-shadow:0 0 0 10px transparent}}\n.tk-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}\n@media (max-width:400px){.tk-feed{--pad:14px}.tk-card{grid-template-columns:22px 46px minmax(0,1fr);gap:10px}.tk-thumb{width:46px;height:52px}.tk-q{font-size:17px}}\n@media (prefers-reduced-motion:reduce){.tk-card,.tk-bar i,.tk-chip{transition:none}.tk-flash{animation:none}}\n</style>\n<div class=\"tk\" style=\"--c-cook:oklch(0.6 0.16 45)\">\n  <div class=\"tk-ctrl\">\n    <p class=\"tk-q\" id=\"tk-q\">You just saw a long <b>cooking</b> video. Tap what you did with it.</p>\n    <ul class=\"tk-chips\" role=\"group\" aria-labelledby=\"tk-q\">\n      <li><button class=\"tk-chip\" type=\"button\" aria-pressed=\"false\" data-s=\"end\"><span class=\"tk-tick\" aria-hidden=\"true\"></span>Watched to the end <span class=\"tk-badge\">strong</span></button></li>\n      <li><button class=\"tk-chip\" type=\"button\" aria-pressed=\"false\" data-s=\"again\"><span class=\"tk-tick\" aria-hidden=\"true\"></span>Watched it again</button></li>\n      <li><button class=\"tk-chip\" type=\"button\" aria-pressed=\"false\" data-s=\"like\"><span class=\"tk-tick\" aria-hidden=\"true\"></span>Liked</button></li>\n      <li><button class=\"tk-chip\" type=\"button\" aria-pressed=\"false\" data-s=\"share\"><span class=\"tk-tick\" aria-hidden=\"true\"></span>Shared</button></li>\n      <li><button class=\"tk-chip\" type=\"button\" aria-pressed=\"false\" data-s=\"country\"><span class=\"tk-tick\" aria-hidden=\"true\"></span>Same country as creator <span class=\"tk-badge\">weak</span></button></li>\n      <li><button class=\"tk-chip\" type=\"button\" aria-pressed=\"false\" data-s=\"skip\" data-neg><span class=\"tk-tick\" aria-hidden=\"true\"></span>Swiped past</button></li>\n      <li><button class=\"tk-chip\" type=\"button\" aria-pressed=\"false\" data-s=\"nope\" data-neg><span class=\"tk-tick\" aria-hidden=\"true\"></span>Not interested</button></li>\n    </ul>\n    <div class=\"tk-fol\">\n      <label for=\"tk-f\"><span>Cooking creator's followers</span><output id=\"tk-fo\" for=\"tk-f\">1K</output></label>\n      <input id=\"tk-f\" type=\"range\" min=\"0\" max=\"6\" step=\"1\" value=\"1\" aria-describedby=\"tk-fn\">\n      <p id=\"tk-fn\">Drag it. TikTok says follower count is not a direct factor.</p>\n    </div>\n  </div>\n  <section class=\"tk-feed\" aria-labelledby=\"tk-fh\">\n    <div class=\"tk-row\"><p class=\"tk-h\" id=\"tk-fh\">Next in your For You feed</p><button class=\"tk-reset\" type=\"button\" id=\"tk-r\">Reset</button></div>\n    <ol class=\"tk-stack\" id=\"tk-s\"></ol>\n    <p class=\"tk-key\">Bars show predicted interest with illustrative weights. TikTok names strong and weak signals but publishes no numbers.</p>\n    <p class=\"tk-sr\" aria-live=\"polite\" id=\"tk-live\"></p>\n  </section>\n</div>\n<script>\n(function(){\n  var icons={\n    cook:'<svg viewBox=\"0 0 32 32\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 14h22v4a8 8 0 0 1-8 8h-6a8 8 0 0 1-8-8z\"/><path d=\"M2 14h3M27 14h3\"/><path d=\"M12 9c0-2 2-2 2-4M18 9c0-2 2-2 2-4\"/></svg>',\n    travel:'<svg viewBox=\"0 0 32 32\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M29 6 3 15l9 3 3 9 4-6 6 5z\"/><path d=\"M12 18 29 6\"/></svg>',\n    pets:'<svg viewBox=\"0 0 32 32\" fill=\"currentColor\"><ellipse cx=\"9\" cy=\"12\" rx=\"2.6\" ry=\"3.4\"/><ellipse cx=\"15\" cy=\"8.5\" rx=\"2.6\" ry=\"3.4\"/><ellipse cx=\"21.5\" cy=\"9.5\" rx=\"2.6\" ry=\"3.4\"/><ellipse cx=\"26\" cy=\"15\" rx=\"2.4\" ry=\"3.1\"/><path d=\"M16 15c4 0 8.5 5.5 8.5 9 0 2.5-2 3.5-4.5 3-1.5-.3-2.6-1-4-1s-2.5.7-4 1c-2.5.5-4.5-.5-4.5-3 0-3.5 4.5-9 8.5-9z\"/></svg>'\n  };\n  // Illustrative only: TikTok publishes no weights. It says finishing a longer video is a strong\n  // indicator and sharing a country with the creator a weak one; the others sit in between here.\n  var W={end:.30,again:.14,like:.12,share:.18,country:.03,skip:-.22,nope:-.45};\n  var EXCLUSIVE={end:'skip',skip:'end'};\n  var videos=[\n    {id:'travel',name:'Travel video',c:'oklch(0.58 0.15 230)',base:.62},\n    {id:'pets',name:'Pets video',c:'oklch(0.6 0.14 300)',base:.55},\n    {id:'cook',name:'Cooking video',c:'oklch(0.6 0.16 45)',base:.40,note:'another creator'}\n  ];\n  var on={},prev={travel:0,pets:1,cook:2},stack=document.getElementById('tk-s'),live=document.getElementById('tk-live');\n  videos.forEach(function(v){\n    var li=document.createElement('li');li.className='tk-card';li.style.setProperty('--c',v.c);\n    li.innerHTML='<span class=\"tk-rank\"></span><span class=\"tk-thumb\" aria-hidden=\"true\">'+icons[v.id]+'</span><span class=\"tk-meta\"><span class=\"tk-title\"><span>'+v.name+'</span><span class=\"tk-move\"></span></span><span class=\"tk-bar\"><i></i></span></span>';\n    v.el=li;stack.appendChild(li);\n  });\n  function score(v){\n    if(v.id!=='cook')return v.base;\n    var s=v.base;for(var k in on)if(on[k])s+=W[k];\n    return Math.max(.04,Math.min(.97,s));\n  }\n  function render(announce){\n    var ranked=videos.slice().sort(function(a,b){return score(b)-score(a)});\n    var h=stack.querySelector('.tk-card').offsetHeight,gap=parseFloat(getComputedStyle(stack.parentNode.parentNode).getPropertyValue('--gap'))||10;\n    ranked.forEach(function(v,i){\n      v.el.style.transform='translateY('+(i*(h+gap))+'px)';\n      v.el.classList.toggle('lead',i===0);\n      v.el.querySelector('.tk-rank').textContent=i+1;\n      v.el.querySelector('.tk-bar i').style.width=Math.round(score(v)*100)+'%';\n      var m=v.el.querySelector('.tk-move'),d=prev[v.id]-i;\n      m.className='tk-move'+(d>0?' up':d<0?' down':'');\n      m.textContent=d>0?'▲ '+d:d<0?'▼ '+(-d):'';\n      m.setAttribute('aria-hidden','true');\n    });\n    if(announce)live.textContent='Order now: '+ranked.map(function(v,i){return (i+1)+'. '+v.name}).join(', ')+'.';\n  }\n  document.querySelectorAll('.tk-chip').forEach(function(b){\n    b.addEventListener('click',function(){\n      var k=b.dataset.s,next=!on[k];on[k]=next;b.setAttribute('aria-pressed',String(next));\n      if(next&&EXCLUSIVE[k]){on[EXCLUSIVE[k]]=false;document.querySelector('[data-s=\"'+EXCLUSIVE[k]+'\"]').setAttribute('aria-pressed','false');}\n      render(true);\n    });\n  });\n  document.getElementById('tk-r').addEventListener('click',function(){\n    on={};document.querySelectorAll('.tk-chip').forEach(function(b){b.setAttribute('aria-pressed','false')});render(true);\n  });\n  var LABELS=['100','1K','10K','100K','1M','10M','100M'],f=document.getElementById('tk-f'),fo=document.getElementById('tk-fo'),fn=document.getElementById('tk-fn');\n  function fol(){\n    fo.textContent=LABELS[f.value];f.setAttribute('aria-valuetext',LABELS[f.value]+' followers');\n    fn.textContent=LABELS[f.value]+' followers: the order did not move. Neither follower count nor past hits are a direct factor.';fn.className='on';\n    videos.forEach(function(v){if(v.id==='cook'){v.el.classList.remove('tk-flash');void v.el.offsetWidth;v.el.classList.add('tk-flash');}});\n  }\n  f.addEventListener('input',fol);\n  window.addEventListener('resize',function(){render(false)});\n  render(false);\n})();\n</script>\n"
+    },
+    {
+      "heading": "What the feed weighs",
+      "body": "TikTok says it ranks videos from three groups of factors: user interactions such as likes, shares, follows and comments, video information such as captions, sounds and hashtags, and device and account settings [1]. The settings group gets lower weight because people do not actively express those as preferences [2]. A strong indicator, such as finishing a longer video from beginning to end, outweighs a weak one, such as viewer and creator being in the same country [3]. Tap the signals in the mixer to see a strong one lift a video past a weak one.",
+      "sources": [
+        {
+          "url": "https://newsroom.tiktok.com/en-us/how-tiktok-recommends-videos-for-you",
+          "title": "How TikTok recommends videos #ForYou (TikTok Newsroom, June 2020)",
+          "quote": "User interactions such as the videos you like or share, accounts you follow, comments you post, and content you create."
+        },
+        {
+          "url": "https://newsroom.tiktok.com/en-us/how-tiktok-recommends-videos-for-you",
+          "title": "How TikTok recommends videos #ForYou (TikTok Newsroom, June 2020)",
+          "quote": "they receive lower weight in the recommendation system relative to other data points we measure since users don't actively express these as preferences"
+        },
+        {
+          "url": "https://newsroom.tiktok.com/en-us/how-tiktok-recommends-videos-for-you",
+          "title": "How TikTok recommends videos #ForYou (TikTok Newsroom, June 2020)",
+          "quote": "A strong indicator of interest, such as whether a user finishes watching a longer video from beginning to end, would receive greater weight than a weak indicator, such as whether the video's viewer and creator are both in the same country."
+        }
+      ]
+    },
+    {
+      "heading": "What does not count",
+      "body": "According to TikTok, neither a creator's follower count nor a history of high-performing videos is a direct factor in ranking [1]. An account with more followers is still likely to get more views, simply because more people follow it [1]. The feed also generally avoids two videos in a row with the same sound or by the same creator, and skips duplicated or already-seen content [2]. Drag the follower slider in the mixer and the order stays put.",
+      "sources": [
+        {
+          "url": "https://newsroom.tiktok.com/en-us/how-tiktok-recommends-videos-for-you",
+          "title": "How TikTok recommends videos #ForYou (TikTok Newsroom, June 2020)",
+          "quote": "neither follower count nor whether the account has had previous high-performing videos are direct factors in the recommendation system"
+        },
+        {
+          "url": "https://newsroom.tiktok.com/en-us/how-tiktok-recommends-videos-for-you",
+          "title": "How TikTok recommends videos #ForYou (TikTok Newsroom, June 2020)",
+          "quote": "your For You feed generally won't show two videos in a row made with the same sound or by the same creator"
+        }
+      ]
+    },
+    {
+      "heading": "How a new video reaches viewers",
+      "body": "A video that has just been uploaded or is under review may be ineligible for recommendation into anyone's For You feed [1]. Once eligible, TikTok mixes some videos into feeds even when they do not match a viewer's expressed interests or have many likes, and says this helps the system learn what is popular among a wider range of audiences [2][3]. Its safety team also reviews videos as they rise in popularity [4]. The figure below follows those four stages.",
+      "sources": [
+        {
+          "url": "https://newsroom.tiktok.com/en-us/how-tiktok-recommends-videos-for-you",
+          "title": "How TikTok recommends videos #ForYou (TikTok Newsroom, June 2020)",
+          "quote": "videos that have just been uploaded or are under review, and spam content such as videos seeking to artificially increase traffic, also may be ineligible for recommendation into anyone's For You feed"
+        },
+        {
+          "url": "https://newsroom.tiktok.com/en-us/how-tiktok-recommends-videos-for-you",
+          "title": "How TikTok recommends videos #ForYou (TikTok Newsroom, June 2020)",
+          "quote": "sometimes you may come across a video in your feed that doesn't appear to be relevant to your expressed interests or have amassed a huge number of likes"
+        },
+        {
+          "url": "https://newsroom.tiktok.com/en-us/how-tiktok-recommends-videos-for-you",
+          "title": "How TikTok recommends videos #ForYou (TikTok Newsroom, June 2020)",
+          "quote": "By offering different videos from time to time, the system is also able to get a better sense of what's popular among a wider range of audiences"
+        },
+        {
+          "url": "https://newsroom.tiktok.com/en-us/an-update-on-our-work-to-safeguard-and-diversify-recommendations",
+          "title": "An update on our work to safeguard and diversify recommendations (TikTok Newsroom, December 2021)",
+          "quote": "Our safety team takes additional precautions to review videos as they rise in popularity"
+        }
+      ]
+    },
+    {
+      "kind": "figure",
+      "heading": "Path of a new video",
+      "body": "<style>\n.nv{box-sizing:border-box;max-width:1040px;margin:0 auto;font-family:var(--ow-font);color:var(--ow-fg)}\n.nv ol{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;counter-reset:nv}\n.nv li{position:relative;padding:16px 16px 18px;border-radius:14px;background:var(--ow-panel);border:1px solid var(--ow-line);counter-increment:nv}\n.nv li::before{content:counter(nv);display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--ow-accent);color:var(--ow-accent-ink);font-weight:750;font-size:15px;margin-bottom:12px}\n.nv li:not(:last-child)::after{content:\"\";position:absolute;top:30px;right:-12px;width:10px;height:10px;border-top:2px solid var(--ow-muted);border-right:2px solid var(--ow-muted);transform:rotate(45deg);opacity:.6}\n.nv b{display:block;font-size:17px;line-height:1.3;margin-bottom:6px}\n.nv span{display:block;font-size:15px;line-height:1.45;color:var(--ow-muted)}\n@media (max-width:760px){.nv ol{grid-template-columns:repeat(2,minmax(0,1fr))}.nv li:nth-child(2)::after{display:none}}\n@media (max-width:460px){.nv ol{grid-template-columns:1fr;gap:12px}.nv li{display:grid;grid-template-columns:30px 1fr;column-gap:14px;padding:14px 16px}.nv li::before{margin:0;grid-row:span 2}.nv li:not(:last-child)::after{display:none}}\n</style>\n<div class=\"nv\" role=\"img\" aria-label=\"Four stages TikTok describes for a video: new or under review, ranked for each viewer, mixed into feeds beyond their interests, reviewed again as it rises in popularity\">\n  <ol>\n    <li><b>Just uploaded</b><span>May be ineligible for For You while new or under review.</span></li>\n    <li><b>Ranked per viewer</b><span>Scored by each person's likely interest, from their own signals.</span></li>\n    <li><b>Mixed in</b><span>Shown to some people outside their stated interests, which tells the system about wider appeal.</span></li>\n    <li><b>Reviewed as it rises</b><span>TikTok's safety team reviews videos as they grow in popularity.</span></li>\n  </ol>\n</div>\n"
+    }
+  ],
+  "data": {
+    "tags": [
+      "tiktok",
+      "recommendation",
+      "for-you-feed",
+      "reach",
+      "algorithm",
+      "short-video"
+    ],
+    "facts": [
+      {
+        "label": "Described by TikTok",
+        "value": "June 2020 newsroom post"
+      },
+      {
+        "label": "Strong signal (TikTok's example)",
+        "value": "Finishing a longer video"
+      },
+      {
+        "label": "Weak signal (TikTok's example)",
+        "value": "Viewer and creator in the same country"
+      },
+      {
+        "label": "Follower count",
+        "value": "Not a direct factor"
+      },
+      {
+        "label": "Same creator or sound",
+        "value": "Generally not shown twice in a row"
+      },
+      {
+        "label": "Newly uploaded videos",
+        "value": "May be ineligible until reviewed"
+      }
+    ],
+    "see": [
+      "instagram-ranking",
+      "Watch time",
+      "Hook (short video)",
+      "YouTube Shorts recommendations",
+      "Collaborative filtering",
+      "Trial reels",
+      "Shadowban",
+      "Average view duration"
+    ]
+  }
+}

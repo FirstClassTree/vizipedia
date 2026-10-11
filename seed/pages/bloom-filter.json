@@ -1,0 +1,175 @@
+{
+  "title": "Bloom filter",
+  "slug": "bloom-filter",
+  "hue": 150,
+  "lede": "A Bloom filter is a bit array plus k hash functions that answers \"definitely not in the set\" or \"maybe in the set\", using only a few bits per item.",
+  "sections": [
+    {
+      "kind": "experience",
+      "heading": "Add words, then test them",
+      "body": "<style>\n.bf{box-sizing:border-box;max-width:1040px;margin:0 auto;display:grid;gap:18px;grid-template-columns:1fr;font-family:var(--ow-font);color:var(--ow-fg);--yes:oklch(0.72 0.15 70);--no:oklch(0.58 0.13 155);--bad:oklch(0.58 0.19 25)}\n.bf *{box-sizing:border-box}\n@media (min-width:780px){.bf{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:26px;align-items:start}}\n.bf-q{margin:0 0 10px;font-size:18px;line-height:1.35;font-weight:600}\n.bf-q b{color:var(--ow-accent)}\n.bf-row{display:flex;gap:8px}\n.bf-in{flex:1;min-width:0;font:inherit;font-size:17px;padding:9px 13px;min-height:46px;border-radius:12px;border:1.5px solid var(--ow-line);background:var(--ow-bg);color:var(--ow-fg)}\n.bf-btn{appearance:none;font:inherit;font-size:15px;font-weight:650;min-height:46px;padding:8px 16px;border-radius:12px;border:0;background:var(--ow-accent);color:var(--ow-accent-ink);cursor:pointer;touch-action:manipulation}\n.bf-btn[disabled]{opacity:.45;cursor:default}\n.bf-ghost{appearance:none;font:inherit;font-size:13.5px;min-height:36px;padding:5px 11px;border-radius:999px;border:1.5px solid var(--ow-line);background:var(--ow-bg);color:var(--ow-fg);cursor:pointer;touch-action:manipulation}\n.bf button:focus-visible,.bf input:focus-visible{outline:3px solid color-mix(in oklch,var(--ow-accent) 55%,transparent);outline-offset:2px}\n.bf-v{margin:12px 0 10px;display:flex;align-items:center;gap:10px;min-height:44px;font-size:15px;line-height:1.35}\n.bf-badge{flex:none;font-weight:750;font-size:15px;padding:7px 12px;border-radius:10px;color:#fff;letter-spacing:.01em}\n.bf-badge.no{background:var(--no)}.bf-badge.yes{background:var(--yes);color:#2a1d00}.bf-badge.fp{background:var(--bad)}.bf-badge.idle{background:var(--ow-line);color:var(--ow-muted)}\n.bf-arr{padding:12px;border-radius:16px;background:var(--ow-panel);border:1px solid var(--ow-line)}\n.bf-grid{display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));gap:4px}\n.bf-cell{position:relative;aspect-ratio:1;max-height:40px;border-radius:6px;background:var(--ow-bg);border:1px solid var(--ow-line);display:grid;place-items:center;font-family:var(--ow-mono);font-size:10px;color:color-mix(in oklch,var(--ow-muted) 60%,transparent);transition:background .2s}\n.bf-cell.on{background:var(--ow-accent);border-color:var(--ow-accent);color:var(--ow-accent-ink)}\n.bf-cell.hit{box-shadow:0 0 0 2.5px var(--ow-fg);z-index:1}\n.bf-cell.zero{box-shadow:0 0 0 3px var(--no);background:color-mix(in oklch,var(--no) 30%,var(--ow-bg));color:var(--ow-fg);font-weight:700;z-index:1}\n.bf-cell.flash{animation:bfp .5s ease}\n@keyframes bfp{0%{transform:scale(1.35)}100%{transform:scale(1)}}\n.bf-legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin:10px 2px 0;font-size:12.5px;color:var(--ow-muted)}\n.bf-legend span{display:inline-flex;align-items:center;gap:6px}\n.bf-legend i{width:13px;height:13px;border-radius:4px;border:1px solid var(--ow-line);background:var(--ow-bg)}\n.bf-words{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;align-items:center}\n.bf-words .lab{font-size:13px;color:var(--ow-muted);margin-right:2px}\n.bf-word{appearance:none;font:inherit;font-size:13px;padding:4px 10px;min-height:32px;border-radius:999px;border:1px solid var(--ow-line);background:var(--ow-bg);color:var(--ow-fg);cursor:pointer}\n.bf-box{padding:14px 16px;border-radius:14px;border:1px solid var(--ow-line);background:var(--ow-panel)}\n.bf-box+.bf-box{margin-top:12px}\n.bf-lab{display:flex;justify-content:space-between;gap:12px;font-size:15px;font-weight:600}\n.bf-lab output{font-family:var(--ow-mono);color:var(--ow-muted);font-weight:500;font-variant-numeric:tabular-nums}\n.bf input[type=range]{width:100%;margin:6px 0 4px;height:28px;accent-color:var(--ow-accent);cursor:pointer}\n.bf-big{display:flex;align-items:baseline;gap:10px;margin:0}\n.bf-big b{font-size:34px;line-height:1;font-weight:750;font-variant-numeric:tabular-nums;color:var(--ow-fg)}\n.bf-big span{font-size:13.5px;color:var(--ow-muted);line-height:1.3}\n.bf-sub{margin:6px 0 0;font-size:13px;color:var(--ow-muted);line-height:1.4}\n.bf-sub b{color:var(--ow-fg);font-variant-numeric:tabular-nums}\n.bf-chart{display:block;width:100%;height:auto;margin-top:8px}\n.bf-chart text{font-family:var(--ow-font);font-size:11px;fill:var(--ow-muted)}\n.bf-acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}\n@media (max-width:420px){.bf-q{font-size:17px}.bf-arr{padding:8px}.bf-grid{gap:3px}.bf-cell{font-size:8px}}\n@media (prefers-reduced-motion:reduce){.bf-cell{transition:none}.bf-cell.flash{animation:none}}\n</style>\n<div class=\"bf\">\n  <div>\n    <p class=\"bf-q\">Type a word. <b>Add</b> it to light its bits, or just read the verdict.</p>\n    <div class=\"bf-row\">\n      <input class=\"bf-in\" id=\"bf-in\" type=\"text\" autocomplete=\"off\" spellcheck=\"false\" maxlength=\"24\" aria-label=\"A word to add or test\" placeholder=\"type any word\">\n      <button class=\"bf-btn\" type=\"button\" id=\"bf-add\">Add</button>\n    </div>\n    <div class=\"bf-v\" id=\"bf-v\" aria-live=\"polite\"></div>\n    <div class=\"bf-arr\">\n      <div class=\"bf-grid\" id=\"bf-grid\" role=\"img\" aria-label=\"The bit array\"></div>\n      <div class=\"bf-legend\"><span><i style=\"background:var(--ow-accent);border-color:var(--ow-accent)\"></i>bit set to 1</span><span><i style=\"box-shadow:0 0 0 2px var(--ow-fg)\"></i>this word's bits</span><span><i style=\"box-shadow:0 0 0 2px var(--no)\"></i>a 0: proof it is absent</span></div>\n    </div>\n    <div class=\"bf-words\" id=\"bf-words\"></div>\n  </div>\n  <div>\n    <div class=\"bf-box\">\n      <label class=\"bf-lab\" for=\"bf-k\"><span>Hash functions k</span><output id=\"bf-ko\" for=\"bf-k\">3</output></label>\n      <input id=\"bf-k\" type=\"range\" min=\"1\" max=\"8\" step=\"1\" value=\"3\">\n      <label class=\"bf-lab\" for=\"bf-m\"><span>Array size m</span><output id=\"bf-mo\" for=\"bf-m\">64 bits</output></label>\n      <input id=\"bf-m\" type=\"range\" min=\"16\" max=\"128\" step=\"8\" value=\"64\">\n    </div>\n    <div class=\"bf-box\">\n      <p class=\"bf-big\"><b id=\"bf-p\">0%</b><span>chance a word you never added comes back “maybe present”</span></p>\n      <p class=\"bf-sub\" id=\"bf-sub\"></p>\n      <svg class=\"bf-chart\" id=\"bf-c\" viewBox=\"0 0 300 112\" role=\"img\" aria-label=\"False positive rate for k from 1 to 8\"></svg>\n      <div class=\"bf-acts\"><button class=\"bf-ghost\" type=\"button\" id=\"bf-more\">+ 6 more words</button><button class=\"bf-ghost\" type=\"button\" id=\"bf-clr\">Clear</button></div>\n    </div>\n  </div>\n</div>\n<script>\n(function(){\n  var words=['cat','dog','owl','bee','fox','ant','elk','yak'],k=3,m=64,bits=[],last=[];\n  var IN=document.getElementById('bf-in'),ADD=document.getElementById('bf-add'),G=document.getElementById('bf-grid'),V=document.getElementById('bf-v'),WL=document.getElementById('bf-words'),K=document.getElementById('bf-k'),M=document.getElementById('bf-m'),C=document.getElementById('bf-c');\n  var POOL=['apple','river','piano','tiger','cloud','lemon','rocket','violin','maple','comet','pepper','falcon','canyon','walnut','ember','harbor','quartz','tulip','glacier','mango','saturn','otter','cobalt','meadow','sphinx','dune','fjord','lynx','nectar','prism'];\n  function fnv(s,seed){var h=seed>>>0;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)>>>0}h^=h>>>15;h=Math.imul(h,2246822507)>>>0;h^=h>>>13;return h>>>0}\n  function pos(w){var a=fnv(w,2166136261),b=fnv(w,3141592653)|1,out=[];for(var i=0;i<k;i++)out.push((a+i*b)%m);return out}\n  function norm(s){return s.trim().toLowerCase()}\n  function rebuild(){bits=new Array(m).fill(0);words.forEach(function(w){pos(w).forEach(function(p){bits[p]=1})})}\n  function test(w){return pos(w).every(function(p){return bits[p]})}\n  function fp(n,kk){return Math.pow(1-Math.exp(-kk*n/m),kk)}\n  function fmt(p){var x=p*100;return x===0?'0%':x<0.1?'<0.1%':x<10?x.toFixed(1)+'%':Math.round(x)+'%'}\n  var cells=[];\n  function layout(){\n    var cols=G.getBoundingClientRect().width<420?8:16;G.style.setProperty('--cols',cols);\n    if(cells.length!==m){G.innerHTML='';cells=[];for(var i=0;i<m;i++){var c=document.createElement('span');c.className='bf-cell';c.textContent=i;G.appendChild(c);cells.push(c)}}\n  }\n  var NS='http://www.w3.org/2000/svg';\n  function el(n,a,t){var e=document.createElementNS(NS,n);for(var x in a)e.setAttribute(x,a[x]);if(t!=null)e.textContent=t;return e}\n  function chart(n){\n    while(C.firstChild)C.removeChild(C.firstChild);\n    var ps=[],best=1;for(var i=1;i<=8;i++){ps.push(fp(n,i));if(ps[i-1]<ps[best-1])best=i}\n    var bw=30,gap=6,x0=12,base=78,L=function(p){return Math.log(Math.max(p,1e-9))},lo=L(Math.min.apply(null,ps)),hi=L(Math.max.apply(null,ps));\n    ps.forEach(function(p,i){var kk=i+1,h=n?(hi-lo<1e-9?36:10+(L(p)-lo)/(hi-lo)*50):2,x=x0+i*(bw+gap);\n      C.appendChild(el('rect',{x:x,y:base-h,width:bw,height:h,rx:4,fill:kk===k?'var(--ow-accent)':'color-mix(in oklch, var(--ow-accent) 28%, var(--ow-bg))'}));\n      C.appendChild(el('text',{x:x+bw/2,y:base+14,'text-anchor':'middle','font-weight':kk===k?'700':'400'},'k='+kk));\n      if(n&&(kk===best||kk===k))C.appendChild(el('text',{x:x+bw/2,y:base-h-4,'text-anchor':'middle',fill:'var(--ow-fg)','font-weight':kk===k?'700':'400'},kk===best&&kk!==k?'best':fmt(p)+(kk===best?' best':'')));\n    });\n    C.appendChild(el('text',{x:x0,y:109},'False positives for each k, log scale. Lower is better.'));\n  }\n  function render(flash){\n    layout();\n    var w=norm(IN.value),hp=w?pos(w):[],n=words.length,set=0;\n    bits.forEach(function(b){set+=b});\n    cells.forEach(function(c,i){var on=!!bits[i],mine=hp.indexOf(i)>=0;c.className='bf-cell'+(on?' on':'')+(mine?(on?' hit':' zero'):'')+(flash&&flash.indexOf(i)>=0?' flash':'')});\n    var badge,txt;\n    if(!w){badge='<span class=\"bf-badge idle\">waiting</span>';txt='Type a word to test it against the filter.'}\n    else{var maybe=test(w),inSet=words.indexOf(w)>=0,zeros=hp.filter(function(p){return!bits[p]}).length;\n      if(!maybe){badge='<span class=\"bf-badge no\">Definitely not</span>';txt=zeros+' of its '+k+' bit'+(k>1?'s are':' is')+' still 0, so “'+w+'” was never added.'}\n      else if(inSet){badge='<span class=\"bf-badge yes\">Maybe present</span>';txt='All '+k+' bits are 1. You did add “'+w+'”, but the filter cannot be sure.'}\n      else{badge='<span class=\"bf-badge fp\">Maybe present</span>';txt='All '+k+' bits are 1, yet you never added “'+w+'”: a <b>false positive</b>. Other words set those bits.'}}\n    V.innerHTML=badge+'<span>'+txt+'</span>';\n    ADD.disabled=!w||words.indexOf(w)>=0;ADD.textContent=w&&words.indexOf(w)>=0?'Added':'Add';\n    WL.innerHTML='<span class=\"lab\">'+(n?'Added ('+n+'):':'Nothing added yet.')+'</span>';\n    words.forEach(function(x){var b=document.createElement('button');b.type='button';b.className='bf-word';b.textContent=x;b.addEventListener('click',function(){IN.value=x;render()});WL.appendChild(b)});\n    var est=fp(n,k),probe=0,hits=0;for(var i=0;i<2000;i++){var t='zq'+i+'x';if(words.indexOf(t)<0){probe++;if(test(t))hits++}}\n    document.getElementById('bf-p').textContent=fmt(est);\n    document.getElementById('bf-sub').innerHTML='Formula (1 &minus; e<sup>&minus;kn/m</sup>)<sup>k</sup> with n = <b>'+n+'</b>. Measured on 2,000 made-up words: <b>'+fmt(probe?hits/probe:0)+'</b>. Bits set: <b>'+set+'/'+m+'</b>.';\n    document.getElementById('bf-ko').textContent=k;document.getElementById('bf-mo').textContent=m+' bits';\n    chart(n);\n  }\n  function add(w){w=norm(w);if(!w||words.indexOf(w)>=0)return;words.push(w);var p=pos(w);p.forEach(function(i){bits[i]=1});return p}\n  ADD.addEventListener('click',function(){var p=add(IN.value);render(p)});\n  IN.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();var p=add(IN.value);render(p)}});\n  IN.addEventListener('input',function(){render()});\n  K.addEventListener('input',function(){k=+K.value;K.setAttribute('aria-valuetext',k+' hash functions');rebuild();render()});\n  M.addEventListener('input',function(){m=+M.value;M.setAttribute('aria-valuetext',m+' bits');rebuild();render()});\n  document.getElementById('bf-more').addEventListener('click',function(){var fl=[],c=0;for(var i=0;i<POOL.length&&c<6;i++){var w=POOL[(i*7+words.length*3)%POOL.length];if(words.indexOf(w)<0){fl=fl.concat(add(w));c++}}render(fl)});\n  document.getElementById('bf-clr').addEventListener('click',function(){words=[];rebuild();render()});\n  if(window.ResizeObserver)new ResizeObserver(function(){var cols=G.getBoundingClientRect().width<420?8:16;if(String(cols)!==G.style.getPropertyValue('--cols'))render()}).observe(G);\n  rebuild();\n  // Start on a word that was never added, so the first screen already shows a verdict.\n  var start=['cow','pig','hen','ram','gnu','bat','eel','koi'].filter(function(w){return!test(w)})[0]||'cow';\n  IN.value=start;render();\n})();\n</script>\n"
+    },
+    {
+      "kind": "prose",
+      "heading": "How it works",
+      "body": "Burton Howard Bloom conceived it in 1970 [1]. An empty filter is a bit array of m bits, all 0, with k hash functions that each map an element to one position [2][3]. Adding an element sets its k bits. Testing reads them: any 0 means definitely not in the set [4]; all 1 means it is in the set or other insertions set those bits by chance, a false positive [5]. Elements can be added but not removed [6].",
+      "sources": [
+        {
+          "url": "https://en.wikipedia.org/wiki/Bloom_filter",
+          "title": "Bloom filter (Wikipedia)",
+          "quote": "conceived by Burton Howard Bloom in 1970"
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Bloom_filter",
+          "title": "Bloom filter (Wikipedia)",
+          "quote": "An empty Bloom filter is a bit array of m bits, all set to 0."
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Bloom_filter",
+          "title": "Bloom filter (Wikipedia)",
+          "quote": "which map set elements to one of the m possible array positions"
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Bloom_filter",
+          "title": "Bloom filter (Wikipedia)",
+          "quote": "If any of the bits at these positions is 0, the element is definitely not in the set"
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Bloom_filter",
+          "title": "Bloom filter (Wikipedia)",
+          "quote": "If all are 1, then either the element is in the set, or the bits have by chance been set to 1 during the insertion of other elements"
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Bloom_filter",
+          "title": "Bloom filter (Wikipedia)",
+          "quote": "Elements can be added to the set, but not removed"
+        }
+      ]
+    },
+    {
+      "kind": "prose",
+      "heading": "Tuning the error",
+      "body": "False positives fall as the array grows and rise as more items go in [1]. Fewer than 10 bits per element give a 1% false positive rate, however many elements there are [2], and about 4.8 more bits per element cut that rate tenfold [3]. For a given m and n, the k that minimizes false positives is (m/n)·ln 2 [4]. Google's Guava library defaults to 3% [5]; in Cassandra a 1% setting takes about three times the memory of 10% [6].",
+      "sources": [
+        {
+          "url": "https://en.wikipedia.org/wiki/Bloom_filter",
+          "title": "Bloom filter (Wikipedia)",
+          "quote": "the probability of false positives decreases as m (the number of bits in the array) increases, and increases as n (the number of inserted elements) increases"
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Bloom_filter",
+          "title": "Bloom filter (Wikipedia)",
+          "quote": "fewer than 10 bits per element are required for a 1% false positive probability, independent of the size or number of elements in the set"
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Bloom_filter",
+          "title": "Bloom filter (Wikipedia)",
+          "quote": "reduced by a factor of ten by adding only about 4.8 bits per element"
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Bloom_filter",
+          "title": "Bloom filter (Wikipedia)",
+          "quote": "the value of k that minimizes the false positive probability"
+        },
+        {
+          "url": "https://guava.dev/releases/snapshot-jre/api/docs/com/google/common/hash/BloomFilter.html",
+          "title": "BloomFilter, Google Guava API docs",
+          "quote": "a default expected false positive probability of 3%"
+        },
+        {
+          "url": "https://cassandra.apache.org/doc/latest/cassandra/managing/operating/bloom_filters.html",
+          "title": "Bloom filters, Apache Cassandra documentation",
+          "quote": "will require about three times as much memory as the same table with bloom_filter_fp_chance = 0.1"
+        }
+      ]
+    },
+    {
+      "kind": "prose",
+      "heading": "Where it is used",
+      "body": "Cassandra keeps one per data file so a read can skip files where the row definitely does not exist [1][2]; Google Bigtable, HBase and PostgreSQL use them to avoid disk lookups for rows that are not there [3]. Akamai's servers use one to keep \"one-hit-wonders\", objects requested only once, out of their disk caches [4]. Google Chrome previously used one for malicious URLs: each URL was checked against a local filter first, and only a positive triggered a full check [5][6].",
+      "sources": [
+        {
+          "url": "https://cassandra.apache.org/doc/latest/cassandra/managing/operating/bloom_filters.html",
+          "title": "Bloom filters, Apache Cassandra documentation",
+          "quote": "To avoid checking every SSTable data file for the partition being requested, Cassandra employs a data structure known as a bloom filter."
+        },
+        {
+          "url": "https://cassandra.apache.org/doc/latest/cassandra/managing/operating/bloom_filters.html",
+          "title": "Bloom filters, Apache Cassandra documentation",
+          "quote": "The data definitely does not exist in the given file"
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Bloom_filter",
+          "title": "Bloom filter (Wikipedia)",
+          "quote": "use Bloom filters to reduce the disk lookups for non-existent rows or columns"
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Bloom_filter",
+          "title": "Bloom filter (Wikipedia)",
+          "quote": "use Bloom filters to prevent \"one-hit-wonders\" from being stored in its disk caches"
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Bloom_filter",
+          "title": "Bloom filter (Wikipedia)",
+          "quote": "Google Chrome web browser previously used a Bloom filter to identify malicious URLs"
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Bloom_filter",
+          "title": "Bloom filter (Wikipedia)",
+          "quote": "Any URL was first checked against a local Bloom filter, and only if the Bloom filter returned a positive result was a full check of the URL performed"
+        }
+      ]
+    },
+    {
+      "kind": "figure",
+      "heading": "Two adds, two tests",
+      "body": "<style>.bg{box-sizing:border-box;max-width:640px;margin:0 auto;font-family:var(--ow-font);color:var(--ow-fg)}.bg svg{display:block;width:100%;height:auto}.bg text{font-family:var(--ow-font)}.bg .lb{font-size:13px;font-weight:600;letter-spacing:.06em;fill:var(--ow-muted)}.bg .wd{font-size:17px;font-weight:700;fill:var(--ow-fg)}.bg .ix{font-family:var(--ow-mono);font-size:12px}.bg .n{font-family:var(--ow-mono);font-size:11px;fill:var(--ow-muted)}</style>\n<div class=\"bg\"><svg viewBox=\"0 0 480 272\" role=\"img\" aria-label=\"Adding cat and dog sets three bits each in a 16-bit array. Testing cow finds bit 4 still 0, so cow is definitely not in the set. Testing owl finds all three of its bits set by cat and dog: a false positive.\">\n<text class=\"lb\" x=\"16\" y=\"16\">ADD, k = 3</text>\n<rect x=\"80.0\" y=\"26\" width=\"68\" height=\"30\" rx=\"15\" fill=\"var(--ow-panel)\" stroke=\"var(--ow-line)\"/><text class=\"wd\" x=\"114.0\" y=\"47\" text-anchor=\"middle\">cat</text>\n<path d=\"M114.0 56 C114.0 82 58.0 84 58.0 109\" fill=\"none\" stroke=\"var(--ow-accent)\" stroke-width=\"2\"/>\n<path d=\"M114.0 56 C114.0 82 114.0 84 114.0 109\" fill=\"none\" stroke=\"var(--ow-accent)\" stroke-width=\"2\"/>\n<path d=\"M114.0 56 C114.0 82 198.0 84 198.0 109\" fill=\"none\" stroke=\"var(--ow-accent)\" stroke-width=\"2\"/>\n<rect x=\"304.0\" y=\"26\" width=\"68\" height=\"30\" rx=\"15\" fill=\"var(--ow-panel)\" stroke=\"var(--ow-line)\"/><text class=\"wd\" x=\"338.0\" y=\"47\" text-anchor=\"middle\">dog</text>\n<path d=\"M338.0 56 C338.0 82 254.0 84 254.0 109\" fill=\"none\" stroke=\"var(--ow-accent)\" stroke-width=\"2\"/>\n<path d=\"M338.0 56 C338.0 82 338.0 84 338.0 109\" fill=\"none\" stroke=\"var(--ow-accent)\" stroke-width=\"2\"/>\n<path d=\"M338.0 56 C338.0 82 422.0 84 422.0 109\" fill=\"none\" stroke=\"var(--ow-accent)\" stroke-width=\"2\"/>\n<rect x=\"17.5\" y=\"112\" width=\"25\" height=\"28\" rx=\"5\" fill=\"var(--ow-bg)\" stroke=\"var(--ow-line)\"/><text class=\"ix\" x=\"30.0\" y=\"130.5\" text-anchor=\"middle\" fill=\"var(--ow-muted)\">0</text>\n<text class=\"n\" x=\"30.0\" y=\"153\" text-anchor=\"middle\">0</text>\n<rect x=\"45.5\" y=\"112\" width=\"25\" height=\"28\" rx=\"5\" fill=\"var(--ow-accent)\" stroke=\"var(--ow-accent)\"/><text class=\"ix\" x=\"58.0\" y=\"130.5\" text-anchor=\"middle\" fill=\"var(--ow-accent-ink)\">1</text>\n<text class=\"n\" x=\"58.0\" y=\"153\" text-anchor=\"middle\">1</text>\n<rect x=\"73.5\" y=\"112\" width=\"25\" height=\"28\" rx=\"5\" fill=\"var(--ow-bg)\" stroke=\"var(--ow-line)\"/><text class=\"ix\" x=\"86.0\" y=\"130.5\" text-anchor=\"middle\" fill=\"var(--ow-muted)\">0</text>\n<text class=\"n\" x=\"86.0\" y=\"153\" text-anchor=\"middle\">2</text>\n<rect x=\"101.5\" y=\"112\" width=\"25\" height=\"28\" rx=\"5\" fill=\"var(--ow-accent)\" stroke=\"var(--ow-accent)\"/><text class=\"ix\" x=\"114.0\" y=\"130.5\" text-anchor=\"middle\" fill=\"var(--ow-accent-ink)\">1</text>\n<text class=\"n\" x=\"114.0\" y=\"153\" text-anchor=\"middle\">3</text>\n<rect x=\"129.5\" y=\"112\" width=\"25\" height=\"28\" rx=\"5\" fill=\"var(--ow-bg)\" stroke=\"var(--ow-line)\"/><text class=\"ix\" x=\"142.0\" y=\"130.5\" text-anchor=\"middle\" fill=\"var(--ow-muted)\">0</text>\n<text class=\"n\" x=\"142.0\" y=\"153\" text-anchor=\"middle\">4</text>\n<rect x=\"157.5\" y=\"112\" width=\"25\" height=\"28\" rx=\"5\" fill=\"var(--ow-bg)\" stroke=\"var(--ow-line)\"/><text class=\"ix\" x=\"170.0\" y=\"130.5\" text-anchor=\"middle\" fill=\"var(--ow-muted)\">0</text>\n<text class=\"n\" x=\"170.0\" y=\"153\" text-anchor=\"middle\">5</text>\n<rect x=\"185.5\" y=\"112\" width=\"25\" height=\"28\" rx=\"5\" fill=\"var(--ow-accent)\" stroke=\"var(--ow-accent)\"/><text class=\"ix\" x=\"198.0\" y=\"130.5\" text-anchor=\"middle\" fill=\"var(--ow-accent-ink)\">1</text>\n<text class=\"n\" x=\"198.0\" y=\"153\" text-anchor=\"middle\">6</text>\n<rect x=\"213.5\" y=\"112\" width=\"25\" height=\"28\" rx=\"5\" fill=\"var(--ow-bg)\" stroke=\"var(--ow-line)\"/><text class=\"ix\" x=\"226.0\" y=\"130.5\" text-anchor=\"middle\" fill=\"var(--ow-muted)\">0</text>\n<text class=\"n\" x=\"226.0\" y=\"153\" text-anchor=\"middle\">7</text>\n<rect x=\"241.5\" y=\"112\" width=\"25\" height=\"28\" rx=\"5\" fill=\"var(--ow-accent)\" stroke=\"var(--ow-accent)\"/><text class=\"ix\" x=\"254.0\" y=\"130.5\" text-anchor=\"middle\" fill=\"var(--ow-accent-ink)\">1</text>\n<text class=\"n\" x=\"254.0\" y=\"153\" text-anchor=\"middle\">8</text>\n<rect x=\"269.5\" y=\"112\" width=\"25\" height=\"28\" rx=\"5\" fill=\"var(--ow-bg)\" stroke=\"var(--ow-line)\"/><text class=\"ix\" x=\"282.0\" y=\"130.5\" text-anchor=\"middle\" fill=\"var(--ow-muted)\">0</text>\n<text class=\"n\" x=\"282.0\" y=\"153\" text-anchor=\"middle\">9</text>\n<rect x=\"297.5\" y=\"112\" width=\"25\" height=\"28\" rx=\"5\" fill=\"var(--ow-bg)\" stroke=\"var(--ow-line)\"/><text class=\"ix\" x=\"310.0\" y=\"130.5\" text-anchor=\"middle\" fill=\"var(--ow-muted)\">0</text>\n<text class=\"n\" x=\"310.0\" y=\"153\" text-anchor=\"middle\">10</text>\n<rect x=\"325.5\" y=\"112\" width=\"25\" height=\"28\" rx=\"5\" fill=\"var(--ow-accent)\" stroke=\"var(--ow-accent)\"/><text class=\"ix\" x=\"338.0\" y=\"130.5\" text-anchor=\"middle\" fill=\"var(--ow-accent-ink)\">1</text>\n<text class=\"n\" x=\"338.0\" y=\"153\" text-anchor=\"middle\">11</text>\n<rect x=\"353.5\" y=\"112\" width=\"25\" height=\"28\" rx=\"5\" fill=\"var(--ow-bg)\" stroke=\"var(--ow-line)\"/><text class=\"ix\" x=\"366.0\" y=\"130.5\" text-anchor=\"middle\" fill=\"var(--ow-muted)\">0</text>\n<text class=\"n\" x=\"366.0\" y=\"153\" text-anchor=\"middle\">12</text>\n<rect x=\"381.5\" y=\"112\" width=\"25\" height=\"28\" rx=\"5\" fill=\"var(--ow-bg)\" stroke=\"var(--ow-line)\"/><text class=\"ix\" x=\"394.0\" y=\"130.5\" text-anchor=\"middle\" fill=\"var(--ow-muted)\">0</text>\n<text class=\"n\" x=\"394.0\" y=\"153\" text-anchor=\"middle\">13</text>\n<rect x=\"409.5\" y=\"112\" width=\"25\" height=\"28\" rx=\"5\" fill=\"var(--ow-accent)\" stroke=\"var(--ow-accent)\"/><text class=\"ix\" x=\"422.0\" y=\"130.5\" text-anchor=\"middle\" fill=\"var(--ow-accent-ink)\">1</text>\n<text class=\"n\" x=\"422.0\" y=\"153\" text-anchor=\"middle\">14</text>\n<rect x=\"437.5\" y=\"112\" width=\"25\" height=\"28\" rx=\"5\" fill=\"var(--ow-bg)\" stroke=\"var(--ow-line)\"/><text class=\"ix\" x=\"450.0\" y=\"130.5\" text-anchor=\"middle\" fill=\"var(--ow-muted)\">0</text>\n<text class=\"n\" x=\"450.0\" y=\"153\" text-anchor=\"middle\">15</text>\n<text class=\"lb\" x=\"16\" y=\"178\">TEST</text>\n<path d=\"M92.0 214 C92.0 192 58.0 190 58.0 158\" fill=\"none\" stroke=\"oklch(0.55 0.13 155)\" stroke-width=\"2\" stroke-dasharray=\"4 3\"/>\n<path d=\"M92.0 214 C92.0 192 114.0 190 114.0 158\" fill=\"none\" stroke=\"oklch(0.55 0.13 155)\" stroke-width=\"2\" stroke-dasharray=\"4 3\"/>\n<path d=\"M92.0 214 C92.0 192 142.0 190 142.0 158\" fill=\"none\" stroke=\"oklch(0.55 0.13 155)\" stroke-width=\"3\" stroke-dasharray=\"0\"/>\n<rect x=\"127\" y=\"109.5\" width=\"30\" height=\"33\" rx=\"7\" fill=\"none\" stroke=\"oklch(0.55 0.13 155)\" stroke-width=\"3\"/>\n<rect x=\"58.0\" y=\"214\" width=\"68\" height=\"30\" rx=\"15\" fill=\"var(--ow-panel)\" stroke=\"oklch(0.55 0.13 155)\" stroke-width=\"2\"/><text class=\"wd\" x=\"92.0\" y=\"235\" text-anchor=\"middle\">cow</text>\n<text x=\"92.0\" y=\"265\" text-anchor=\"middle\" font-size=\"14\" font-weight=\"650\" fill=\"oklch(0.55 0.13 155)\">definitely not: bit 4 is 0</text>\n<path d=\"M332.0 214 C332.0 192 198.0 190 198.0 158\" fill=\"none\" stroke=\"oklch(0.56 0.19 25)\" stroke-width=\"2\" stroke-dasharray=\"4 3\"/>\n<path d=\"M332.0 214 C332.0 192 338.0 190 338.0 158\" fill=\"none\" stroke=\"oklch(0.56 0.19 25)\" stroke-width=\"2\" stroke-dasharray=\"4 3\"/>\n<path d=\"M332.0 214 C332.0 192 422.0 190 422.0 158\" fill=\"none\" stroke=\"oklch(0.56 0.19 25)\" stroke-width=\"2\" stroke-dasharray=\"4 3\"/>\n<rect x=\"298.0\" y=\"214\" width=\"68\" height=\"30\" rx=\"15\" fill=\"var(--ow-panel)\" stroke=\"oklch(0.56 0.19 25)\" stroke-width=\"2\"/><text class=\"wd\" x=\"332.0\" y=\"235\" text-anchor=\"middle\">owl</text>\n<text x=\"332.0\" y=\"265\" text-anchor=\"middle\" font-size=\"14\" font-weight=\"650\" fill=\"oklch(0.56 0.19 25)\">maybe present: false positive</text>\n</svg></div>"
+    }
+  ],
+  "data": {
+    "tags": [
+      "data-structures",
+      "probability",
+      "hashing",
+      "databases"
+    ],
+    "facts": [
+      {
+        "label": "Invented",
+        "value": "1970, Burton Howard Bloom"
+      },
+      {
+        "label": "False negatives",
+        "value": "None"
+      },
+      {
+        "label": "Bits per item for 1% error",
+        "value": "Under 10 (about 9.6)"
+      },
+      {
+        "label": "Best number of hashes",
+        "value": "k = (m/n)·ln 2"
+      },
+      {
+        "label": "Guava default error",
+        "value": "3%"
+      },
+      {
+        "label": "Delete an item",
+        "value": "Not possible (needs a counting variant)"
+      }
+    ],
+    "see": [
+      "How Git stores data",
+      "Bayes' theorem",
+      "Diffie-Hellman key exchange",
+      "Raft consensus",
+      "PageRank",
+      "TCP congestion control",
+      "Hash function",
+      "Cuckoo filter",
+      "HyperLogLog",
+      "Consistent hashing"
+    ]
+  }
+}

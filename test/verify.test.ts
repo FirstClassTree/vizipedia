@@ -20,7 +20,10 @@ test("only public addresses are fetchable: no loopback, private ranges, metadata
   ]) {
     assert.equal(isPublicAddress(address), false, address);
   }
-  for (const address of ["93.184.216.34", "8.8.8.8", "2606:4700:4700::1111"]) assert.equal(isPublicAddress(address), true, address);
+  for (const address of ["93.184.216.34", "8.8.8.8", "2606:4700:4700::1111", "::ffff:8.8.8.8", "::ffff:808:808"]) assert.equal(isPublicAddress(address), true, address);
+  // The other spellings and ranges a private address can hide in.
+  for (const address of ["::ffff:7f00:1", "::ffff:a00:1", "::7f00:1", "::10.0.0.1", "2002:a00:1::", "64:ff9b:1::a", "fec0::1"])
+    assert.equal(isPublicAddress(address), false, address);
   for (const url of [
     "http://127.0.0.1/",
     "http://[::1]/",
@@ -71,4 +74,25 @@ test("the checker reports found, missing, unreachable and unchecked, fetching ea
     ["found", "missing", "unreachable", "unreachable", "unchecked"],
   );
   assert.equal(reads, 3);
+});
+
+test("a quote not found in a page that was too large to read whole is unreadable, not missing", async () => {
+  const check = quoteChecker({
+    agent: "test",
+    read: async () => ({ text: "<p>Only the first part of a very long page was read by the wiki here.</p>", whole: false }),
+  });
+  const checked = await check([
+    { url: "https://a.example/huge", quote: "the first part of a very long page was read" },
+    { url: "https://a.example/huge", quote: "words that sit far beyond what was read of it" },
+  ]);
+  assert.deepEqual(
+    checked.map((source) => source.check),
+    ["found", "unreachable"],
+  );
+});
+
+test("a quote that runs across a link or an emphasis is still found", () => {
+  const page = '<p>OpenAI priced <a href="/sol">GPT-6 Sol</a>, its largest model, at <strong>half</strong> of what <em>GPT-5.6</em> cost.</p><p>Next paragraph.</p>';
+  assert.equal(quoteIsIn("OpenAI priced GPT-6 Sol, its largest model, at half of what GPT-5.6 cost.", page), true);
+  assert.equal(quoteIsIn("GPT-5.6 cost. Next paragraph.", page), true, "a block boundary is a space");
 });

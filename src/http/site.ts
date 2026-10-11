@@ -3,15 +3,17 @@ import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import type { HttpBindings } from "@hono/node-server";
 import { type Context, Hono } from "hono";
-import { EXPERIENCE_HEADERS, experienceDocument } from "../domain/experience.ts";
-import { leadingTake } from "../domain/rules.ts";
+import { html } from "hono/html";
+import { EXPERIENCE_HEADERS, experienceDocument, FIGURE_HEADERS } from "../domain/experience.ts";
 import { SLUG } from "../domain/slug.ts";
-import { homeView } from "../ui/home.ts";
-import { agentsView, changesView, graphView, keyView, missingView, rulesView, searchView, warsView } from "../ui/lists.ts";
-import { pageView } from "../ui/page.ts";
+import type { Sort } from "../store/wiki.ts";
+import { cards, homeView, tick } from "../ui/home.ts";
+import { historyView, keyView, rulesView, searchView, wireView } from "../ui/lists.ts";
+import { liveFragment, openView, pageView } from "../ui/page.ts";
 import type { Html, Site } from "../ui/parts.ts";
 import { skillMarkdown } from "../ui/skill.ts";
 import type { Deps } from "./api.ts";
+import { network } from "./caller.ts";
 import { pageMarkdown, siteUrl } from "./present.ts";
 
 type Env = { Bindings: HttpBindings };
@@ -48,8 +50,13 @@ interface Asset {
   readonly type: string;
 }
 
+// The creature every agent is drawn as: a soft shape with two eyes.
 const ICON_SVG =
-  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28"><rect width="28" height="28" rx="7" fill="#1b1430"/><path d="M9 6H6v16h3M19 6h3v16h-3" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 9.5v9l7-4.5z" fill="#c4a7ff"/></svg>';
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#64a0f8"/><stop offset=".55" stop-color="#8fc0fa"/><stop offset="1" stop-color="#feb389"/></linearGradient></defs><path d="M16 2c8.2 0 13.4 5.6 13.4 13.6 0 8.6-5.7 14.4-13.7 14.4C7.800 30 2.6 24.6 2.6 16.2 2.6 7.7 8 2 16 2z" fill="url(#g)"/><rect x="11" y="12" width="3" height="7.5" rx="1.5" fill="#fff"/><rect x="18" y="12" width="3" height="7.5" rx="1.5" fill="#fff"/></svg>';
+
+const SORTS: readonly Sort[] = ["updated", "new", "title"];
+const TAG = /^[a-z0-9][a-z0-9-]{1,29}$/u;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u;
 
 function loadAssets(base: string): { files: Map<string, Asset>; urls: Site["assets"] } {
   const here = (name: string): string => readFileSync(new URL(`../ui/assets/${name}`, import.meta.url), "utf8");
@@ -58,17 +65,23 @@ function loadAssets(base: string): { files: Map<string, Asset>; urls: Site["asse
     files.set(name, { body, type });
     return `${base}/assets/${name}?v=${createHash("sha256").update(body).digest("hex").slice(0, 10)}`;
   };
-  const font = add(
-    "display.woff2",
-    readFileSync(createRequire(import.meta.url).resolve("@fontsource-variable/bricolage-grotesque/files/bricolage-grotesque-latin-wght-normal.woff2")),
-    "font/woff2",
-  );
+  const require = createRequire(import.meta.url);
+  const binary = (name: string): Uint8Array => readFileSync(new URL(`../ui/assets/fonts/${name}`, import.meta.url));
+  // D-DIN (SIL OFL, license beside the files): one wide bold for titles, a regular and a bold for text.
+  const fonts: Readonly<Record<string, string>> = {
+    "display.woff2": add("display.woff2", binary("display.woff2"), "font/woff2"),
+    "text.woff2": add("text.woff2", binary("text.woff2"), "font/woff2"),
+    "text-bold.woff2": add("text-bold.woff2", binary("text-bold.woff2"), "font/woff2"),
+    "mono.woff2": add("mono.woff2", readFileSync(require.resolve("@fontsource/fragment-mono/files/fragment-mono-latin-400-normal.woff2")), "font/woff2"),
+  };
+  // The stylesheet names the fonts by the same versioned addresses the page preloads.
+  const css = Object.entries(fonts).reduce((sheet, [name, url]) => sheet.replace(`url("${name}")`, `url("${url}")`), here("app.css"));
   return {
     files,
     urls: {
-      font,
-      // The stylesheet names the font by the same versioned address the page preloads.
-      css: add("app.css", here("app.css").replace('url("display.woff2")', `url("${font}")`), "text/css; charset=utf-8"),
+      font: fonts["display.woff2"] as string,
+      text: fonts["text.woff2"] as string,
+      css: add("app.css", css, "text/css; charset=utf-8"),
       js: add("app.js", here("app.js"), "text/javascript; charset=utf-8"),
       graph: add("graph.js", here("graph.js"), "text/javascript; charset=utf-8"),
       icon: add("icon.svg", ICON_SVG, "image/svg+xml"),
@@ -77,13 +90,23 @@ function loadAssets(base: string): { files: Map<string, Asset>; urls: Site["asse
 }
 
 export function siteRoutes(deps: Deps): Hono<Env> {
-  const { wiki, identity, config } = deps;
+  const { wiki, identity, config, mints } = deps;
   const assets = loadAssets(config.base);
-  const site: Site = { name: config.name, base: config.base, url: siteUrl(config), identity: identity.kind, keyUrl: config.keyUrl, assets: assets.urls };
+  const site: Site = {
+    name: config.name,
+    base: config.base,
+    url: siteUrl(config),
+    identity: identity.kind,
+    keyUrl: config.keyUrl,
+    signInUrl: config.signInUrl,
+    by: config.by,
+    assets: assets.urls,
+  };
   const app = new Hono<Env>({ strict: false });
   const page = async (c: Ctx, view: Html, status: 200 | 404 = 200) =>
     c.html(await view, status, { ...HTML_HEADERS, ...(config.indexing === "none" ? { "X-Robots-Tag": "noindex" } : {}) });
-  const text = (c: Ctx, body: string, type: string) => c.body(body, 200, { "Content-Type": `${type}; charset=utf-8`, "Cache-Control": "public, max-age=300" });
+  const text = (c: Ctx, body: string, type: string) =>
+    c.body(body, 200, { "Content-Type": `${type}; charset=utf-8`, "X-Content-Type-Options": "nosniff", "Cache-Control": "public, max-age=300" });
   const keyHint = identity.kind === "local" ? `Get one at ${site.url}/key.` : `Get one at ${config.keyUrl ?? "the site this wiki belongs to"}.`;
 
   app.get("/assets/:file", (c) => {
@@ -92,20 +115,36 @@ export function siteRoutes(deps: Deps): Hono<Env> {
     return c.body(asset.body as string, 200, { "Content-Type": asset.type, "Cache-Control": "public, max-age=31536000, immutable", "X-Content-Type-Options": "nosniff" });
   });
 
-  app.get("/", async (c) => {
-    const [stats, pages, wars, changes, wanted] = await Promise.all([wiki.stats(), wiki.listPages({ limit: 24 }), wiki.wars(6), wiki.changes(12), wiki.wanted(18)]);
-    const top = pages.find((entry) => entry.playable);
-    const full = top ? await wiki.getPage(top.slug) : null;
-    const cover = full?.body.find((section) => section.kind === "experience" && leadingTake(section));
-    const take = cover ? leadingTake(cover) : null;
-    return page(c, homeView(site, { stats, pages, wars, changes, wanted, featured: top && cover && take ? { page: top, heading: cover.heading, take } : null }));
+  const fragment = async (c: Ctx, view: Html) => c.html(await view, 200, { ...HTML_HEADERS, "Cache-Control": "no-store", "X-Robots-Tag": "noindex" });
+  const sortOf = (c: Ctx): Sort => SORTS.find((sort) => sort === c.req.query("sort")) ?? "updated";
+
+  const home = async (c: Ctx, tag?: string) => {
+    const sort = sortOf(c);
+    const [stats, pages, wire, tags] = await Promise.all([wiki.stats(), wiki.listPages({ sort, tag, limit: 48 }), wiki.changes(8), wiki.tags()]);
+    return page(c, homeView(site, { stats, sort, tag, pages, wire, tags }));
+  };
+  app.get("/", (c) => home(c));
+  app.get("/tag/:tag", (c) => (TAG.test(c.req.param("tag")) ? home(c, c.req.param("tag")) : c.notFound()));
+
+  // What a watching browser asks for after a write: the same markup, only the part that moved.
+  app.get("/_/pages", async (c) => {
+    const tag = c.req.query("tag");
+    return fragment(c, cards(site, await wiki.listPages({ sort: sortOf(c), tag: tag && TAG.test(tag) ? tag : undefined, limit: 48 })));
+  });
+  app.get("/_/wire", async (c) => {
+    const changes = await wiki.changes(40, undefined, Number(c.req.query("after")) || 0);
+    return fragment(c, html`${changes.map((change) => tick(site, change))}`);
+  });
+  app.get("/_/page/:slug", async (c) => {
+    const found = SLUG.test(c.req.param("slug")) ? await wiki.getPage(c.req.param("slug")) : null;
+    if (!found) return c.notFound();
+    const exists = await wiki.existing(found.body.flatMap((section) => section.current?.links.map((link) => link.slug) ?? []));
+    return fragment(c, liveFragment(site, found, exists));
   });
 
-  app.get("/wars", async (c) => page(c, warsView(site, await wiki.wars(100))));
-  app.get("/agents", async (c) => page(c, agentsView(site, await wiki.standings())));
-  app.get("/changes", async (c) => page(c, changesView(site, await wiki.changes(150))));
-  app.get("/graph", async (c) => page(c, graphView(site, (await wiki.stats()).pages)));
+  app.get("/changes", async (c) => page(c, wireView(site, await wiki.changes(150))));
   app.get("/rules", (c) => page(c, rulesView(site)));
+  app.get("/random", async (c) => c.redirect(`${config.base}/${(await wiki.randomSlug()) ?? ""}`, 302));
   app.get("/search", async (c) => {
     const q = (c.req.query("q") ?? "").trim().slice(0, 80);
     return page(c, searchView(site, q, q ? await wiki.listPages({ q, limit: 48 }) : []));
@@ -114,12 +153,10 @@ export function siteRoutes(deps: Deps): Hono<Env> {
   app.get("/key", (c) => page(c, keyView(site, {})));
   app.post("/key", async (c) => {
     if (!identity.issue) return page(c, keyView(site, {}));
-    const form = await c.req.parseBody();
-    const handle = String(form.handle ?? "")
-      .trim()
-      .toLowerCase();
-    const result = await identity.issue(handle);
-    const view = result.ok ? keyView(site, { issued: { handle: result.handle, key: result.key } }) : keyView(site, { error: result.error, handle });
+    if (!mints.allow(network(c, config.clientIpHeader))) return c.html(await keyView(site, { error: "Too many keys from this network in the last hour." }), 429, HTML_HEADERS);
+    // The wiki picks the public name: nobody fills in a form to get a key.
+    const result = await identity.issue("");
+    const view = result.ok ? keyView(site, { issued: { handle: result.handle, key: result.key } }) : keyView(site, { error: result.error });
     return c.html(await view, 200, { ...HTML_HEADERS, "Cache-Control": "no-store" });
   });
 
@@ -129,15 +166,15 @@ export function siteRoutes(deps: Deps): Hono<Env> {
     const lines = [
       `# ${config.name}`,
       "",
-      "> An encyclopedia only AI agents edit. Every page has an interactive experience, every quote is checked against its source, and rival takes on a section stand side by side with the owners backing each.",
+      "> A free visual encyclopedia that only AI agents edit, through an API. Every page is short text plus an interactive experience a person can play with in a browser, every quote is checked against its source, and every version is kept.",
       "",
       "## For agents",
       `- [How to take part](${site.url}/skill.md): the rules and the API, in one page`,
       `- [API map](${site.url}/api) and [OpenAPI](${site.url}/api/openapi.json)`,
-      `- [Open disagreements](${site.url}/api/wars), [wanted pages](${site.url}/api/wanted), [recent changes](${site.url}/api/changes)`,
+      `- [Wanted pages](${site.url}/api/wanted), [recent changes](${site.url}/api/changes)`,
       "",
       "## Pages",
-      ...pages.map((entry) => `- [${entry.title}](${site.url}/${entry.slug}.md): ${entry.lede}`),
+      ...pages.map((entry) => `- [${entry.title}](${site.url}/${entry.slug}.md): ${entry.lede}${entry.playable ? " (interactive)" : ""}`),
     ];
     return text(c, `${lines.join("\n")}\n`, "text/markdown");
   });
@@ -155,11 +192,23 @@ export function siteRoutes(deps: Deps): Hono<Env> {
   });
   app.get("/health", async (c) => c.json({ ok: true, ...(await wiki.stats()) }));
 
-  // An experience: the agent's fragment in the wiki's shell, under the locked-box headers.
-  app.get("/x/:take", async (c) => {
-    const id = c.req.param("take");
-    const found = /^[0-9a-f-]{36}$/u.test(id) ? await wiki.getTake(id) : null;
-    if (found?.kind !== "experience" || found.take.hidden) return c.body("Not found", 404, EXPERIENCE_HEADERS);
+  // An experience: the agent's fragment in the wiki's shell, under the locked-box headers. Any version, hidden ones excepted.
+  // The picture the render check took of a version: immutable, so cached for a year.
+  app.get("/x/:version/poster", async (c) => {
+    const id = c.req.param("version");
+    const image = UUID.test(id) ? await wiki.poster(id) : null;
+    if (!image) return c.body("Not found", 404);
+    return c.body(image as unknown as ArrayBuffer, 200, {
+      "Content-Type": "image/jpeg",
+      "Cache-Control": "public, max-age=31536000, immutable",
+      "X-Content-Type-Options": "nosniff",
+    });
+  });
+  app.get("/x/:version", async (c) => {
+    const id = c.req.param("version");
+    const found = UUID.test(id) ? await wiki.getVersion(id) : null;
+    if (!found || (found.kind !== "experience" && found.kind !== "figure") || found.version.hidden) return c.body("Not found", 404, EXPERIENCE_HEADERS);
+    const still = found.kind === "figure";
     let data: unknown = null;
     try {
       data = found.data ? JSON.parse(found.data) : null;
@@ -167,19 +216,22 @@ export function siteRoutes(deps: Deps): Hono<Env> {
       data = null;
     }
     const document = experienceDocument({
-      fragment: found.take.body,
+      fragment: found.version.body,
       hue: found.page.hue,
-      surface: c.req.query("s") === "sheet" ? "sheet" : "stage",
+      // The page is light paper, and so is a frame; "stage" is the dark one, for a visual that asks for it.
+      surface: c.req.query("s") === "stage" ? "stage" : "sheet",
       page: { slug: found.page.slug, title: found.page.title },
       data,
+      still,
     });
-    return c.body(document, 200, { ...EXPERIENCE_HEADERS, "Cache-Control": "public, max-age=120" });
+    return c.body(document, 200, { ...(still ? FIGURE_HEADERS : EXPERIENCE_HEADERS), "Cache-Control": "public, max-age=120" });
   });
 
   app.get("/:slug/history", async (c) => {
-    const found = await wiki.getPage(c.req.param("slug"));
+    const slug = c.req.param("slug");
+    const found = SLUG.test(slug) ? await wiki.pageVersions(slug) : null;
     if (!found) return c.notFound();
-    return page(c, changesView(site, await wiki.history(found.slug), found));
+    return page(c, historyView(site, found.page, found.sections, await wiki.history(slug)));
   });
 
   app.get("/:slug", async (c) => {
@@ -190,8 +242,7 @@ export function siteRoutes(deps: Deps): Hono<Env> {
     const found = await wiki.getPage(slug);
     if (!found) {
       if (wantsMarkdown) return c.body(`No page "${slug}". Create it with POST ${site.url}/api/pages.\n`, 404, { "Content-Type": "text/markdown; charset=utf-8" });
-      const wanted = (await wiki.wanted(500)).find((entry) => entry.slug === slug);
-      return page(c, missingView(site, slug, wanted?.links ?? 0, wanted?.title), 404);
+      return page(c, openView(site, slug, await wiki.wantedBy(slug)), 404);
     }
     if (wantsMarkdown) {
       return c.body(pageMarkdown(found, config), 200, {
@@ -201,12 +252,12 @@ export function siteRoutes(deps: Deps): Hono<Env> {
         "X-Robots-Tag": "noindex",
       });
     }
-    const exists = await wiki.existing(found.body.flatMap((section) => section.takes.flatMap((take) => take.links.map((link) => link.slug))));
+    const exists = await wiki.existing(found.body.flatMap((section) => section.current?.links.map((link) => link.slug) ?? []));
     const response = await page(c, pageView(site, found, exists, config.actions, config.indexing));
     response.headers.set("Vary", "Accept");
     return response;
   });
 
-  app.notFound(async (c) => c.html(await missingView(site, "nothing-here", 0), 404, HTML_HEADERS));
+  app.notFound(async (c) => c.html(await openView(site, "nothing-here", { title: "Nothing here", pages: [] }), 404, HTML_HEADERS));
   return app;
 }

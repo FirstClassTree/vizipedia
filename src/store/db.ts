@@ -44,12 +44,14 @@ create table if not exists pages (
   hidden_at timestamptz,
   lede text not null default '',
   sections integer not null default 0,
-  takes integer not null default 0,
   owners integer not null default 0,
-  contested integer not null default 0,
   playable boolean not null default false,
   verified integer not null default 0,
-  indexable boolean not null default false
+  indexable boolean not null default false,
+  cover_version_id uuid,
+  cover_kind text,
+  tags jsonb not null default '[]',
+  facts jsonb not null default '[]'
 );
 create table if not exists sections (
   id uuid primary key default gen_random_uuid(),
@@ -58,14 +60,16 @@ create table if not exists sections (
   heading text not null,
   anchor text not null,
   position integer not null,
-  leading_take_id uuid,
+  current_version_id uuid,
   created_at timestamptz not null default now(),
   unique (page_id, anchor)
 );
-create table if not exists takes (
+-- Every write to a section, kept whole. The newest one nobody hid is what readers see.
+create table if not exists versions (
   id uuid primary key default gen_random_uuid(),
   section_id uuid not null references sections(id),
   owner_id uuid not null references owners(id),
+  number integer not null,
   model text not null,
   client text,
   body text not null,
@@ -73,53 +77,25 @@ create table if not exists takes (
   links jsonb not null default '[]',
   sources jsonb not null default '[]',
   note text,
-  revision integer not null default 1,
+  revert_of uuid references versions(id),
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
   hidden_at timestamptz,
-  unique (section_id, owner_id)
-);
-create table if not exists take_revisions (
-  take_id uuid not null references takes(id),
-  revision integer not null,
-  model text not null,
-  client text,
-  body text not null,
-  sources jsonb not null,
-  note text,
-  created_at timestamptz not null default now(),
-  primary key (take_id, revision)
-);
-create table if not exists backings (
-  section_id uuid not null references sections(id),
-  owner_id uuid not null references owners(id),
-  take_id uuid not null references takes(id),
-  revision integer not null,
-  model text not null,
-  note text,
-  created_at timestamptz not null default now(),
-  primary key (section_id, owner_id)
+  unique (section_id, number)
 );
 create table if not exists flags (
-  take_id uuid not null references takes(id),
+  version_id uuid not null references versions(id),
   owner_id uuid not null references owners(id),
   reason text not null,
   note text,
   created_at timestamptz not null default now(),
   resolved_at timestamptz,
-  primary key (take_id, owner_id)
+  primary key (version_id, owner_id)
 );
 create table if not exists links (
   page_id uuid not null references pages(id),
   target_slug text not null,
   title text not null default '',
   primary key (page_id, target_slug)
-);
-create table if not exists views (
-  page_id uuid not null references pages(id),
-  day date not null,
-  views integer not null default 0,
-  primary key (page_id, day)
 );
 -- The raw log: every write, as it happened. Rules change; this does not.
 create table if not exists events (
@@ -132,7 +108,7 @@ create table if not exists events (
   kind text not null,
   page_id uuid,
   section_id uuid,
-  take_id uuid,
+  version_id uuid,
   payload jsonb not null default '{}'
 );
 create table if not exists settings (
@@ -141,21 +117,26 @@ create table if not exists settings (
 );
 create index if not exists events_owner_at on events (owner_id, at desc);
 create index if not exists events_page_at on events (page_id, at desc);
-create index if not exists takes_section on takes (section_id);
-create index if not exists backings_take on backings (take_id);
+create index if not exists versions_section on versions (section_id, number desc);
+create table if not exists posters (
+  version_id uuid primary key references versions(id),
+  image bytea not null,
+  created_at timestamptz not null default now()
+);
 create index if not exists links_target on links (target_slug);
 `;
 
-export async function openDb(options: { databaseUrl?: string; dataDir?: string }): Promise<Db> {
-  const db = options.databaseUrl ? postgres(options.databaseUrl) : await embedded(options.dataDir);
+export async function openDb(options: { databaseUrl?: string; dataDir?: string; poolSize?: number }): Promise<Db> {
+  const db = options.databaseUrl ? postgres(options.databaseUrl, options.poolSize ?? 10) : await embedded(options.dataDir);
   for (const statement of SCHEMA.split(/;\s*\n/u)) {
     if (statement.trim()) await db.query(statement);
   }
   return db;
 }
 
-function postgres(url: string): Db {
-  const pool = new pg.Pool({ connectionString: url, max: 10 });
+/** Connections per process: a shared Postgres with few allowed (Cloud SQL's smallest permits 25) wants a small pool per instance. */
+function postgres(url: string, max: number): Db {
+  const pool = new pg.Pool({ connectionString: url, max });
   return {
     query: (sql, params) => pool.query(sql, params as unknown[]) as never,
     async tx(work) {

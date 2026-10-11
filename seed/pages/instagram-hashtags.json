@@ -1,0 +1,273 @@
+{
+  "title": "Instagram hashtags",
+  "slug": "instagram-hashtags",
+  "hue": 330,
+  "lede": "Hashtags are the # labels Instagram has supported since January 2011. Instagram says they tell it what a post is about but add no reach by themselves, and since December 2025 it allows five per post.",
+  "sections": [
+    {
+      "kind": "experience",
+      "heading": "How many hashtags, by study",
+      "body": "<style>\n.hx{--neg:oklch(0.62 0.16 38);--hatch:repeating-linear-gradient(135deg,color-mix(in oklch,var(--ow-line) 100%,transparent) 0 2px,transparent 2px 7px);--lab:178px;max-width:1100px;margin:0 auto;color:var(--ow-fg);font-family:var(--ow-font)}\n.hx *{box-sizing:border-box}\n.hx-top{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 16px;margin:0 0 14px}\n.hx-q{margin:0;font-size:20px;font-weight:650;letter-spacing:-.01em;line-height:1.25}\n.hx-q b{font-family:var(--ow-mono);font-variant-numeric:tabular-nums;color:var(--ow-accent);font-weight:700}\n.hx-cap{display:inline-flex;align-items:center;gap:7px;font-size:15px;line-height:1.3;padding:5px 11px;border-radius:999px;border:1px solid var(--ow-line);background:var(--ow-panel)}\n.hx-cap i{width:8px;height:8px;border-radius:50%;background:var(--ow-accent);flex:none}\n.hx-cap.over i{background:var(--neg)}\n.hx-m{display:grid;grid-template-columns:var(--lab) minmax(0,1fr);column-gap:14px;row-gap:8px;align-items:center}\n.hx-lab{font-size:16px;font-weight:600;line-height:1.2}\n.hx-lab small{display:block;font-weight:400;font-size:14px;color:var(--ow-muted);margin-top:2px}\n.hx-sl{grid-column:2;position:relative;height:46px;cursor:pointer;touch-action:pan-y;outline:none;user-select:none;-webkit-user-select:none}\n.hx-sl-l{grid-column:1;font-size:14px;color:var(--ow-muted);line-height:1.25}\n.hx-rail{position:absolute;left:0;right:0;top:50%;height:6px;margin-top:-3px;border-radius:3px;background:var(--ow-line);overflow:hidden}\n.hx-fill{position:absolute;left:0;top:0;bottom:0;background:var(--ow-accent);border-radius:3px}\n.hx-th{position:absolute;top:50%;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;background:var(--ow-panel);border:3px solid var(--ow-accent);box-shadow:0 1px 4px rgb(0 0 0/.22);display:grid;place-items:center;font:700 13px/1 var(--ow-mono);color:var(--ow-fg)}\n.hx-sl:focus-visible .hx-th{outline:3px solid color-mix(in oklch,var(--ow-accent) 45%,transparent);outline-offset:3px}\n.hx-strip{grid-column:2;position:relative;height:38px;border-radius:6px}\n.hx-seg{position:absolute;top:0;bottom:0;border-radius:5px;display:flex;align-items:center;justify-content:center;overflow:hidden;font:600 14px/1 var(--ow-mono);font-variant-numeric:tabular-nums;white-space:nowrap;cursor:pointer}\n.hx-seg span{padding:3px 5px;position:relative;z-index:2;background:inherit;border-radius:4px}\n.hx-seg.no{background:var(--hatch);box-shadow:inset 0 0 0 1px var(--ow-line);cursor:pointer}\n.hx-seg.hi{background:var(--ow-accent);color:var(--ow-accent-ink)}\n.hx-seg.mid{background:color-mix(in oklch,var(--ow-accent) 62%,var(--ow-panel));color:var(--ow-accent-ink)}\n.hx-seg.lo{background:color-mix(in oklch,var(--ow-accent) 26%,var(--ow-panel));color:var(--ow-fg)}\n.hx-seg.base{background:var(--ow-panel);box-shadow:inset 0 0 0 2px var(--ow-muted);color:var(--ow-fg)}\n.hx-seg.neg{background:var(--neg);color:#fff}\n.hx-seg.negl{background:color-mix(in oklch,var(--neg) 35%,var(--ow-panel));color:var(--ow-fg)}\n.hx-band{position:absolute;top:-3px;bottom:-3px;border-radius:6px;box-shadow:0 0 0 2.5px var(--ow-fg);pointer-events:none;z-index:1}\n.hx-capline{position:absolute;top:-4px;bottom:-4px;width:0;border-left:2px dashed var(--ow-fg);opacity:.55;pointer-events:none}\n.hx-ticks{grid-column:2;position:relative;height:22px;font:500 14px/1 var(--ow-mono);color:var(--ow-muted)}\n.hx-ticks span{position:absolute;top:2px;transform:translateX(-50%)}\n.hx-ticks .c{color:var(--ow-fg);font-weight:700}\n.hx-key{grid-column:1;font-size:14px;color:var(--ow-muted)}\n.hx-leg{display:flex;flex-wrap:wrap;gap:6px 16px;margin:12px 0 0;padding:0;list-style:none;font-size:14px;color:var(--ow-muted)}\n.hx-leg li{display:inline-flex;align-items:center;gap:7px}\n.hx-leg i{width:18px;height:12px;border-radius:3px;flex:none}\n.hx-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:16px}\n.hx-card{background:var(--ow-panel);border:1px solid var(--ow-line);border-radius:12px;padding:14px 16px 15px;min-width:0}\n.hx-card h3{margin:0;font-size:16px;font-weight:650;line-height:1.25}\n.hx-card .s{font-size:14px;color:var(--ow-muted);margin-top:1px}\n.hx-v{font:700 28px/1.1 var(--ow-mono);font-variant-numeric:tabular-nums;margin:10px 0 4px;letter-spacing:-.02em}\n.hx-v.w{font:650 26px/1.1 var(--ow-font);letter-spacing:-.01em}\n.hx-v.nm{color:var(--ow-muted);font:600 20px/1.4 var(--ow-font);letter-spacing:0;margin:12px 0 4px}\n.hx-v.pos{color:var(--ow-accent)}\n.hx-v.neg{color:var(--neg)}\n.hx-card p{margin:0;font-size:16px;line-height:1.4}\n.hx-th,.hx-fill,.hx-band{transition:left .16s ease,width .16s ease}\n@media (prefers-reduced-motion:reduce){.hx-th,.hx-fill,.hx-band{transition:none}}\n@media (max-width:640px){\n .hx{--lab:0px}\n .hx-m{grid-template-columns:minmax(0,1fr);column-gap:0;row-gap:4px}\n .hx-lab{grid-column:1;margin-top:8px;font-size:16px}\n .hx-lab small{display:inline;margin:0 0 0 6px}\n .hx-sl,.hx-strip,.hx-ticks{grid-column:1}\n .hx-sl-l,.hx-key{display:none}\n .hx-strip{height:32px}\n .hx-q{font-size:18px}\n .hx-cards{grid-template-columns:minmax(0,1fr);gap:8px}\n .hx-card{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:14px;align-items:center;padding:12px 14px}\n .hx-card .hd{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:0 8px;align-items:baseline}\n .hx-v{margin:8px 0 0;font-size:24px;min-width:3.6em}\n .hx-v.w{font:650 20px/1.2 var(--ow-font)}\n.hx-v.nm{font-size:16px;margin:8px 0 0}\n .hx-card p{margin-top:8px;font-size:16px;line-height:1.35}\n}\n</style>\n<div class=\"hx\">\n <div class=\"hx-top\">\n  <p class=\"hx-q\" id=\"hx-q\" aria-live=\"polite\">At <b id=\"hx-n\">5</b> hashtags on one post</p>\n  <span class=\"hx-cap\" id=\"hx-cap\"><i></i><span id=\"hx-capt\">Within Instagram's cap of 5</span></span>\n </div>\n <div class=\"hx-m\">\n  <div class=\"hx-sl-l\" id=\"hx-sl-l\">Drag, or use the arrow keys</div>\n  <div class=\"hx-sl\" id=\"hx-sl\" role=\"slider\" tabindex=\"0\" aria-label=\"Hashtags on one post\" aria-valuemin=\"0\" aria-valuemax=\"30\" aria-valuenow=\"5\" aria-describedby=\"hx-sl-l\">\n   <div class=\"hx-rail\"><div class=\"hx-fill\" id=\"hx-fill\"></div></div>\n   <div class=\"hx-capline\" id=\"hx-capline-s\"></div>\n   <div class=\"hx-th\" id=\"hx-th\">5</div>\n  </div>\n  <div id=\"hx-rows\" style=\"display:contents\"></div>\n  <div class=\"hx-key\">Hashtags</div>\n  <div class=\"hx-ticks\" id=\"hx-ticks\" aria-hidden=\"true\"></div>\n </div>\n <ul class=\"hx-leg\" aria-hidden=\"true\">\n  <li><i style=\"background:var(--ow-accent)\"></i>More reach</li>\n  <li><i style=\"background:var(--neg)\"></i>Less reach</li>\n  <li><i style=\"background:var(--ow-panel);box-shadow:inset 0 0 0 2px var(--ow-muted)\"></i>No hashtags (baseline)</li>\n  <li><i style=\"background:var(--hatch);box-shadow:inset 0 0 0 1px var(--ow-line)\"></i>No data point</li>\n  <li><i style=\"border-left:2px dashed var(--ow-fg);width:2px;border-radius:0;opacity:.6\"></i>Cap of 5 since Dec 2025</li>\n </ul>\n <div class=\"hx-cards\" id=\"hx-cards\"></div>\n</div>\n<script>\n(function () {\n  var N = 31, MAX = 30, CAP = 5;\n  // Every segment is a count, or a group of counts, a study reports. Gaps are drawn as \"no data point\".\n  var studies = [\n    { name: \"Later\", sample: \"18.1M feed posts\",\n      segs: [[6, 19, \"lo\", \"rising\"], [20, 20, \"hi\", \"peak\"], [30, 30, \"mid\", \"\"]],\n      at: function (n) {\n        if (n === 20) return [\"Peak\", \"pos\", \"The highest average reach rate of any count.\"];\n        if (n === 30) return [\"Near peak\", \"pos\", \"Close behind the peak at 20.\"];\n        if (n > 5 && n < 20) return [\"Rising\", \"pos\", \"Average reach rate rises as the count goes past 5. The text gives no exact figure.\"];\n        return [\"No data point\", \"nm\", \"Later's text gives no figure for \" + n + \".\"];\n      } },\n    { name: \"Fanpage Karma\", sample: \"1.6M posts\",\n      segs: [[0, 0, \"base\", \"\"], [1, 3, \"negl\", \"lower\"], [4, 4, \"mid\", \"\"], [5, 5, \"hi\", \"+2%\"], [6, 30, \"neg\", \"−3% for every count over 5, one group\", \"−3%\"]],\n      at: function (n) {\n        if (n === 0) return [\"Baseline\", \"\", \"Posts with no hashtags: the reference the other counts are compared with.\"];\n        if (n <= 3) return [\"Below none\", \"neg\", \"Slightly worse than no hashtags. No exact figure given.\"];\n        if (n === 4) return [\"2nd best\", \"pos\", \"Close behind 5.\"];\n        if (n === 5) return [\"+2%\", \"pos\", \"The most reach, compared with posts with no hashtags.\"];\n        return [\"−3%\", \"neg\", \"Posts with more than 5, measured as one group, lose reach.\"];\n      } },\n    { name: \"Hootsuite\", sample: \"20 posts, one account\",\n      segs: [[3, 5, \"hi\", \"462\"], [30, 30, \"mid\", \"394\"]],\n      at: function (n) {\n        if (n >= 3 && n <= 5) return [\"462\", \"pos\", \"Average reach of the 10 posts with 3 to 5 hashtags.\"];\n        if (n === 30) return [\"394\", \"\", \"Average reach of the 10 posts with 30 hashtags.\"];\n        return [\"Not measured\", \"nm\", \"The test tried only 3 to 5 and 30.\"];\n      } }\n  ];\n  var pct = function (i) { return (i / N) * 100 + \"%\"; };\n  var $ = function (id) { return document.getElementById(id); };\n  var rows = $(\"hx-rows\"), cards = $(\"hx-cards\"), bands = [], value = 5;\n\n  function seg(a, b, cls, label, short) {\n    var el = document.createElement(\"div\");\n    el.className = \"hx-seg \" + cls;\n    el.style.left = \"calc(\" + pct(a) + \" + 1.5px)\";\n    el.style.width = \"calc(\" + pct(b - a + 1) + \" - 3px)\";\n    if (label) { var s = document.createElement(\"span\"); s.textContent = label; s.setAttribute(\"data-long\", label); if (short) s.setAttribute(\"data-short\", short); el.appendChild(s); }\n    el.setAttribute(\"data-a\", a);\n    return el;\n  }\n  studies.forEach(function (st) {\n    var lab = document.createElement(\"div\");\n    lab.className = \"hx-lab\";\n    lab.textContent = st.name;\n    var sm = document.createElement(\"small\"); sm.textContent = st.sample; lab.appendChild(sm);\n    var strip = document.createElement(\"div\");\n    strip.className = \"hx-strip\";\n    strip.setAttribute(\"aria-hidden\", \"true\");\n    var covered = [];\n    st.segs.forEach(function (s) { for (var i = s[0]; i <= s[1]; i++) covered[i] = true; });\n    for (var i = 0; i < N; ) {           // unknown runs, drawn as one striped block each\n      if (covered[i]) { i++; continue; }\n      var j = i; while (j + 1 < N && !covered[j + 1]) j++;\n      strip.appendChild(seg(i, j, \"no\", \"\"));\n      i = j + 1;\n    }\n    st.segs.forEach(function (s) { strip.appendChild(seg(s[0], s[1], s[2], s[3], s[4])); });\n    var cl = document.createElement(\"div\"); cl.className = \"hx-capline\"; cl.style.left = pct(CAP + 1); strip.appendChild(cl);\n    var band = document.createElement(\"div\"); band.className = \"hx-band\"; strip.appendChild(band); bands.push(band);\n    rows.appendChild(lab); rows.appendChild(strip);\n\n    var card = document.createElement(\"div\");\n    card.className = \"hx-card\";\n    card.innerHTML = '<div class=\"hd\"><h3></h3><div class=\"s\"></div></div><div class=\"hx-v\"></div><p></p>';\n    card.querySelector(\"h3\").textContent = st.name;\n    card.querySelector(\".s\").textContent = st.sample;\n    st.card = card;\n    cards.appendChild(card);\n  });\n  $(\"hx-capline-s\").style.left = pct(CAP + 1);\n  [0, 5, 10, 15, 20, 25, 30].forEach(function (t) {\n    var s = document.createElement(\"span\");\n    s.textContent = t; s.style.left = pct(t + 0.5);\n    if (t === CAP) s.className = \"c\";\n    if (t === 0) { s.style.left = \"0\"; s.style.transform = \"none\"; }\n    if (t === MAX) { s.style.left = \"auto\"; s.style.right = \"0\"; s.style.transform = \"none\"; }\n    $(\"hx-ticks\").appendChild(s);\n  });\n\n  function fit() {                       // hide a label that does not fit its block\n    var spans = document.querySelectorAll(\".hx-seg span\");\n    for (var i = 0; i < spans.length; i++) {\n      var sp = spans[i], room = sp.parentNode.clientWidth;\n      sp.style.visibility = \"\"; sp.textContent = sp.getAttribute(\"data-long\");\n      if (sp.offsetWidth > room && sp.getAttribute(\"data-short\")) sp.textContent = sp.getAttribute(\"data-short\");\n      if (sp.offsetWidth > room) sp.style.visibility = \"hidden\";\n    }\n  }\n  function set(n) {\n    n = Math.max(0, Math.min(MAX, Math.round(n)));\n    value = n;\n    $(\"hx-n\").textContent = n;\n    $(\"hx-th\").textContent = n;\n    $(\"hx-th\").style.left = pct(n + 0.5);\n    $(\"hx-fill\").style.width = pct(n + 0.5);\n    var sl = $(\"hx-sl\");\n    sl.setAttribute(\"aria-valuenow\", n);\n    sl.setAttribute(\"aria-valuetext\", n + (n === 1 ? \" hashtag\" : \" hashtags\"));\n    bands.forEach(function (b) { b.style.left = pct(n); b.style.width = pct(1); });\n    var over = n > CAP;\n    $(\"hx-cap\").className = \"hx-cap\" + (over ? \" over\" : \"\");\n    $(\"hx-capt\").textContent = over ? \"Over Instagram's cap of 5 since Dec 2025\" : \"Within Instagram's cap of 5\";\n    studies.forEach(function (st) {\n      var r = st.at(n), v = st.card.querySelector(\".hx-v\");\n      v.textContent = r[0];\n      v.className = \"hx-v\" + (r[1] ? \" \" + r[1] : \"\") + (/^[0-9+\\u2212]/.test(r[0]) ? \"\" : \" w\");\n      st.card.querySelector(\"p\").textContent = r[2];\n    });\n  }\n  var sl = $(\"hx-sl\"), drag = false;\n  function fromX(x) { var r = sl.getBoundingClientRect(); set(((x - r.left) / r.width) * N - 0.5); }\n  sl.addEventListener(\"pointerdown\", function (e) { drag = true; sl.setPointerCapture(e.pointerId); fromX(e.clientX); sl.focus({ preventScroll: true }); });\n  sl.addEventListener(\"pointermove\", function (e) { if (drag) fromX(e.clientX); });\n  sl.addEventListener(\"pointerup\", function () { drag = false; });\n  sl.addEventListener(\"pointercancel\", function () { drag = false; });\n  rows.addEventListener(\"click\", function (e) {      // a click on any study row picks that count\n    var strip = e.target.closest && e.target.closest(\".hx-strip\");\n    if (!strip) return;\n    var r = strip.getBoundingClientRect();\n    set(((e.clientX - r.left) / r.width) * N - 0.5);\n  });\n  sl.addEventListener(\"keydown\", function (e) {\n    var k = e.key, n = value;\n    if (k === \"ArrowRight\" || k === \"ArrowUp\") n++;\n    else if (k === \"ArrowLeft\" || k === \"ArrowDown\") n--;\n    else if (k === \"PageUp\") n += 5;\n    else if (k === \"PageDown\") n -= 5;\n    else if (k === \"Home\") n = 0;\n    else if (k === \"End\") n = MAX;\n    else return;\n    e.preventDefault(); set(n);\n  });\n  set(5);\n  fit();\n  if (window.ResizeObserver) new ResizeObserver(fit).observe(rows.parentNode);\n})();\n</script>",
+      "sources": [
+        {
+          "url": "https://later.com/blog/how-many-hashtags-on-instagram/",
+          "title": "How Many Hashtags to Use on Instagram, 18M posts analyzed (Later)",
+          "quote": "study based on analysis of 18.1M Instagram feed posts published via Later"
+        },
+        {
+          "url": "https://later.com/blog/how-many-hashtags-on-instagram/",
+          "title": "How Many Hashtags to Use on Instagram, 18M posts analyzed (Later)",
+          "quote": "while posts with 20 hashtags receive the highest average reach rate, those with 30 hashtags are close behind"
+        },
+        {
+          "url": "https://later.com/blog/how-many-hashtags-on-instagram/",
+          "title": "How Many Hashtags to Use on Instagram, 18M posts analyzed (Later)",
+          "quote": "the average reach rate significantly increases as the number of hashtags increases beyond 5 per post"
+        },
+        {
+          "url": "https://www.fanpagekarma.com/insights/how-many-hashtags-should-you-use-on-instagram/",
+          "title": "How many hashtags should you use on Instagram? (Fanpage Karma)",
+          "quote": "we have analyzed 1.6 million posts"
+        },
+        {
+          "url": "https://www.fanpagekarma.com/insights/how-many-hashtags-should-you-use-on-instagram/",
+          "title": "How many hashtags should you use on Instagram? (Fanpage Karma)",
+          "quote": "posts with 5 hashtags achieve the greatest reach (+2% compared to posts without any hashtags), closely followed by posts with 4 hashtags"
+        },
+        {
+          "url": "https://www.fanpagekarma.com/insights/how-many-hashtags-should-you-use-on-instagram/",
+          "title": "How many hashtags should you use on Instagram? (Fanpage Karma)",
+          "quote": "Posts with 1-3 hashtags perform slightly worse than posts without hashtags. Those using more than 5 hashtags tend to lose reach (-3%)"
+        },
+        {
+          "url": "https://blog.hootsuite.com/experiment-instagram-hashtags/",
+          "title": "Experiment: How Many Instagram Hashtags Should You Really Use? (Hootsuite, 2021)",
+          "quote": "average reach: 462 average reach: 394"
+        },
+        {
+          "url": "https://blog.hootsuite.com/experiment-instagram-hashtags/",
+          "title": "Experiment: How Many Instagram Hashtags Should You Really Use? (Hootsuite, 2021)",
+          "quote": "Ten of these posts included 30 hashtags. For the other 10 posts, I limited myself to 3 to 5 hashtags."
+        },
+        {
+          "url": "https://www.socialmediatoday.com/news/instagram-implements-new-limits-on-hashtag-use/808309/",
+          "title": "Instagram Implements New Limits on Hashtag Use (Social Media Today, December 2025)",
+          "quote": "Instagram will gradually update the number of hashtags that you can include in a caption for a reel or post to five"
+        }
+      ]
+    },
+    {
+      "heading": "What the studies measured",
+      "body": "Later's 18.1 million feed posts had the highest average reach rate at 20 hashtags, with 30 close behind [1][2]. Fanpage Karma's 1.6 million posts did best at 5, with 2% more reach than posts with none, while 1 to 3 did slightly worse than none and more than 5 lost 3% [3][4][5]. Hootsuite's test on one account found that 10 posts with 3 to 5 hashtags averaged a reach of 462, against 394 for 10 posts with 30 [6][7]. Drag the count above to see what each study measured at that number, and where it measured nothing.",
+      "sources": [
+        {
+          "url": "https://later.com/blog/how-many-hashtags-on-instagram/",
+          "title": "How Many Hashtags to Use on Instagram, 18M posts analyzed (Later)",
+          "quote": "study based on analysis of 18.1M Instagram feed posts published via Later"
+        },
+        {
+          "url": "https://later.com/blog/how-many-hashtags-on-instagram/",
+          "title": "How Many Hashtags to Use on Instagram, 18M posts analyzed (Later)",
+          "quote": "while posts with 20 hashtags receive the highest average reach rate, those with 30 hashtags are close behind"
+        },
+        {
+          "url": "https://www.fanpagekarma.com/insights/how-many-hashtags-should-you-use-on-instagram/",
+          "title": "How many hashtags should you use on Instagram? (Fanpage Karma)",
+          "quote": "we have analyzed 1.6 million posts"
+        },
+        {
+          "url": "https://www.fanpagekarma.com/insights/how-many-hashtags-should-you-use-on-instagram/",
+          "title": "How many hashtags should you use on Instagram? (Fanpage Karma)",
+          "quote": "posts with 5 hashtags achieve the greatest reach (+2% compared to posts without any hashtags), closely followed by posts with 4 hashtags"
+        },
+        {
+          "url": "https://www.fanpagekarma.com/insights/how-many-hashtags-should-you-use-on-instagram/",
+          "title": "How many hashtags should you use on Instagram? (Fanpage Karma)",
+          "quote": "Posts with 1-3 hashtags perform slightly worse than posts without hashtags. Those using more than 5 hashtags tend to lose reach (-3%)"
+        },
+        {
+          "url": "https://blog.hootsuite.com/experiment-instagram-hashtags/",
+          "title": "Experiment: How Many Instagram Hashtags Should You Really Use? (Hootsuite, 2021)",
+          "quote": "average reach: 462 average reach: 394"
+        },
+        {
+          "url": "https://blog.hootsuite.com/experiment-instagram-hashtags/",
+          "title": "Experiment: How Many Instagram Hashtags Should You Really Use? (Hootsuite, 2021)",
+          "quote": "Ten of these posts included 30 hashtags. For the other 10 posts, I limited myself to 3 to 5 hashtags."
+        }
+      ]
+    },
+    {
+      "heading": "What Instagram says hashtags do",
+      "body": "Instagram says a hashtag tells it what a post is about and adds no reach by itself. Instagram chief Adam Mosseri [1] has said hashtags \"don't work\" to increase reach [2] but are \"a great way to let people know what a post is about and connect posts\" [3]. Feed ranks posts first on the viewer's own activity, then on signals such as how many people like a post and how quickly [4][5]. In search, Instagram scores a hashtag result partly by how closely the words typed match the words in the tag [6].",
+      "sources": [
+        {
+          "url": "https://www.socialmediatoday.com/news/instagram-implements-new-limits-on-hashtag-use/808309/",
+          "title": "Instagram Implements New Limits on Hashtag Use (Social Media Today, December 2025)",
+          "quote": "Instagram chief Adam Mosseri"
+        },
+        {
+          "url": "https://www.socialmediatoday.com/news/instagram-implements-new-limits-on-hashtag-use/808309/",
+          "title": "Instagram Implements New Limits on Hashtag Use (Social Media Today, December 2025)",
+          "quote": "Mosseri said that hashtags \"don't work\" to increase reach"
+        },
+        {
+          "url": "https://www.socialmediatoday.com/news/instagram-implements-new-limits-on-hashtag-use/808309/",
+          "title": "Instagram Implements New Limits on Hashtag Use (Social Media Today, December 2025)",
+          "quote": "hashtags don't improve visibility on Instagram, but they are \"a great way to let people know what a post is about and connect posts.\""
+        },
+        {
+          "url": "https://about.instagram.com/blog/announcements/instagram-ranking-explained",
+          "title": "Instagram Ranking Explained (Instagram)",
+          "quote": "The most important signals across Feed, roughly in order of importance, are: Your activity"
+        },
+        {
+          "url": "https://about.instagram.com/blog/announcements/instagram-ranking-explained",
+          "title": "Instagram Ranking Explained (Instagram)",
+          "quote": "how many people have liked it and how quickly people are liking, commenting, sharing and saving a post"
+        },
+        {
+          "url": "https://transparency.meta.com/features/explaining-ranking/ig-search/",
+          "title": "How Instagram search ranks results (Meta Transparency Center)",
+          "quote": "the similarity between the words used in your search and those in the hashtag"
+        }
+      ]
+    },
+    {
+      "heading": "From 30 hashtags to five",
+      "body": "In 2021 a post could carry up to 30 hashtags, and Instagram's Creators account advised 3 to 5 [1][2][3]. In December 2025 Instagram began cutting the number a post or reel caption can carry to five [4][5], saying fewer, more targeted tags \"can improve both your content's performance and people's experience on Instagram\" [6]. Later's guide says the cap counts the caption and the comments together [7]. The timeline below marks what Instagram added and took away from 2011 to 2025.",
+      "sources": [
+        {
+          "url": "https://blog.hootsuite.com/experiment-instagram-hashtags/",
+          "title": "Experiment: How Many Instagram Hashtags Should You Really Use? (Hootsuite, 2021)",
+          "quote": "Stacey McLachlan November 3, 2021"
+        },
+        {
+          "url": "https://blog.hootsuite.com/experiment-instagram-hashtags/",
+          "title": "Experiment: How Many Instagram Hashtags Should You Really Use? (Hootsuite, 2021)",
+          "quote": "a platform that allows you to use up to 30 hashtags in each post"
+        },
+        {
+          "url": "https://blog.hootsuite.com/experiment-instagram-hashtags/",
+          "title": "Experiment: How Many Instagram Hashtags Should You Really Use? (Hootsuite, 2021)",
+          "quote": "recommended that it's best practice to only use 3 to 5 hashtags per post"
+        },
+        {
+          "url": "https://www.socialmediatoday.com/news/instagram-implements-new-limits-on-hashtag-use/808309/",
+          "title": "Instagram Implements New Limits on Hashtag Use (Social Media Today, December 2025)",
+          "quote": "Instagram will gradually update the number of hashtags that you can include in a caption for a reel or post to five"
+        },
+        {
+          "url": "https://www.socialmediatoday.com/news/instagram-implements-new-limits-on-hashtag-use/808309/",
+          "title": "Instagram Implements New Limits on Hashtag Use (Social Media Today, December 2025)",
+          "quote": "Published Dec. 18, 2025"
+        },
+        {
+          "url": "https://www.socialmediatoday.com/news/instagram-implements-new-limits-on-hashtag-use/808309/",
+          "title": "Instagram Implements New Limits on Hashtag Use (Social Media Today, December 2025)",
+          "quote": "using fewer (up to 5) more targeted hashtags, rather than many generic ones, can improve both your content's performance and people's experience on Instagram"
+        },
+        {
+          "url": "https://later.com/blog/instagram-hashtags/",
+          "title": "Instagram Hashtag Strategy in 2026 (Later)",
+          "quote": "the limit applies whether hashtags are in your caption or comments"
+        }
+      ]
+    },
+    {
+      "kind": "figure",
+      "heading": "What Instagram changed, 2011 to 2025",
+      "body": "<style>\n.tl{--neg:oklch(0.62 0.16 38);max-width:1100px;margin:0 auto;font-family:var(--ow-font);color:var(--ow-fg)}\n.tl ol{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));position:relative}\n.tl ol::before{content:\"\";position:absolute;left:0;right:0;top:9px;height:2px;background:var(--ow-line)}\n.tl li{position:relative;padding:30px 10px 0 0}\n.tl li::before{content:\"\";position:absolute;left:0;top:2px;width:16px;height:16px;border-radius:50%;background:var(--ow-accent);box-shadow:0 0 0 4px var(--ow-bg)}\n.tl li.cut::before{background:var(--neg)}\n.tl li.cap::before{width:20px;height:20px;top:0;box-shadow:0 0 0 4px var(--ow-bg),0 0 0 6px var(--neg)}\n.tl time{display:block;font:700 16px/1.2 var(--ow-mono);font-variant-numeric:tabular-nums}\n.tl time small{display:block;font:500 14px/1.3 var(--ow-font);color:var(--ow-muted);margin-top:2px}\n.tl p{margin:8px 0 0;font-size:16px;line-height:1.35}\n.tl .k{display:flex;gap:18px;margin:20px 0 0;font-size:14px;color:var(--ow-muted)}\n.tl .k span{display:inline-flex;align-items:center;gap:7px}\n.tl .k i{width:12px;height:12px;border-radius:50%;background:var(--ow-accent)}\n.tl .k i.c{background:var(--neg)}\n@media (max-width:760px){\n .tl ol{grid-template-columns:minmax(0,1fr);row-gap:18px}\n .tl ol::before{left:7px;right:auto;top:6px;bottom:6px;width:2px;height:auto}\n .tl li{padding:0 0 0 34px}\n .tl li::before{top:2px}\n .tl li.cap::before{left:-2px;top:0}\n .tl time small{display:inline;margin-left:8px}\n .tl p{margin-top:4px}\n}\n</style>\n<div class=\"tl\">\n <ol>\n  <li><time>2011<small>January</small></time><p>Hashtags arrive, to help people find photos and each other</p></li>\n  <li><time>2017<small>December</small></time><p>People can follow a hashtag in their feed</p></li>\n  <li class=\"cut\"><time>2020<small>October 30</small></time><p>\"Recent\" tab on hashtag pages removed for a while, over U.S. election misinformation</p></li>\n  <li><time>2021<small>by November</small></time><p>Up to 30 per post; Instagram's Creators account advises 3 to 5</p></li>\n  <li class=\"cut\"><time>2023<small>April</small></time><p>Searching recent hashtag posts removed for good</p></li>\n  <li class=\"cut\"><time>2024<small>December 13</small></time><p>Following hashtags ends</p></li>\n  <li class=\"cut cap\"><time>2025<small>December</small></time><p>Cap of five hashtags per post or reel caption</p></li>\n </ol>\n <div class=\"k\"><span><i></i>Added or allowed</span><span><i class=\"c\"></i>Taken away or limited</span></div>\n</div>",
+      "sources": [
+        {
+          "url": "https://en.wikipedia.org/wiki/Instagram",
+          "title": "Instagram (Wikipedia)",
+          "quote": "In January 2011, Instagram introduced hashtags to help users discover both photos and each other"
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Instagram",
+          "title": "Instagram (Wikipedia)",
+          "quote": "In December 2017, Instagram began to allow users to follow hashtags"
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Instagram",
+          "title": "Instagram (Wikipedia)",
+          "quote": "On October 30, 2020, Instagram temporarily removed the \"recent\" tab on hashtag pages to prevent the spread of misinformation"
+        },
+        {
+          "url": "https://blog.hootsuite.com/experiment-instagram-hashtags/",
+          "title": "Experiment: How Many Instagram Hashtags Should You Really Use? (Hootsuite, 2021)",
+          "quote": "Stacey McLachlan November 3, 2021"
+        },
+        {
+          "url": "https://blog.hootsuite.com/experiment-instagram-hashtags/",
+          "title": "Experiment: How Many Instagram Hashtags Should You Really Use? (Hootsuite, 2021)",
+          "quote": "a platform that allows you to use up to 30 hashtags in each post"
+        },
+        {
+          "url": "https://blog.hootsuite.com/experiment-instagram-hashtags/",
+          "title": "Experiment: How Many Instagram Hashtags Should You Really Use? (Hootsuite, 2021)",
+          "quote": "recommended that it's best practice to only use 3 to 5 hashtags per post"
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Instagram",
+          "title": "Instagram (Wikipedia)",
+          "quote": "in April 2023 the ability to search recent hashtags was removed entirely"
+        },
+        {
+          "url": "https://blog.hootsuite.com/instagram-hashtags/",
+          "title": "Instagram hashtags guide (Hootsuite)",
+          "quote": "As of December 13, 2024, Instagram users can no longer follow hashtags"
+        },
+        {
+          "url": "https://www.socialmediatoday.com/news/instagram-implements-new-limits-on-hashtag-use/808309/",
+          "title": "Instagram Implements New Limits on Hashtag Use (Social Media Today, December 2025)",
+          "quote": "Instagram will gradually update the number of hashtags that you can include in a caption for a reel or post to five"
+        }
+      ]
+    }
+  ],
+  "data": {
+    "tags": [
+      "instagram",
+      "hashtags",
+      "reach",
+      "social-media"
+    ],
+    "facts": [
+      {
+        "label": "Added to Instagram",
+        "value": "January 2011"
+      },
+      {
+        "label": "Hashtags per post",
+        "value": "5 since December 2025 (up to 30 before)"
+      },
+      {
+        "label": "Following hashtags",
+        "value": "December 2017 to December 13, 2024"
+      },
+      {
+        "label": "Later, 18.1M feed posts",
+        "value": "Highest average reach rate at 20 hashtags"
+      },
+      {
+        "label": "Fanpage Karma, 1.6M posts",
+        "value": "5 hashtags: +2% reach vs none; more than 5: -3%"
+      },
+      {
+        "label": "Hootsuite, 20 posts",
+        "value": "Average reach 462 with 3 to 5 tags, 394 with 30"
+      }
+    ],
+    "see": [
+      "instagram-ranking",
+      "Instagram Explore",
+      "Instagram Reels",
+      "Hashtag",
+      "Instagram SEO",
+      "Alt text on Instagram",
+      "Shadowban"
+    ]
+  }
+}

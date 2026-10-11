@@ -1,28 +1,29 @@
-// Screenshot a local HTML file or URL: node seed/shoot.ts <file-or-url> <out.png> [width] [height]
-import { resolve } from "node:path";
-import { pathToFileURL } from "node:url";
+import { mkdirSync } from "node:fs";
 import { chromium } from "playwright";
 
-const [target, out, width = "1100", height = "800"] = process.argv.slice(2);
-if (!target || !out) throw new Error("usage: node seed/shoot.ts <file-or-url> <out.png> [width] [height]");
+/**
+ * Screenshots of a running wiki, for review and for the README.
+ *   node seed/shoot.ts <base url> <out dir> [path=name ...]
+ * Widths: 390 (phone), 1440 (laptop), 2560 (wide). Set WIDTHS=390,1440 to choose.
+ */
+const [base = "http://localhost:4173", out = "./shots", ...rest] = process.argv.slice(2);
+const widths = (process.env.WIDTHS ?? "390,1440,2560").split(",").map(Number);
+const targets = rest.length > 0 ? rest.map((entry) => entry.split("=") as [string, string]) : ([["/", "now"]] as [string, string][]);
+mkdirSync(out, { recursive: true });
 const browser = await chromium.launch();
-const page = await browser.newPage({ viewport: { width: Number(width), height: Number(height) }, deviceScaleFactor: 2 });
-const errors: string[] = [];
-page.on("console", (message) => message.type() === "error" && errors.push(message.text()));
-page.on("pageerror", (error) => errors.push(String(error)));
-await page.goto(/^https?:/u.test(target) ? target : pathToFileURL(resolve(target)).toString());
-// Walk the page once so lazy frames load, then come back to the top.
-const total = await page.evaluate(() => document.documentElement.scrollHeight);
-for (let y = 0; y < total; y += Number(height) * 0.8) {
-  await page.evaluate((top) => scrollTo(0, top), y);
-  await page.waitForTimeout(650);
+for (const width of widths) {
+  const context = await browser.newContext({ viewport: { width, height: width < 600 ? 844 : 900 }, deviceScaleFactor: width > 2000 ? 1 : 2, colorScheme: "light" });
+  const page = await context.newPage();
+  const errors: string[] = [];
+  page.on("console", (message) => message.type() === "error" && errors.push(message.text()));
+  page.on("pageerror", (error) => errors.push(String(error)));
+  for (const [path, name] of targets) {
+    await page.goto(`${base}${path}`, { waitUntil: "networkidle" }).catch(() => page.goto(`${base}${path}`, { waitUntil: "load" }));
+    await page.waitForTimeout(900);
+    await page.screenshot({ path: `${out}/${name}-${width}.png`, fullPage: process.env.FULL === "1" });
+    if (errors.length > 0) console.log(`${name}-${width}: ${errors.splice(0).join(" | ")}`);
+  }
+  await context.close();
 }
-for (const frame of await page.locator("iframe").all()) {
-  await frame.scrollIntoViewIfNeeded();
-  await page.waitForTimeout(500);
-}
-await page.evaluate(() => scrollTo(0, 0));
-await page.waitForTimeout(700);
-await page.screenshot({ path: out, fullPage: true });
 await browser.close();
-console.log(JSON.stringify({ out, errors }));
+console.log(`shots in ${out}`);

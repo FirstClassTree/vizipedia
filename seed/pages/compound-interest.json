@@ -1,0 +1,151 @@
+{
+  "title": "Compound interest",
+  "slug": "compound-interest",
+  "hue": 75,
+  "lede": "Interest earned on interest: each period's interest joins the balance, so savings, and debts, grow on their own growth.",
+  "sections": [
+    {
+      "kind": "experience",
+      "heading": "Two savers, one race to 65",
+      "body": "<style>\n.ci{box-sizing:border-box;max-width:1040px;margin:0 auto;display:grid;gap:14px;font-family:var(--ow-font);color:var(--ow-fg)}\n.ci *{box-sizing:border-box}\n.ci-q{margin:0;font-size:18px;line-height:1.35;font-weight:600}\n.ci-q .a{color:var(--ow-accent)}\n.ci-chart{border-radius:16px;background:var(--ow-panel);border:1px solid var(--ow-line);padding:12px 14px 8px}\n.ci-svg{display:block;width:100%;height:auto}\n.ci-svg text{font-family:var(--ow-font);font-size:11.5px;fill:var(--ow-muted)}\n.ci-svg .lab{font-size:12.5px;font-weight:650}\n.ci-say{margin:6px 2px 0;font-size:14.5px;line-height:1.4;min-height:2.8em}\n.ci-say b.a{color:var(--ow-accent)}\n.ci-cards{display:grid;gap:12px;grid-template-columns:1fr}\n@media (min-width:640px){.ci-cards{grid-template-columns:1fr 1fr}}\n.ci-card{padding:10px 14px 8px;border-radius:14px;border:1px solid var(--ow-line);background:var(--ow-panel)}\n.ci-name i{display:inline-block;width:12px;height:12px;border-radius:50%;background:var(--c);margin-right:8px;vertical-align:-1px}\n.ci-name{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0;font-size:15px;font-weight:700}\n.ci-name span{font-family:var(--ow-mono);font-size:13px;font-weight:500;color:var(--ow-muted)}\n.ci-row{display:grid;grid-template-columns:96px minmax(0,1fr) 64px;align-items:center;gap:8px;font-size:13.5px}\n.ci-row output{font-family:var(--ow-mono);font-variant-numeric:tabular-nums;text-align:right}\n.ci input[type=range]{width:100%;margin:0;height:30px;cursor:pointer}\n.ci .A input{accent-color:var(--ow-accent)}.ci .B input{accent-color:var(--ow-fg)}\n.ci input:focus-visible{outline:3px solid color-mix(in oklch,var(--ow-accent) 55%,transparent);outline-offset:2px;border-radius:6px}\n.ci-key{margin:0;font-size:12.5px;color:var(--ow-muted);line-height:1.45}\n@media (max-width:400px){.ci-row{grid-template-columns:78px minmax(0,1fr) 58px;font-size:13px}.ci-q{font-size:17px}}\n</style>\n<div class=\"ci\">\n  <p class=\"ci-q\">Two savers, same market. <span class=\"a\">A</span> starts early with less; B starts later with more. <span class=\"a\">Drag the sliders</span>: who has more at 65?</p>\n  <div class=\"ci-chart\">\n    <svg class=\"ci-svg\" id=\"ci-g\" viewBox=\"0 0 900 300\" role=\"img\" aria-label=\"Balance of saver A and saver B by age, up to 65\"></svg>\n    <p class=\"ci-say\" id=\"ci-say\" aria-live=\"polite\"></p>\n  </div>\n  <div class=\"ci-cards\" id=\"ci-cards\"></div>\n  <p class=\"ci-key\">Monthly deposits until 65, interest compounded monthly, no fees, tax or inflation. Ticks on each curve mark the rule of 72: money roughly doubles every 72 &divide; rate years.</p>\n</div>\n<script>\n(function(){\n  var S=[{id:'A',c:'var(--ow-accent)',age:25,m:200,r:7},{id:'B',c:'var(--ow-fg)',age:35,m:400,r:7}];\n  var END=65,MIN=18,cards=document.getElementById('ci-cards'),svg=document.getElementById('ci-g'),say=document.getElementById('ci-say'),NS='http://www.w3.org/2000/svg';\n  function money(v){v=Math.round(v);if(v>=1e6)return '$'+(v/1e6).toFixed(v>=1e7?1:2)+'M';if(v>=1e4)return '$'+Math.round(v/1000)+'k';if(v>=1000)return '$'+(v/1000).toFixed(1)+'k';return '$'+v}\n  var fields=[{k:'age',label:'Start age',min:18,max:60,step:1,fmt:function(v){return v}},{k:'m',label:'Per month',min:25,max:2000,step:25,fmt:function(v){return '$'+v}},{k:'r',label:'Yearly return',min:0,max:12,step:.5,fmt:function(v){return v+'%'}}];\n  S.forEach(function(s){\n    var d=document.createElement('div');d.className='ci-card '+s.id;d.style.setProperty('--c',s.c);\n    var h='<p class=\"ci-name\"><b><i></i>Saver '+s.id+'</b><span id=\"ci-'+s.id+'-in\"></span></p>';\n    fields.forEach(function(f){var id='ci-'+s.id+'-'+f.k;h+='<label class=\"ci-row\" for=\"'+id+'\"><span>'+f.label+'</span><input id=\"'+id+'\" type=\"range\" min=\"'+f.min+'\" max=\"'+f.max+'\" step=\"'+f.step+'\" value=\"'+s[f.k]+'\"><output id=\"'+id+'-o\" for=\"'+id+'\">'+f.fmt(s[f.k])+'</output></label>'});\n    d.innerHTML=h;cards.appendChild(d);\n    fields.forEach(function(f){var inp=document.getElementById('ci-'+s.id+'-'+f.k);inp.addEventListener('input',function(){s[f.k]=+inp.value;document.getElementById(inp.id+'-o').textContent=f.fmt(s[f.k]);inp.setAttribute('aria-valuetext',f.label+' '+f.fmt(s[f.k]));render()})});\n  });\n  function series(s){var out=[],b=0,put=0,i=s.r/100/12;for(var mo=0;mo<=(END-MIN)*12;mo++){var age=MIN+mo/12;out.push({age:age,b:b,put:put});if(age>=s.age&&age<END){b=b*(1+i)+s.m;put+=s.m}else if(age>=END){}else{}}return out}\n  function el(n,a,t){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);if(t!=null)e.textContent=t;svg.appendChild(e);return e}\n  function nice(v){var p=Math.pow(10,Math.floor(Math.log10(v))),f=v/p,st=[1,1.2,1.6,2,2.4,3,4,5,6,8,10];for(var i=0;i<st.length;i++)if(f<=st[i])return st[i]*p;return 10*p}\n  function render(){\n    var W=Math.max(280,Math.round(svg.getBoundingClientRect().width)||900),narrow=W<520,H=narrow?250:300;svg.setAttribute('viewBox','0 0 '+W+' '+H);\n    while(svg.firstChild)svg.removeChild(svg.firstChild);\n    var L=narrow?40:52,R=narrow?70:76,T=14,B=26;\n    var D=S.map(series),max=0,ends=[];D.forEach(function(d){max=Math.max(max,d[d.length-1].b)});\n    var top=nice(Math.max(max,1000)*1.05);\n    function X(a){return L+(W-L-R)*(a-MIN)/(END-MIN)}function Y(v){return T+(H-T-B)*(1-v/top)}\n    for(var k=0;k<=4;k++){var v=top*k/4;el('line',{x1:L,x2:W-R,y1:Y(v),y2:Y(v),stroke:'var(--ow-line)','stroke-width':1});el('text',{x:L-6,y:Y(v)+4,'text-anchor':'end'},money(v))}\n    (narrow?[18,30,40,50,65]:[18,25,30,35,40,45,50,55,60,65]).forEach(function(a){el('text',{x:X(a),y:H-8,'text-anchor':a===18?'start':a===65?'end':'middle'},a===65?'65':a)});\n    D.forEach(function(d,j){\n      var s=S[j],pts=d.filter(function(p,i){return i%3===0||i===d.length-1});\n      el('path',{d:pts.map(function(p,i){return(i?'L':'M')+X(p.age).toFixed(1)+' '+Y(p.put).toFixed(1)}).join(''),fill:'none',stroke:s.c,'stroke-width':1.5,'stroke-dasharray':'4 4',opacity:.55});\n      el('path',{d:pts.map(function(p,i){return(i?'L':'M')+X(p.age).toFixed(1)+' '+Y(p.b).toFixed(1)}).join(''),fill:'none',stroke:s.c,'stroke-width':3.5,'stroke-linejoin':'round','stroke-linecap':'round'});\n      if(s.r>0){var dt=72/s.r;for(var a=s.age+dt,n=1;a<END;a+=dt,n++){var p=d[Math.round((a-MIN)*12)];var x=X(a),y=Y(p.b);el('line',{x1:x,x2:x,y1:y-7,y2:y+7,stroke:s.c,'stroke-width':2.5,'stroke-linecap':'round'});if(n===1&&!narrow)el('text',{x:x+(j?6:-6),y:j?y+20:y-12,'text-anchor':j?'start':'end',style:'fill:'+s.c},'×2 every '+(Math.round(dt*10)/10)+' yrs')}}\n      var e=d[d.length-1];el('circle',{cx:X(END),cy:Y(e.b),r:5,fill:s.c});\n      ends.push({y:Y(e.b),s:s,v:e.b});\n      document.getElementById('ci-'+s.id+'-in').textContent='puts in '+money(e.put);\n    });\n    var ea=D[0][D[0].length-1],eb=D[1][D[1].length-1];\n    ends.sort(function(a,b){return a.y-b.y});if(ends[1].y-ends[0].y<16){var mid=(ends[0].y+ends[1].y)/2;ends[0].y=mid-8;ends[1].y=mid+8}\n    ends.forEach(function(o){el('text',{x:X(END)+8,y:o.y+4,'class':'lab',style:'fill:'+o.s.c},o.s.id+' '+money(o.v))});\n    var cross=null;for(var i=1;i<D[0].length;i++){var d0=D[0][i].b-D[1][i].b,d1=D[0][i-1].b-D[1][i-1].b;if(D[0][i].b>0&&D[1][i].b>0&&d0*d1<0&&i<D[0].length-1){cross={age:D[0][i].age,v:(D[0][i].b+D[1][i].b)/2,w:d0<0?'B':'A'}}}\n    if(cross){var cx=X(cross.age),cy=Y(cross.v);el('line',{x1:cx,x2:cx,y1:cy,y2:H-B,stroke:'var(--ow-muted)','stroke-width':1,'stroke-dasharray':'2 3'});el('circle',{cx:cx,cy:cy,r:7,fill:'none',stroke:'var(--ow-fg)','stroke-width':2});el('text',{x:cx-10,y:cy-24,'text-anchor':'end','class':'lab',style:'fill:var(--ow-fg)'},cross.w+' passes at '+Math.floor(cross.age))}\n    var win=ea.b>=eb.b?'A':'B',lose=win==='A'?'B':'A',gap=Math.abs(ea.b-eb.b),wi=win==='A'?ea:eb,li=win==='A'?eb:ea;\n    var t='At 65, <b'+(win==='A'?' class=\"a\"':'')+'>'+win+' has '+money(wi.b)+'</b>, '+money(gap)+' more than '+lose+'.';\n    if(wi.put<li.put)t+=' '+win+' put in '+money(li.put-wi.put)+' less: the extra years did the work.';\n    else if(!cross&&wi.put>li.put)t+=' '+win+' also put in '+money(wi.put-li.put)+' more.';\n    if(cross)t+=' The curves cross at '+Math.floor(cross.age)+'.';else if(gap>0)t+=' The curves never cross.';\n    say.innerHTML=t;\n  }\n  render();\n  var rt=0;window.addEventListener('resize',function(){clearTimeout(rt);rt=setTimeout(render,60)});\n})();\n</script>\n"
+    },
+    {
+      "kind": "prose",
+      "heading": "Growth on growth",
+      "body": "Compound interest is when you earn interest on the money you've saved and on the interest you earn along the way [1]. At 5% a year, $1,000 becomes $1,050 after one year and $1,102.50 after two, because the second year's interest is calculated on the new value [2]. The total is A = P(1 + r/n)^(nt), where r is the yearly rate and n how many times a year interest is added [3]. Adding it more often helps only a little: as n grows without limit, the effective rate approaches an upper limit [4]. Jacob Bernoulli found the constant e in 1683 studying this question [5].",
+      "sources": [
+        {
+          "url": "https://www.consumerfinance.gov/ask-cfpb/what-is-compound-interest-en-1683/",
+          "title": "How does compound interest work? (US Consumer Financial Protection Bureau)",
+          "quote": "Compound interest is when you earn interest on the money you’ve saved and on the interest you earn along the way."
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Compound_interest",
+          "title": "Compound interest (Wikipedia)",
+          "quote": "After 1 year, it will earn $1,050 and after 2 years it will be worth $1,102.50 because the second year's interest is calculated on a new value, not on the original principal."
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Compound_interest",
+          "title": "Compound interest (Wikipedia)",
+          "quote": "A is the final amount P is the original principal sum r is the nominal annual interest rate n is the compounding frequency"
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Compound_interest",
+          "title": "Compound interest (Wikipedia)",
+          "quote": "continuous compounding occurs, in which case the effective annual rate approaches an upper limit"
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Compound_interest",
+          "title": "Compound interest (Wikipedia)",
+          "quote": "in 1683 by studying a question about compound interest"
+        }
+      ]
+    },
+    {
+      "kind": "prose",
+      "heading": "The rule of 72, and why starting early wins",
+      "body": "To estimate the years to double, divide 72 by the yearly rate, a rule Luca Pacioli printed in 1494 [1]; 72 works well in common interest situations and divides easily [2]. Time is the big lever. In a Retraite Québec example at 5% a year, Stephanie saves $1,000 a year from 25 to 35, $10,000 in all, and has $61,400 at 65 [3][4]. Frank saves $1,000 a year for 20 years from 45, $20,000 in all, and has $35,700 [5].",
+      "sources": [
+        {
+          "url": "https://en.wikipedia.org/wiki/Compound_interest",
+          "title": "Compound interest (Wikipedia)",
+          "quote": "The Summa de arithmetica of Luca Pacioli (1494) gives the Rule of 72"
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Rule_of_72",
+          "title": "Rule of 72 (Wikipedia)",
+          "quote": "69 is more accurate for continuous compounding, while 72 works well in common interest situations and is more easily divisible"
+        },
+        {
+          "url": "https://www.retraitequebec.gouv.qc.ca/en/tout-simplement/Pages/epargne-personnelle-commencez-tot-pour-recolter-gros.aspx",
+          "title": "Personal savings: start early to reap big (Retraite Québec)",
+          "quote": "Stephanie starts saving $1000 per year at age 25 and continues to do so for 10 years, until she turns 35."
+        },
+        {
+          "url": "https://www.retraitequebec.gouv.qc.ca/en/tout-simplement/Pages/epargne-personnelle-commencez-tot-pour-recolter-gros.aspx",
+          "title": "Personal savings: start early to reap big (Retraite Québec)",
+          "quote": "Her total investment is $10 000, but that money continues to grow in value thanks to interest. If she benefits from an average annual return of 5%, she will have $61 400 by age 65."
+        },
+        {
+          "url": "https://www.retraitequebec.gouv.qc.ca/en/tout-simplement/Pages/epargne-personnelle-commencez-tot-pour-recolter-gros.aspx",
+          "title": "Personal savings: start early to reap big (Retraite Québec)",
+          "quote": "He invests $1000 per year for 20 years, for a total of $20 000 invested. If he has the same return of 5%, he will have $35 700 at age 65."
+        }
+      ]
+    },
+    {
+      "kind": "prose",
+      "heading": "The same maths on debt",
+      "body": "Compounding also describes the accumulation of debts from a borrower [1]. Many credit card companies calculate the interest you owe daily, based on your average daily account balance [2], so the sooner you pay off all or some of a balance, the less interest you pay [3]. Lenders charging compound interest was once regarded as the worst kind of usury [4]. By the rule of 72, an unpaid balance at 24% a year doubles in about three years.",
+      "sources": [
+        {
+          "url": "https://en.wikipedia.org/wiki/Compound_interest",
+          "title": "Compound interest (Wikipedia)",
+          "quote": "or of the accumulation of debts from a borrower"
+        },
+        {
+          "url": "https://www.consumerfinance.gov/ask-cfpb/how-does-my-credit-card-company-calculate-the-amount-of-interest-i-owe-en-51/",
+          "title": "How does my credit card company calculate the amount of interest I owe? (US Consumer Financial Protection Bureau)",
+          "quote": "Many credit card companies calculate the interest you owe daily, based on your average daily account balance."
+        },
+        {
+          "url": "https://www.consumerfinance.gov/ask-cfpb/how-does-my-credit-card-company-calculate-the-amount-of-interest-i-owe-en-51/",
+          "title": "How does my credit card company calculate the amount of interest I owe? (US Consumer Financial Protection Bureau)",
+          "quote": "the sooner you pay off all or some of your balance, the less interest you will pay"
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Compound_interest",
+          "title": "Compound interest (Wikipedia)",
+          "quote": "Compound interest when charged by lenders was once regarded as the worst kind of usury"
+        }
+      ]
+    },
+    {
+      "kind": "figure",
+      "heading": "Formula, frequency and doubling time",
+      "body": "<style>\n.cf{box-sizing:border-box;max-width:1040px;margin:0 auto;font-family:var(--ow-font);color:var(--ow-fg);display:grid;gap:14px;grid-template-columns:1fr}\n@media (min-width:760px){.cf{grid-template-columns:repeat(3,minmax(0,1fr))}}\n.cf-c{padding:16px;border-radius:16px;background:var(--ow-panel);border:1px solid var(--ow-line)}\n.cf-h{margin:0 0 4px;font-size:13px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--ow-muted)}\n.cf-s{margin:0 0 12px;font-size:13.5px;color:var(--ow-muted);line-height:1.4}\n.cf-f{font-family:var(--ow-mono);font-size:clamp(19px,2.4vw,24px);margin:6px 0 12px}\n.cf-f sup{font-size:.6em}\n.cf ul.n{list-style:none;margin:0;padding:0;display:grid;gap:5px;font-size:13.5px;color:var(--ow-muted)}\n.cf ul.n b{font-family:var(--ow-mono);color:var(--ow-fg)}\n.cf ol{list-style:none;margin:0;padding:0;display:grid;gap:8px}\n.cf li.x,.cf ol li{display:grid;grid-template-columns:78px minmax(0,1fr) 54px;align-items:center;gap:8px;font-size:13.5px}\n.cf .lb{color:var(--ow-muted)}\n.cf .tr{height:14px;border-radius:99px;background:color-mix(in oklch,var(--ow-line) 70%,transparent);overflow:hidden}\n.cf .tr i{display:block;height:100%;border-radius:99px;background:var(--ow-accent)}\n.cf .pc{font-family:var(--ow-mono);font-variant-numeric:tabular-nums;font-size:13px;text-align:right}\n.cf table{width:100%;border-collapse:collapse;font-size:13.5px;font-variant-numeric:tabular-nums}\n.cf th{text-align:left;font-weight:600;color:var(--ow-muted);padding:4px 0;border-bottom:1px solid var(--ow-line)}\n.cf td{padding:5px 0;border-bottom:1px solid color-mix(in oklch,var(--ow-line) 60%,transparent);font-family:var(--ow-mono)}\n.cf td:nth-child(2){color:var(--ow-accent);font-weight:600}\n.cf-debt{margin:12px 0 0;font-size:13.5px;line-height:1.4;color:var(--ow-muted)}\n.cf-debt b{color:var(--ow-fg)}\n</style>\n<div class=\"cf\" role=\"img\" aria-label=\"The compound interest formula; 1000 dollars at 5 percent for 30 years compounded yearly, monthly, daily and continuously; and rule of 72 doubling times against exact doubling times\">\n<div class=\"cf-c\"><p class=\"cf-h\">The formula</p>\n<div class=\"cf-f\">A = P(1 + r/n)<sup>nt</sup></div>\n<ul class=\"n\"><li><b>P</b> what you start with</li><li><b>r</b> yearly rate, as a decimal</li><li><b>n</b> times per year interest is added</li><li><b>t</b> years</li><li><b>A</b> what you end with</li></ul></div>\n<div class=\"cf-c\"><p class=\"cf-h\">How often it compounds</p><p class=\"cf-s\">$1,000 at 5% for 30 years</p>\n<ol><li><span class=\"lb\">Yearly</span><span class=\"tr\"><i style=\"width:94.0%\"></i></span><span class=\"pc\">$4,322</span></li><li><span class=\"lb\">Monthly</span><span class=\"tr\"><i style=\"width:97.1%\"></i></span><span class=\"pc\">$4,468</span></li><li><span class=\"lb\">Daily</span><span class=\"tr\"><i style=\"width:97.4%\"></i></span><span class=\"pc\">$4,481</span></li><li><span class=\"lb\">Continuous</span><span class=\"tr\"><i style=\"width:97.4%\"></i></span><span class=\"pc\">$4,482</span></li></ol>\n<p class=\"cf-debt\">Yearly to daily adds <b>$159</b>. Time matters far more: the same $1,000 left 60 years becomes <b>$18,679</b>.</p></div>\n<div class=\"cf-c\"><p class=\"cf-h\">Rule of 72</p><p class=\"cf-s\">Years to double: 72 &divide; rate vs exact</p>\n<table><tr><th>Rate</th><th>72 &divide; r</th><th>Exact</th></tr><tr><td>2%</td><td>36 yrs</td><td>35 yrs</td></tr><tr><td>4%</td><td>18 yrs</td><td>17.7 yrs</td></tr><tr><td>6%</td><td>12 yrs</td><td>11.9 yrs</td></tr><tr><td>8%</td><td>9 yrs</td><td>9 yrs</td></tr><tr><td>10%</td><td>7.2 yrs</td><td>7.3 yrs</td></tr><tr><td>12%</td><td>6 yrs</td><td>6.1 yrs</td></tr></table>\n<p class=\"cf-debt\">Debt runs the same curve: an unpaid balance at <b>24%</b> doubles in about <b>3 years</b>.</p></div>\n</div>"
+    }
+  ],
+  "data": {
+    "tags": [
+      "finance",
+      "mathematics",
+      "exponential-growth",
+      "saving"
+    ],
+    "facts": [
+      {
+        "label": "Formula",
+        "value": "P(1 + r/n)^(nt)"
+      },
+      {
+        "label": "Years to double",
+        "value": "≈ 72 ÷ rate"
+      },
+      {
+        "label": "$1,000 at 5%, 30 years",
+        "value": "$4,322 yearly vs $4,481 daily"
+      },
+      {
+        "label": "Rule of 72 in print",
+        "value": "1494"
+      },
+      {
+        "label": "e found by Bernoulli",
+        "value": "1683"
+      }
+    ],
+    "see": [
+      "conways-game-of-life",
+      "Bayes' theorem",
+      "PageRank",
+      "Fourier transform",
+      "Hacker News ranking",
+      "Watch time",
+      "Rule of 72",
+      "Mortgage amortization",
+      "Inflation",
+      "Dollar-cost averaging"
+    ]
+  }
+}

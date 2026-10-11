@@ -1,0 +1,136 @@
+{
+  "title": "PageRank",
+  "slug": "pagerank",
+  "hue": 225,
+  "lede": "PageRank scores a web page by how often a random surfer, clicking from link to link, would land on it. It was the link-based ranking at the heart of early Google.",
+  "sections": [
+    {
+      "kind": "experience",
+      "heading": "Watch rank flow",
+      "body": "<style>\n.pr{box-sizing:border-box;max-width:1040px;margin:0 auto;font-family:var(--ow-font);color:var(--ow-fg);display:grid;gap:14px 26px;grid-template-columns:minmax(0,1fr)}\n.pr *{box-sizing:border-box}\n@media (min-width:760px){.pr{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);align-items:start}}\n.pr-q{margin:0 0 4px;font-size:18px;line-height:1.35;font-weight:650}\n.pr-hint{margin:0 0 10px;font-size:15px;line-height:1.45;color:var(--ow-muted);min-height:2.9em}\n.pr-hint b{color:var(--ow-fg)}\n.pr-try{appearance:none;font:inherit;font-size:14px;font-weight:650;margin-left:4px;padding:3px 10px;border-radius:999px;border:1.5px solid var(--ow-accent);background:transparent;color:var(--ow-accent);cursor:pointer;white-space:nowrap}\n.pr-try:hover{background:color-mix(in oklch,var(--ow-accent) 12%,transparent)}\n.pr-stage{position:relative;border-radius:18px;background:var(--ow-panel);border:1px solid var(--ow-line);overflow:hidden}\n.pr-svg{display:block;width:100%;height:auto;touch-action:manipulation;-webkit-user-select:none;user-select:none}\n.pr-edge{fill:none;stroke:color-mix(in oklch,var(--ow-muted) 55%,transparent);stroke-linecap:round}\n.pr-edge.hot{stroke:var(--ow-accent)}\n.pr-ehit{fill:none;stroke:transparent;stroke-width:14;cursor:pointer;pointer-events:stroke}\n.pr-ehit:hover+.pr-edge,.pr-edge.hover{stroke:oklch(0.62 0.19 25)}\n.pr-node{cursor:pointer;outline:none}\n.pr-node .hit{fill:transparent}\n.pr-node .disc{stroke:var(--ow-accent);stroke-width:1.5}\n.pr-node.sel .disc{stroke:var(--ow-fg);stroke-width:3.5}\n.pr-node.sel .halo{opacity:1}\n.pr-node .halo{fill:none;stroke:var(--ow-accent);stroke-width:2;stroke-dasharray:4 5;opacity:0}\n.pr-node:focus-visible .halo{opacity:1;stroke:var(--ow-fg)}\n.pr-name{font-size:14px;font-weight:650;fill:var(--ow-fg);text-anchor:middle;paint-order:stroke;stroke:var(--ow-panel);stroke-width:6px;stroke-linejoin:round}\n.pr-pct{font-size:12.5px;font-family:var(--ow-mono);fill:var(--ow-muted);text-anchor:middle;paint-order:stroke;stroke:var(--ow-panel);stroke-width:6px;stroke-linejoin:round}\n.pr-dot{fill:var(--ow-accent)}\n.pr-surfer{fill:var(--ow-fg);stroke:var(--ow-panel);stroke-width:2.5}\n.pr-status{position:absolute;left:12px;top:10px;font-size:13px;font-weight:650;font-variant-numeric:tabular-nums;padding:4px 10px;border-radius:999px;background:color-mix(in oklch,var(--ow-bg) 85%,transparent);border:1px solid var(--ow-line);color:var(--ow-muted);pointer-events:none}\n.pr-status.done{color:oklch(0.6 0.15 150);border-color:color-mix(in oklch,oklch(0.6 0.15 150) 45%,var(--ow-line))}\n.pr-legend{margin:8px 2px 0;font-size:13px;line-height:1.4;color:var(--ow-muted)}.pr-legend i{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--ow-fg);margin-right:6px;vertical-align:-1px}\n.pr-side{display:grid;gap:14px}\n.pr-damp{padding:12px 14px;border-radius:14px;border:1px solid var(--ow-line);background:var(--ow-panel)}\n.pr-damp label{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:16px;font-weight:650}\n.pr-damp output{font-family:var(--ow-mono);font-size:18px;color:var(--ow-accent);font-weight:700}\n.pr-damp input{width:100%;margin:8px 0 2px;height:28px;accent-color:var(--ow-accent);cursor:pointer}\n.pr-damp p{margin:0;font-size:13.5px;line-height:1.4;color:var(--ow-muted)}\n.pr-h{margin:0 0 6px;font-size:12.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ow-muted)}\n.pr-list{position:relative;margin:0;padding:0;list-style:none}\n.pr-row{position:absolute;left:0;right:0;top:0;height:26px;display:grid;grid-template-columns:76px minmax(0,1fr) 48px;align-items:center;gap:8px;font-size:14px;transition:transform .45s cubic-bezier(.2,.8,.2,1)}\n.pr-row span:first-child{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}\n.pr-row.sel span:first-child{color:var(--ow-accent)}\n.pr-bar{height:10px;border-radius:99px;background:color-mix(in oklch,var(--ow-line) 70%,transparent);overflow:hidden}\n.pr-bar i{display:block;height:100%;border-radius:inherit;background:var(--ow-accent)}\n.pr-row output{font-family:var(--ow-mono);font-size:13px;text-align:right;font-variant-numeric:tabular-nums;color:var(--ow-muted)}\n.pr-btns{display:flex;flex-wrap:wrap;gap:8px}\n.pr-btn{appearance:none;font:inherit;font-size:14px;font-weight:600;min-height:40px;padding:8px 14px;border-radius:999px;border:1.5px solid var(--ow-line);background:var(--ow-panel);color:var(--ow-fg);cursor:pointer;touch-action:manipulation}\n.pr-btn:hover{border-color:var(--ow-accent)}\n.pr button:focus-visible,.pr input:focus-visible{outline:3px solid color-mix(in oklch,var(--ow-accent) 55%,transparent);outline-offset:2px}\n.pr-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}\n@media (prefers-reduced-motion:reduce){.pr-row{transition:none}}\n</style>\n<div class=\"pr\">\n  <div>\n    <p class=\"pr-q\" id=\"pr-q\">Eight web pages link to each other. Bigger circle, higher PageRank.</p>\n    <p class=\"pr-hint\" id=\"pr-hint\"><b>Tap a page, then another</b> to add or remove a link between them. <button class=\"pr-try\" type=\"button\" id=\"pr-try\">Try: Home links to Fan page</button></p>\n    <div class=\"pr-stage\">\n      <svg class=\"pr-svg\" id=\"pr-svg\" role=\"group\" aria-labelledby=\"pr-q\">\n        <defs>\n          <marker id=\"pr-ar\" viewBox=\"0 0 10 10\" refX=\"8\" refY=\"5\" markerWidth=\"8\" markerHeight=\"8\" markerUnits=\"userSpaceOnUse\" orient=\"auto-start-reverse\"><path d=\"M0 0L10 5L0 10z\" style=\"fill:color-mix(in oklch,var(--ow-muted) 75%,transparent)\"/></marker>\n        </defs>\n        <g id=\"pr-edges\"></g><g id=\"pr-dots\"></g><g id=\"pr-nodes\"></g><circle class=\"pr-surfer\" id=\"pr-surfer\" r=\"7\"/>\n      </svg>\n      <span class=\"pr-status\" id=\"pr-status\" aria-live=\"polite\">Iteration 0</span>\n    </div>\n    <p class=\"pr-legend\"><i aria-hidden=\"true\"></i><span id=\"pr-legend\"></span></p>\n  </div>\n  <div class=\"pr-side\">\n    <div class=\"pr-damp\">\n      <label for=\"pr-d\"><span>Damping factor d</span><output id=\"pr-do\" for=\"pr-d\">0.85</output></label>\n      <input id=\"pr-d\" type=\"range\" min=\"0.5\" max=\"0.99\" step=\"0.01\" value=\"0.85\" aria-describedby=\"pr-dn\">\n      <p id=\"pr-dn\">The 1998 paper's usual value. Higher d: links carry more rank and it takes longer to settle.</p>\n    </div>\n    <div>\n      <p class=\"pr-h\">PageRank, share of the surfer's time</p>\n      <ol class=\"pr-list\" id=\"pr-list\"></ol>\n    </div>\n    <div class=\"pr-btns\">\n      <button class=\"pr-btn\" type=\"button\" id=\"pr-again\">Restart from equal ranks</button>\n      <button class=\"pr-btn\" type=\"button\" id=\"pr-reset\">Reset links</button>\n    </div>\n  </div>\n  <p class=\"pr-sr\" aria-live=\"polite\" id=\"pr-live\"></p>\n</div>\n<script>\n(function(){\n  var NAMES=['Home','About','Blog','Docs','News','Shop','Forum','Fan page'];\n  // Positions on a unit square, one set for wide frames and one for tall narrow ones.\n  var WIDE=[[.5,.4],[.22,.1],[.76,.08],[.12,.5],[.94,.42],[.78,.88],[.46,.9],[.1,.93]];\n  var TALL=[[.52,.38],[.2,.06],[.82,.06],[.12,.46],[.88,.44],[.8,.84],[.5,.76],[.14,.95]];\n  var START=[[0,1],[0,2],[0,3],[1,0],[2,0],[2,4],[4,2],[4,5],[5,0],[3,0],[3,6],[6,3],[6,0],[7,6]];\n  var N=NAMES.length,EPS=0.001,reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;\n  var svg=document.getElementById('pr-svg'),gE=document.getElementById('pr-edges'),gD=document.getElementById('pr-dots'),gN=document.getElementById('pr-nodes'),surf=document.getElementById('pr-surfer');\n  var statusEl=document.getElementById('pr-status'),legend=document.getElementById('pr-legend'),hint=document.getElementById('pr-hint'),live=document.getElementById('pr-live');\n  var NS='http://www.w3.org/2000/svg',W=600,H=400,pos=[],links={},d=.85,sel=-1;\n  function key(a,b){return a+'>'+b}\n  function setLinks(list){links={};list.forEach(function(e){links[key(e[0],e[1])]=e})}\n  function outs(i){var o=[];for(var k in links)if(links[k][0]===i)o.push(links[k][1]);return o}\n  function step(pr){\n    // PR(A) = (1-d)/N + d * sum PR(T)/C(T). A page with no links out shares its rank with every page.\n    var nx=new Array(N).fill((1-d)/N),dang=0;\n    for(var i=0;i<N;i++){var o=outs(i);if(!o.length){dang+=pr[i];continue}o.forEach(function(j){nx[j]+=d*pr[i]/o.length})}\n    for(var j=0;j<N;j++)nx[j]+=d*dang/N;return nx;\n  }\n  function diff(a,b){var m=0;for(var i=0;i<N;i++)m=Math.max(m,Math.abs(a[i]-b[i]));return m}\n  var cur=new Array(N).fill(1/N),nxt,t=0,iter=0,settled=false;\n  function restart(from){cur=from.slice();nxt=step(cur);t=0;iter=0;settled=false;\n    if(reduce){var k=0;while(diff(cur,nxt)>=EPS&&k<500){cur=nxt;nxt=step(cur);k++}iter=k;cur=nxt;settled=true;}}\n  function shown(){if(settled)return cur;var e=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;return cur.map(function(v,i){return v+(nxt[i]-v)*e})}\n  function rad(p){return Math.max(7,Math.sqrt(p)*(W<500?62:74))}\n  function layout(){\n    var w=svg.getBoundingClientRect().width||600,tall=w<520;W=tall?360:600;H=tall?470:400;\n    svg.setAttribute('viewBox','0 0 '+W+' '+H);\n    var P=tall?TALL:WIDE,mx=tall?40:56,top=tall?62:58,bot=tall?72:60;\n    pos=P.map(function(p){return[mx+p[0]*(W-2*mx),top+p[1]*(H-top-bot)]});\n    buildEdges();\n  }\n  // nodes\n  var nodeEls=NAMES.map(function(n,i){\n    var g=document.createElementNS(NS,'g');g.setAttribute('class','pr-node');g.setAttribute('tabindex','0');g.setAttribute('role','button');\n    g.innerHTML='<circle class=\"hit\" r=\"34\"/><circle class=\"halo\"/><circle class=\"disc\"/><text class=\"pr-name\"></text><text class=\"pr-pct\"></text>';\n    g.querySelector('.pr-name').textContent=n;\n    g.addEventListener('click',function(){pick(i)});\n    g.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();pick(i)}if(e.key==='Escape'){pick(-1)}});\n    gN.appendChild(g);return g;\n  });\n  var edgeEls={};\n  function buildEdges(){\n    gE.innerHTML='';gD.innerHTML='';edgeEls={};\n    Object.keys(links).forEach(function(k){\n      var e=links[k],hit=document.createElementNS(NS,'path'),p=document.createElementNS(NS,'path'),dot=document.createElementNS(NS,'circle');\n      hit.setAttribute('class','pr-ehit');p.setAttribute('class','pr-edge');p.setAttribute('marker-end','url(#pr-ar)');dot.setAttribute('class','pr-dot');\n      var t1=document.createElementNS(NS,'title');t1.textContent='Remove link '+NAMES[e[0]]+' to '+NAMES[e[1]];hit.appendChild(t1);\n      hit.addEventListener('click',function(){toggle(e[0],e[1])});\n      gE.appendChild(hit);gE.appendChild(p);gD.appendChild(dot);edgeEls[k]={hit:hit,p:p,dot:dot,e:e};\n    });\n  }\n  function geo(a,b,ra,rb){\n    var A=pos[a],B=pos[b],dx=B[0]-A[0],dy=B[1]-A[1],L=Math.hypot(dx,dy)||1,nx=-dy/L,ny=dx/L,c=[ (A[0]+B[0])/2+nx*L*.14,(A[1]+B[1])/2+ny*L*.14];\n    function trim(P,r){var vx=c[0]-P[0],vy=c[1]-P[1],l=Math.hypot(vx,vy)||1;return[P[0]+vx/l*r,P[1]+vy/l*r]}\n    return{s:trim(A,ra+2),e:trim(B,rb+5),c:c};\n  }\n  function at(g,u){var v=1-u;return[v*v*g.s[0]+2*v*u*g.c[0]+u*u*g.e[0],v*v*g.s[1]+2*v*u*g.c[1]+u*u*g.e[1]]}\n  function pct(p){return(p*100).toFixed(1)+'%'}\n  // ranking list\n  var listEl=document.getElementById('pr-list'),rows=NAMES.map(function(n){var li=document.createElement('li');li.className='pr-row';li.innerHTML='<span>'+n+'</span><span class=\"pr-bar\"><i></i></span><output></output>';listEl.appendChild(li);return li});\n  listEl.style.height=(N*30)+'px';\n  var lastOrder='';\n  function draw(pr){\n    var rs=pr.map(rad),mx=Math.max.apply(null,pr);\n    nodeEls.forEach(function(g,i){\n      var r=rs[i],x=pos[i][0],y=pos[i][1],f=Math.round(18+70*pr[i]/mx);\n      g.querySelector('.hit').setAttribute('cx',x);g.querySelector('.hit').setAttribute('cy',y);g.querySelector('.hit').setAttribute('r',Math.max(30,r+6));\n      var dc=g.querySelector('.disc');dc.setAttribute('cx',x);dc.setAttribute('cy',y);dc.setAttribute('r',r);dc.style.fill='color-mix(in srgb,var(--ow-accent) '+f+'%,var(--ow-panel))';\n      var h=g.querySelector('.halo');h.setAttribute('cx',x);h.setAttribute('cy',y);h.setAttribute('r',r+7);\n      var below=y+r+16>H-8,ny=below?y-r-24:y+r+16;\n      var tn=g.querySelector('.pr-name'),tp=g.querySelector('.pr-pct');tn.setAttribute('x',x);tn.setAttribute('y',ny);tp.setAttribute('x',x);tp.setAttribute('y',ny+14);tp.textContent=pct(pr[i]);\n      g.setAttribute('aria-label',NAMES[i]+', PageRank '+pct(pr[i])+', links out to '+(outs(i).map(function(j){return NAMES[j]}).join(', ')||'nothing')+(sel===i?'. Selected':''));\n      g.classList.toggle('sel',sel===i);\n    });\n    for(var k in edgeEls){var E=edgeEls[k],a=E.e[0],b=E.e[1],G=geo(a,b,rs[a],rs[b]),dd='M'+G.s[0]+' '+G.s[1]+'Q'+G.c[0]+' '+G.c[1]+' '+G.e[0]+' '+G.e[1];\n      E.p.setAttribute('d',dd);E.hit.setAttribute('d',dd);\n      var flow=d*pr[a]/outs(a).length;E.p.style.strokeWidth=(1+flow*55).toFixed(2);\n      E.p.classList.toggle('hot',sel===a);\n      if(!settled&&!reduce){var q=at(G,t);E.dot.setAttribute('cx',q[0]);E.dot.setAttribute('cy',q[1]);E.dot.setAttribute('r',(1.5+Math.sqrt(flow)*14).toFixed(2));E.dot.style.opacity=Math.sin(Math.PI*t).toFixed(2)}else E.dot.style.opacity=0;\n    }\n    var order=pr.map(function(v,i){return i}).sort(function(x,y){return pr[y]-pr[x]});\n    order.forEach(function(i,k){var li=rows[i];li.style.transform='translateY('+(k*30)+'px)';li.querySelector('i').style.width=(pr[i]/mx*100).toFixed(1)+'%';li.querySelector('output').textContent=pct(pr[i]);li.classList.toggle('sel',sel===i)});\n    var os=order.join();if(settled&&os!==lastOrder){lastOrder=os;live.textContent='Settled. Highest: '+NAMES[order[0]]+' '+pct(pr[order[0]])+', then '+NAMES[order[1]]+' '+pct(pr[order[1]])+'.'}\n    statusEl.textContent=settled?'Settled after '+iter+(iter===1?' iteration':' iterations'):'Iteration '+(iter+1)+' · rank flowing';\n    statusEl.classList.toggle('done',settled);\n  }\n  // random surfer: follows a link with probability d, otherwise jumps to any page\n  var sAt=0,sTo=0,sKind='',sT=1,sWait=0;\n  function surfer(dt,pr){\n    if(reduce){surf.style.display='none';return}\n    var rs=pr.map(rad);\n    if(sT<1){sT=Math.min(1,sT+dt/520);\n      if(sKind==='link'&&links[key(sAt,sTo)]){var q=at(geo(sAt,sTo,rs[sAt],rs[sTo]),sT);surf.setAttribute('cx',q[0]);surf.setAttribute('cy',q[1]);surf.style.opacity=1}\n      else{var P=sT<.5?pos[sAt]:pos[sTo];surf.setAttribute('cx',P[0]);surf.setAttribute('cy',P[1]-rs[sT<.5?sAt:sTo]*.0);surf.style.opacity=Math.abs(1-2*sT).toFixed(2)}\n      if(sT>=1){sAt=sTo;sWait=0}return}\n    surf.setAttribute('cx',pos[sAt][0]);surf.setAttribute('cy',pos[sAt][1]);surf.style.opacity=1;\n    sWait+=dt;if(sWait<650)return;\n    var o=outs(sAt);\n    if(o.length&&Math.random()<d){sTo=o[Math.floor(Math.random()*o.length)];sKind='link'}else{sTo=Math.floor(Math.random()*N);sKind='jump'}\n    sT=0;\n  }\n  function setLegend(){legend.textContent='Random surfer: clicks a link '+Math.round(d*100)+'% of the time, jumps anywhere '+Math.round((1-d)*100)+'%'}\n  function setHint(){\n    if(sel>=0){hint.innerHTML='<b>'+NAMES[sel]+'</b> selected. Now tap the page it should link to (tap it again to cancel).';return}\n    hint.innerHTML='<b>Tap a page, then another</b> to add or remove a link between them. '+(links[key(0,7)]?'Fan page now has one link, from the top page.':'<button class=\"pr-try\" type=\"button\" id=\"pr-try\">Try: Home links to Fan page</button>');\n    var b=document.getElementById('pr-try');if(b)b.addEventListener('click',function(){toggle(0,7)});\n  }\n  function toggle(a,b){\n    var k=key(a,b),had=!!links[k];if(had)delete links[k];else links[k]=[a,b];\n    live.textContent=(had?'Removed':'Added')+' link from '+NAMES[a]+' to '+NAMES[b]+'.';\n    sel=-1;buildEdges();restart(shown());setHint();\n  }\n  function pick(i){\n    if(i<0||sel===i){sel=-1;setHint();return}\n    if(sel<0){sel=i;setHint();return}\n    toggle(sel,i);\n  }\n  var dIn=document.getElementById('pr-d'),dOut=document.getElementById('pr-do'),dNote=document.getElementById('pr-dn');\n  dIn.addEventListener('input',function(){d=+dIn.value;dOut.textContent=d.toFixed(2);dIn.setAttribute('aria-valuetext','d '+d.toFixed(2));\n    dNote.textContent=Math.abs(d-.85)<.005?\"The 1998 paper's usual value. Higher d: links carry more rank and it takes longer to settle.\":d>.85?'Links carry more rank; the surfer rarely gets bored. Watch it take longer to settle.':'The surfer gets bored often, so ranks drift toward equal. Links matter less.';\n    setLegend();restart(shown())});\n  document.getElementById('pr-again').addEventListener('click',function(){restart(new Array(N).fill(1/N))});\n  document.getElementById('pr-reset').addEventListener('click',function(){sel=-1;setLinks(START);buildEdges();setHint();restart(new Array(N).fill(1/N))});\n  svg.addEventListener('click',function(e){if(e.target===svg){sel=-1;setHint()}});\n  var last=performance.now();\n  function frame(now){\n    var dt=Math.min(64,now-last);last=now;\n    if(!settled){t+=dt/Math.max(200,640-iter*45);if(t>=1){cur=nxt;iter++;nxt=step(cur);t=0;if(diff(cur,nxt)<EPS){settled=true;cur=nxt}}}\n    var pr=shown();draw(pr);surfer(dt,pr);requestAnimationFrame(frame);\n  }\n  setLinks(START);layout();setHint();setLegend();restart(cur);\n  if(reduce)draw(shown());\n  var lw=0;addEventListener('resize',function(){var w=svg.getBoundingClientRect().width;if((w<520)!==(lw<520)){layout()}lw=w;draw(shown())});\n  lw=svg.getBoundingClientRect().width;\n  requestAnimationFrame(frame);\n})();\n</script>\n"
+    },
+    {
+      "heading": "The random surfer",
+      "body": "In the 1998 paper that introduced Google, Sergey Brin and Lawrence Page picture a surfer who keeps clicking links and now and then gets bored and starts on a random page [1]. A page's PageRank is the probability that this surfer is visiting it [1]. The damping factor d is the chance of continuing to click rather than jumping, and the authors usually set it to 0.85 [2].",
+      "sources": [
+        {
+          "url": "http://infolab.stanford.edu/~backrub/google.html",
+          "title": "The Anatomy of a Large-Scale Hypertextual Web Search Engine (Brin and Page, 1998)",
+          "quote": "The probability that the random surfer visits a page is its PageRank"
+        },
+        {
+          "url": "http://infolab.stanford.edu/~backrub/google.html",
+          "title": "The Anatomy of a Large-Scale Hypertextual Web Search Engine (Brin and Page, 1998)",
+          "quote": "The parameter d is a damping factor which can be set between 0 and 1. We usually set d to 0.85."
+        }
+      ]
+    },
+    {
+      "heading": "How rank flows along links",
+      "body": "Counting backlinks treats every link the same; PageRank instead weighs each link by the rank of the page it comes from, divided by that page's number of links [1]. So a page ranks high when many pages point to it, or when a few high-ranked pages do [2]. The scores come from a simple iterative algorithm, repeated until they settle; the paper says rank for 26 million pages could be computed in a few hours on one workstation [3]. In the explorable, link Home to Fan page and watch one strong link lift it.",
+      "sources": [
+        {
+          "url": "http://infolab.stanford.edu/~backrub/google.html",
+          "title": "The Anatomy of a Large-Scale Hypertextual Web Search Engine (Brin and Page, 1998)",
+          "quote": "PageRank extends this idea by not counting links from all pages equally, and by normalizing by the number of links on a page"
+        },
+        {
+          "url": "http://infolab.stanford.edu/~backrub/google.html",
+          "title": "The Anatomy of a Large-Scale Hypertextual Web Search Engine (Brin and Page, 1998)",
+          "quote": "a page can have a high PageRank if there are many pages that point to it, or if there are some pages that point to it and have a high PageRank"
+        },
+        {
+          "url": "http://infolab.stanford.edu/~backrub/google.html",
+          "title": "The Anatomy of a Large-Scale Hypertextual Web Search Engine (Brin and Page, 1998)",
+          "quote": "a PageRank for 26 million web pages can be computed in a few hours on a medium size workstation"
+        }
+      ]
+    },
+    {
+      "kind": "figure",
+      "heading": "The formula, piece by piece",
+      "body": "<style>\n.pf{box-sizing:border-box;max-width:1040px;margin:0 auto;font-family:var(--ow-font);color:var(--ow-fg)}\n.pf-eq{display:flex;flex-wrap:wrap;justify-content:center;align-items:stretch;gap:8px 6px;font-family:var(--ow-mono);font-size:clamp(17px,2.6vw,26px);line-height:1.2}\n.pf-t{display:flex;flex-direction:column;align-items:center;gap:8px}\n.pf-t>span:first-child{padding:8px 12px;border-radius:12px;white-space:nowrap}\n.pf-op{align-self:flex-start;padding:8px 2px;color:var(--ow-muted)}\n.pf-a>span:first-child{background:color-mix(in oklch,var(--ow-fg) 7%,transparent)}\n.pf-b>span:first-child{background:color-mix(in oklch,oklch(0.65 0.14 150) 18%,transparent)}\n.pf-c>span:first-child{background:color-mix(in oklch,var(--ow-accent) 16%,transparent)}\n.pf-d>span:first-child{background:color-mix(in oklch,oklch(0.7 0.14 70) 22%,transparent)}\n.pf-t small{display:block;max-width:15em;font-family:var(--ow-font);font-size:14px;line-height:1.35;color:var(--ow-muted);text-align:center}\n.pf-t small b{color:var(--ow-fg);font-weight:650}\n.pf-note{margin:18px 0 0;text-align:center;font-size:14px;color:var(--ow-muted)}\n@media (max-width:520px){.pf-eq{flex-direction:column;align-items:stretch}.pf-op{align-self:center;padding:0}.pf-t{flex-direction:row;justify-content:flex-start;gap:12px;text-align:left}.pf-t>span:first-child{min-width:8.5em;text-align:center}.pf-t small{text-align:left;max-width:none}}\n</style>\n<div class=\"pf\" role=\"img\" aria-label=\"The PageRank formula from the 1998 paper: PR(A) equals (1 minus d) plus d times the sum over pages T linking to A of PR(T) divided by C(T), the number of links on T.\">\n  <div class=\"pf-eq\">\n    <div class=\"pf-t pf-a\"><span>PR(A)</span><small><b>Rank of page A</b></small></div>\n    <div class=\"pf-op\">=</div>\n    <div class=\"pf-t pf-b\"><span>(1 − d)</span><small><b>Bored surfer</b> jumps to a random page</small></div>\n    <div class=\"pf-op\">+</div>\n    <div class=\"pf-t pf-c\"><span>d ×</span><small><b>d = 0.85</b>: chance the surfer keeps clicking</small></div>\n    <div class=\"pf-t pf-d\"><span>Σ PR(T) / C(T)</span><small><b>Every page T linking to A</b> splits its rank over its C(T) links</small></div>\n  </div>\n  <p class=\"pf-note\">Brin and Page, 1998. Repeat for every page until the numbers stop changing.</p>\n</div>\n",
+      "sources": [
+        {
+          "url": "http://infolab.stanford.edu/~backrub/google.html",
+          "title": "The Anatomy of a Large-Scale Hypertextual Web Search Engine (Brin and Page, 1998)",
+          "quote": "PR(A) = (1-d) + d (PR(T1)/C(T1) + ... + PR(Tn)/C(Tn))"
+        }
+      ]
+    },
+    {
+      "heading": "PageRank at Google today",
+      "body": "The method was patented with Lawrence Page as inventor and Stanford as original assignee; the patent ranks a document from the ranks of documents citing it, plus a constant chance of a random jump [1]. Google says PageRank was one of its core ranking systems at launch, has evolved a lot, and is still part of those core systems [2][3]. Its public guide to ranking still names links from prominent sites as one sign of quality [4]. Related: [[Hacker News ranking]], [[Reddit hot ranking]], [[LinkedIn feed ranking]].",
+      "sources": [
+        {
+          "url": "https://patents.google.com/patent/US6285999B1/en",
+          "title": "US6285999B1, Method for node ranking in a linked database (Google Patents)",
+          "quote": "The rank assigned to a document is calculated from the ranks of documents citing it."
+        },
+        {
+          "url": "https://developers.google.com/search/docs/appearance/ranking-systems-guide?hl=en",
+          "title": "A guide to Google Search ranking systems (Google Search Central)",
+          "quote": "Among these is PageRank, one of our core ranking systems used when Google first launched."
+        },
+        {
+          "url": "https://developers.google.com/search/docs/appearance/ranking-systems-guide?hl=en",
+          "title": "A guide to Google Search ranking systems (Google Search Central)",
+          "quote": "How PageRank works has evolved a lot since then, and it continues to be part of our core ranking systems."
+        },
+        {
+          "url": "https://www.google.com/search/howsearchworks/how-search-works/ranking-results/",
+          "title": "How Search works: ranking results (Google)",
+          "quote": "one of the factors used to determine quality is understanding if other prominent websites link or refer to the content"
+        }
+      ]
+    }
+  ],
+  "data": {
+    "tags": [
+      "search",
+      "ranking",
+      "algorithm",
+      "google",
+      "links"
+    ],
+    "facts": [
+      {
+        "label": "Introduced",
+        "value": "1998, Brin and Page (Stanford)"
+      },
+      {
+        "label": "Damping factor d",
+        "value": "Usually 0.85"
+      },
+      {
+        "label": "Meaning of a score",
+        "value": "Chance a random surfer is on the page"
+      },
+      {
+        "label": "Computed by",
+        "value": "Iterating until scores settle"
+      },
+      {
+        "label": "Patent",
+        "value": "US 6,285,999 (inventor Lawrence Page)"
+      },
+      {
+        "label": "Status at Google",
+        "value": "Still part of core ranking, evolved"
+      }
+    ],
+    "see": [
+      "Hacker News ranking",
+      "Reddit hot ranking",
+      "LinkedIn feed ranking",
+      "X recommendation algorithm",
+      "instagram-ranking",
+      "tiktok-for-you-feed",
+      "HITS algorithm",
+      "Markov chain",
+      "Random walk",
+      "Link spam",
+      "Web crawler"
+    ]
+  }
+}

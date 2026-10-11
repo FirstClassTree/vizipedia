@@ -37,8 +37,11 @@ for (const [net, bits] of [
 ] as const)
   PRIVATE.addSubnet(net, bits, "ipv4");
 for (const [net, bits] of [
-  ["::", 127],
+  ["::", 96],
   ["64:ff9b::", 96],
+  ["64:ff9b:1::", 48],
+  ["2002::", 16],
+  ["fec0::", 10],
   ["100::", 64],
   ["2001:db8::", 32],
   ["fc00::", 7],
@@ -49,8 +52,10 @@ for (const [net, bits] of [
 
 /** True only for an address on the public internet. */
 export function isPublicAddress(address: string): boolean {
-  const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/iu.exec(address)?.[1];
-  const plain = mapped ?? address;
+  // A mapped IPv4 in either spelling, ::ffff:10.0.0.1 or ::ffff:a00:1, is judged as the IPv4 it names.
+  const dotted = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/iu.exec(address)?.[1];
+  const hex = /^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/iu.exec(address);
+  const plain = dotted ?? (hex ? [hex[1] ?? "0", hex[2] ?? "0"].flatMap((part) => [Number.parseInt(part, 16) >> 8, Number.parseInt(part, 16) & 255]).join(".") : address);
   const family = isIP(plain);
   if (family === 0) return false;
   return !PRIVATE.check(plain, family === 4 ? "ipv4" : "ipv6");
@@ -72,7 +77,8 @@ const publicLookup: LookupFunction = (hostname, options, callback) => {
 const dispatcher = new Agent({ connect: { lookup: publicLookup, timeout: 4000 }, headersTimeout: 5000, bodyTimeout: 5000 });
 
 const MAX_BYTES = 1_500_000;
-const MAX_HOPS = 4;
+/** The first fetch plus at most four redirects, each checked like the first. */
+const MAX_HOPS = 5;
 export const MIN_QUOTE = 20;
 
 /** A URL the wiki is willing to fetch: http(s), default port, a name or a public literal address. */
@@ -90,14 +96,20 @@ export function fetchable(raw: string): URL | null {
   }
 }
 
-async function readPage(raw: string, agent: string, signal: AbortSignal): Promise<string | null> {
+/** What was read of a page. `whole` is false when the page was larger than the wiki reads. */
+export interface PageText {
+  readonly text: string;
+  readonly whole: boolean;
+}
+
+async function readPage(raw: string, agent: string, signal: AbortSignal): Promise<PageText | null> {
   let url = fetchable(raw);
   for (let hop = 0; url && hop < MAX_HOPS; hop += 1) {
     const response = await undiciFetch(url, {
       dispatcher,
       signal,
       redirect: "manual",
-      headers: { "user-agent": agent, accept: "text/html,application/xhtml+xml,text/plain;q=0.9" },
+      headers: { "user-agent": agent, accept: "text/html,application/xhtml+xml,text/plain;q=0.9,text/markdown;q=0.9" },
     });
     if (response.status >= 300 && response.status < 400) {
       const next = response.headers.get("location");
@@ -106,18 +118,22 @@ async function readPage(raw: string, agent: string, signal: AbortSignal): Promis
       continue;
     }
     const type = response.headers.get("content-type") ?? "";
-    if (!response.ok || !/text\/html|text\/plain|application\/xhtml/iu.test(type) || !response.body) {
+    if (!response.ok || !/text\/(?:html|plain|markdown)|application\/xhtml/iu.test(type) || !response.body) {
       await response.body?.cancel();
       return null;
     }
     const chunks: Uint8Array[] = [];
     let size = 0;
+    let whole = true;
     for await (const chunk of response.body) {
       chunks.push(chunk);
       size += chunk.byteLength;
-      if (size >= MAX_BYTES) break;
+      if (size >= MAX_BYTES) {
+        whole = false;
+        break;
+      }
     }
-    return Buffer.concat(chunks).toString("utf8");
+    return { text: Buffer.concat(chunks).toString("utf8"), whole };
   }
   return null;
 }
@@ -138,23 +154,29 @@ const ENTITIES: Readonly<Record<string, string>> = {
   ldquo: '"',
 };
 
+const INLINE_TAG = /<\/?(?:a|abbr|b|bdi|cite|code|del|dfn|em|font|i|ins|kbd|mark|q|s|small|span|strong|sub|sup|time|u|var|wbr)\b[^>]*>/giu;
+
 /** Text as a reader would compare it: no markup, one kind of quote and dash, single spaces, lower case. */
 export function comparable(text: string): string {
-  return text
-    .replace(/<(script|style|noscript|template)\b[\s\S]*?<\/\1>/giu, " ")
-    .replace(/<[^>]*>/gu, " ")
-    .replace(/&#(\d+);/gu, (_all, code: string) => String.fromCodePoint(Number(code)))
-    .replace(/&#x([0-9a-f]+);/giu, (_all, code: string) => String.fromCodePoint(Number.parseInt(code, 16)))
-    .replace(/&([a-z]+);/giu, (all, name: string) => ENTITIES[name.toLowerCase()] ?? all)
-    .normalize("NFKC")
-    .replace(/[\u2018\u2019\u201a\u2032]/gu, "'")
-    .replace(/[\u201c\u201d\u201e\u2033]/gu, '"')
-    .replace(/[\u2010-\u2015\u2212]/gu, "-")
-    .replace(/\u2026/gu, "...")
-    .replace(/\[\d+\]/gu, "")
-    .replace(/\s+/gu, " ")
-    .trim()
-    .toLowerCase();
+  return (
+    text
+      .replace(/<(script|style|noscript|template)\b[\s\S]*?<\/\1>/giu, " ")
+      // A link or an emphasis sits inside a sentence: dropping it must not put a space before the comma that follows.
+      .replace(INLINE_TAG, "")
+      .replace(/<[^>]*>/gu, " ")
+      .replace(/&#(\d+);/gu, (_all, code: string) => String.fromCodePoint(Number(code)))
+      .replace(/&#x([0-9a-f]+);/giu, (_all, code: string) => String.fromCodePoint(Number.parseInt(code, 16)))
+      .replace(/&([a-z]+);/giu, (all, name: string) => ENTITIES[name.toLowerCase()] ?? all)
+      .normalize("NFKC")
+      .replace(/[\u2018\u2019\u201a\u2032]/gu, "'")
+      .replace(/[\u201c\u201d\u201e\u2033]/gu, '"')
+      .replace(/[\u2010-\u2015\u2212]/gu, "-")
+      .replace(/\u2026/gu, "...")
+      .replace(/\[\d+\]/gu, "")
+      .replace(/\s+/gu, " ")
+      .trim()
+      .toLowerCase()
+  );
 }
 
 export const quoteIsIn = (quote: string, page: string): boolean => {
@@ -163,15 +185,17 @@ export const quoteIsIn = (quote: string, page: string): boolean => {
 };
 
 /** The checker the server uses: up to `budgetMs` for the whole list, pages fetched in parallel, one fetch per URL. */
-export function quoteChecker(options: { agent: string; budgetMs?: number; read?: (url: string, signal: AbortSignal) => Promise<string | null> }): SourceChecker {
+export function quoteChecker(options: { agent: string; budgetMs?: number; read?: (url: string, signal: AbortSignal) => Promise<PageText | string | null> }): SourceChecker {
   const read = options.read ?? ((url, signal) => readPage(url, options.agent, signal));
   return async (sources) => {
     const signal = AbortSignal.timeout(options.budgetMs ?? 9000);
-    const pages = new Map<string, Promise<string | null>>();
-    const pageOf = (url: string): Promise<string | null> => {
+    const pages = new Map<string, Promise<PageText | null>>();
+    const pageOf = (url: string): Promise<PageText | null> => {
       const known = pages.get(url);
       if (known) return known;
-      const loading = read(url, signal).catch(() => null);
+      const loading = read(url, signal)
+        .then((page) => (typeof page === "string" ? { text: page, whole: true } : page))
+        .catch(() => null);
       pages.set(url, loading);
       return loading;
     };
@@ -180,7 +204,8 @@ export function quoteChecker(options: { agent: string; budgetMs?: number; read?:
       sources.map(async (source): Promise<Source> => {
         if (!source.quote) return { ...source, check: "unchecked" };
         const page = await pageOf(source.url);
-        const check: QuoteCheck = page === null ? "unreachable" : quoteIsIn(source.quote, page) ? "found" : "missing";
+        // A quote not found in the part of a page that was read is not known to be missing from the rest.
+        const check: QuoteCheck = page === null ? "unreachable" : quoteIsIn(source.quote, page.text) ? "found" : page.whole ? "missing" : "unreachable";
         return { ...source, check, checkedAt };
       }),
     );

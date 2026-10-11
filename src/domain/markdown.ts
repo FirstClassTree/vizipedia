@@ -128,6 +128,8 @@ export function resolveHtml(html: string, base: string, sourcePrefix: string, ex
 export const textOf = (html: string): string =>
   html
     .replace(/<sup class="cite">.*?<\/sup>/gu, "")
+    // Inline marks go without a trace, so "[[Link]]." does not become "Link ."; blocks leave a space.
+    .replace(/<\/?(?:a|em|strong|code|s|del|sub|sup)\b[^>]*>/gu, "")
     .replace(/<[^>]+>/gu, " ")
     .replace(/&lt;/gu, "<")
     .replace(/&gt;/gu, ">")

@@ -27,7 +27,7 @@ export function openAiScreen(apiKey: string, fetcher: typeof fetch = fetch): Scr
         .map(([name]) => name);
       return categories.join(", ") || "flagged";
     } catch {
-      // The screen failing must not take writes down with it; flags and patrol still stand.
+      // The screen failing must not take writes down with it; flags and the operator token still stand.
       return null;
     }
   };

@@ -14,19 +14,35 @@ export interface Config {
   readonly origin: string;
   readonly name: string;
   readonly databaseUrl: string | undefined;
+  /** Postgres connections this process may hold open (DB_POOL, default 10). */
+  readonly dbPool: number;
   readonly dataDir: string | undefined;
   /** When set, keys are checked by this endpoint instead of the wiki's own table. */
   readonly identityUrl: string | undefined;
   /** Where a person gets a key when identity is remote. */
   readonly keyUrl: string | undefined;
+  /**
+   * Where a person signs in when identity is remote, with `{next}` for the path to come back
+   * to: one sign-in for the product and the wiki (Tal, 2026-10-09: "sign up should be the
+   * same as ShapelessAI"). The wiki then asks the product for a key as that person.
+   */
+  readonly signInUrl: string | undefined;
   readonly signup: "open" | "closed";
   readonly adminToken: string | undefined;
+  /** A header a trusting proxy sets to the caller's address; see network() in http/api.ts. */
+  readonly clientIpHeader: string | undefined;
   /** Handles treated as established from their first write. */
   readonly trusted: ReadonlySet<string>;
   readonly actions: readonly PageAction[];
   /** "none" keeps the whole wiki out of search engines, whatever a page has earned. */
   readonly indexing: "earned" | "none";
+  /** Who runs this wiki: named in the header and footer, and pitched once on every page. */
+  readonly by: { readonly name: string; readonly url: string; readonly pitch: string | null } | undefined;
 }
+
+// ShapelessAI runs this wiki and makes social content with agents, which is what most of its
+// pages are about: one line on every page says so, once (Tal, 2026-10-09: "plug ShapelessAI more").
+const SHAPELESS_PITCH = "Put this to work: agents that make and post your social content. Free to start.";
 
 export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const port = Number(env.PORT ?? 4173);
@@ -41,16 +57,23 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
     port,
     base,
     origin: (env.PUBLIC_ORIGIN ?? `http://localhost:${port}`).replace(/\/+$/u, ""),
-    name: env.SITE_NAME ?? "OpenWiki",
+    name: env.SITE_NAME ?? "Vizipedia",
     databaseUrl: env.DATABASE_URL || undefined,
+    dbPool: Math.max(1, Math.floor(Number(env.DB_POOL) || 10)),
     dataDir: env.DATABASE_URL ? undefined : (env.DATA_DIR ?? "./data"),
     identityUrl: env.IDENTITY_URL || undefined,
     keyUrl: env.KEY_URL || undefined,
+    signInUrl: env.SIGN_IN_URL || undefined,
     signup: env.SIGNUP === "closed" ? "closed" : "open",
     adminToken: env.ADMIN_TOKEN || undefined,
+    clientIpHeader: env.CLIENT_IP_HEADER?.trim().toLowerCase() || undefined,
     trusted: new Set(trusted),
     actions: parseActions(env.PAGE_ACTIONS),
     indexing: env.INDEXING === "none" ? "none" : "earned",
+    by:
+      env.BY_NAME && env.BY_URL && /^https?:\/\//u.test(env.BY_URL)
+        ? { name: env.BY_NAME, url: env.BY_URL, pitch: env.BY_PITCH || null }
+        : { name: "ShapelessAI", url: "https://shapelessai.com", pitch: env.BY_PITCH ?? SHAPELESS_PITCH },
   };
 }
 

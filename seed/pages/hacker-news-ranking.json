@@ -1,0 +1,160 @@
+{
+  "title": "Hacker News ranking",
+  "slug": "hacker-news-ranking",
+  "hue": 28,
+  "lede": "Hacker News ranks its front page by dividing a story's points by a power of its age, so new stories rise fast and every story sinks as hours pass.",
+  "sections": [
+    {
+      "kind": "experience",
+      "heading": "Race to the front page",
+      "body": "<style>\n.hn{box-sizing:border-box;max-width:1040px;margin:0 auto;display:grid;gap:20px;grid-template-columns:1fr;font-family:var(--ow-font);color:var(--ow-fg)}\n.hn *{box-sizing:border-box}\n@media (min-width:760px){.hn{grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:28px;align-items:start}}\n.hn-q{margin:0 0 14px;font-size:18px;line-height:1.35;font-weight:600}\n.hn-q b{color:var(--ow-accent)}\n.hn-box{padding:14px 16px;border-radius:14px;border:1px solid var(--ow-line);background:var(--ow-panel)}\n.hn-box+.hn-box{margin-top:12px}\n.hn-lab{display:flex;justify-content:space-between;gap:12px;font-size:15px;font-weight:600;margin-top:4px}\n.hn-lab output{font-family:var(--ow-mono);font-variant-numeric:tabular-nums;color:var(--ow-muted);font-weight:500}\n.hn input[type=range]{width:100%;margin:8px 0 6px;height:28px;accent-color:var(--ow-accent);cursor:pointer}\n.hn input[type=range]:focus-visible,.hn button:focus-visible{outline:3px solid color-mix(in oklch,var(--ow-accent) 55%,transparent);outline-offset:2px;border-radius:8px}\n.hn-chip{appearance:none;font:inherit;font-size:14px;display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:7px 12px;margin-top:4px;border-radius:999px;border:1.5px solid var(--ow-line);background:var(--ow-bg);color:var(--ow-fg);cursor:pointer;touch-action:manipulation}\n.hn-chip[aria-pressed=\"true\"]{background:var(--ow-fg);border-color:var(--ow-fg);color:var(--ow-bg)}\n.hn-clockrow{display:flex;align-items:center;gap:12px}\n.hn-play{appearance:none;flex:none;width:44px;height:44px;border-radius:50%;border:0;background:var(--ow-accent);color:var(--ow-accent-ink);cursor:pointer;display:grid;place-items:center;touch-action:manipulation}\n.hn-play svg{width:18px;height:18px;display:block}\n.hn-clockrow>div{flex:1;min-width:0}\n.hn-feed{border-radius:18px;background:var(--ow-panel);border:1px solid var(--ow-line);padding:16px 18px}\n.hn-h{margin:0;font-size:13px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--ow-muted)}\n.hn-list{position:relative;margin:10px 0 0;padding:0;list-style:none;height:calc(4*46px + 3*6px)}\n.hn-row{position:absolute;left:0;right:0;top:0;height:46px;display:grid;grid-template-columns:24px minmax(0,1fr) auto;align-items:center;gap:10px;padding:4px 10px;border-radius:10px;transition:transform .4s cubic-bezier(.2,.8,.2,1)}\n.hn-row.you{background:color-mix(in oklch,var(--ow-accent) 10%,transparent);box-shadow:inset 0 0 0 1.5px color-mix(in oklch,var(--ow-accent) 45%,transparent)}\n.hn-rk{font-size:17px;font-weight:750;color:var(--ow-muted);text-align:right;font-variant-numeric:tabular-nums}\n.hn-t{min-width:0;display:block}\n.hn-t b{display:block;font-size:15px;line-height:1.25;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}\n.hn-t b i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;background:var(--c);vertical-align:1px}\n.hn-t span{display:block;font-size:13px;color:var(--ow-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}\n.hn-sc{font-family:var(--ow-mono);font-size:14px;font-variant-numeric:tabular-nums;color:var(--ow-muted)}\n.hn-chart{display:block;width:100%;height:auto;margin-top:12px;touch-action:none;cursor:ew-resize}\n.hn-chart text{font-family:var(--ow-font);font-size:11px;fill:var(--ow-muted)}\n.hn-say{margin:10px 0 0;font-size:15px;line-height:1.4;min-height:2.8em}\n.hn-say b{color:var(--ow-accent)}\n.hn-key{margin:8px 0 0;font-size:13px;line-height:1.45;color:var(--ow-muted)}\n.hn-key code{font-family:var(--ow-mono);font-size:12.5px;color:var(--ow-fg)}\n@media (max-width:420px){.hn-feed{padding:14px 12px}.hn-row{padding:4px 6px;gap:8px}.hn-q{font-size:17px}}\n@media (prefers-reduced-motion:reduce){.hn-row{transition:none}}\n</style>\n<div class=\"hn\">\n  <div>\n    <p class=\"hn-q\">Drag <b>your story</b>'s points and age, then scrub the clock.</p>\n    <div class=\"hn-box\">\n      <label class=\"hn-lab\" for=\"hn-p\"><span>Your story's points</span><output id=\"hn-po\" for=\"hn-p\">41</output></label>\n      <input id=\"hn-p\" type=\"range\" min=\"0\" max=\"100\" step=\"1\" value=\"49\">\n      <label class=\"hn-lab\" for=\"hn-a\"><span>Posted</span><output id=\"hn-ao\" for=\"hn-a\">30 min ago</output></label>\n      <input id=\"hn-a\" type=\"range\" min=\"0\" max=\"24\" step=\"0.25\" value=\"0.5\">\n      <button class=\"hn-chip\" type=\"button\" id=\"hn-u\" aria-pressed=\"false\">Text post, no URL &times;0.4</button>\n    </div>\n    <div class=\"hn-box\">\n      <div class=\"hn-clockrow\">\n        <button class=\"hn-play\" type=\"button\" id=\"hn-go\" aria-label=\"Play the next 24 hours\"><svg viewBox=\"0 0 20 20\" fill=\"currentColor\" aria-hidden=\"true\"><path id=\"hn-ic\" d=\"M5 3l12 7-12 7z\"/></svg></button>\n        <div>\n          <label class=\"hn-lab\" for=\"hn-c\"><span>Clock</span><output id=\"hn-co\" for=\"hn-c\">now</output></label>\n          <input id=\"hn-c\" type=\"range\" min=\"0\" max=\"24\" step=\"0.25\" value=\"0\">\n        </div>\n      </div>\n    </div>\n  </div>\n  <section class=\"hn-feed\" aria-labelledby=\"hn-fh\">\n    <p class=\"hn-h\" id=\"hn-fh\">Front page</p>\n    <ol class=\"hn-list\" id=\"hn-l\"></ol>\n    <svg class=\"hn-chart\" id=\"hn-g\" viewBox=\"0 0 520 150\" role=\"img\" aria-label=\"Rank of each story over the next 24 hours\"></svg>\n    <p class=\"hn-say\" id=\"hn-say\" aria-live=\"polite\"></p>\n    <p class=\"hn-key\">Score <code>(points&minus;1)<sup>0.8</sup> &divide; (hours+2)<sup>1.8</sup></code>, from Paul Graham's 2010 code. Points are frozen here; real stories keep getting votes, and flags or moderators can move them.</p>\n  </section>\n</div>\n<script>\n(function(){\n  var stories=[\n    {id:'a',name:'An essay on compilers',p:600,age:9,c:'oklch(0.6 0.13 250)'},\n    {id:'b',name:'Show HN: A synth in 4 KB',p:120,age:2,c:'oklch(0.6 0.14 150)'},\n    {id:'c',name:'Ask HN: How do you take notes?',p:80,age:1,nourl:true,c:'oklch(0.6 0.13 310)'},\n    {id:'you',name:'Your story',p:40,age:0.5,c:'var(--ow-accent)'}\n  ];\n  var you=stories[3],clock=0,list=document.getElementById('hn-l'),svg=document.getElementById('hn-g'),say=document.getElementById('hn-say');\n  var P=document.getElementById('hn-p'),A=document.getElementById('hn-a'),C=document.getElementById('hn-c'),U=document.getElementById('hn-u');\n  var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;\n  function pts(v){var x=Math.pow(10,v/100*Math.log10(2000));return x<10?Math.max(1,Math.round(x)):x<100?Math.round(x):Math.round(x/10)*10}\n  function score(s,t){var base=s.p-1,num=base>0?Math.pow(base,.8):base;return num/Math.pow(s.age+t+2,1.8)*(s.nourl?.4:1)}\n  function rankAt(t){return stories.slice().sort(function(x,y){return score(y,t)-score(x,t)})}\n  function ago(h){if(h<1)return Math.round(h*60)+' min ago';var r=Math.round(h*10)/10;return r+(r===1?' hour':' hours')+' ago'}\n  function fmtH(h){return h===0?'now':'+'+(Math.round(h*100)/100)+' h'}\n  stories.forEach(function(s){\n    var li=document.createElement('li');li.className='hn-row'+(s===you?' you':'');li.style.setProperty('--c',s.c);\n    li.innerHTML='<span class=\"hn-rk\"></span><span class=\"hn-t\"><b><i></i>'+s.name+'</b><span></span></span><span class=\"hn-sc\"></span>';\n    s.el=li;list.appendChild(li);\n  });\n  var NS='http://www.w3.org/2000/svg',W=520,H=150,L=26,R=8,T=12,B=26;\n  function X(t){return L+(W-L-R)*t/24}function Y(r){return T+(H-T-B)*r/3}\n  function el(n,a){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);return e}\n  function chart(){\n    while(svg.firstChild)svg.removeChild(svg.firstChild);\n    W=Math.max(240,Math.round(svg.getBoundingClientRect().width)||520);H=W<480?132:150;svg.setAttribute('viewBox','0 0 '+W+' '+H);\n    for(var r=0;r<4;r++){svg.appendChild(el('line',{x1:L,x2:W-R,y1:Y(r),y2:Y(r),stroke:'var(--ow-line)','stroke-width':1}));var lt=el('text',{x:0,y:Y(r)+4});lt.textContent='#'+(r+1);svg.appendChild(lt)}\n    (W<400?[0,12,24]:[0,6,12,18,24]).forEach(function(h){var t=el('text',{x:X(h),y:H-8,'text-anchor':h===0?'start':h===24?'end':'middle'});t.textContent=h===0?'now':'+'+h+' h';svg.appendChild(t)});\n    var paths={};stories.forEach(function(s){paths[s.id]=[]});\n    for(var i=0;i<=96;i++){var t=i/4,o=rankAt(t);o.forEach(function(s,r){paths[s.id].push([X(t),Y(r)])})}\n    stories.forEach(function(s){\n      var d=paths[s.id].map(function(p,i){return(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)}).join('');\n      svg.appendChild(el('path',{d:d,fill:'none',stroke:s.c,'stroke-width':s===you?4:2.5,'stroke-linejoin':'round','stroke-linecap':'round',opacity:s===you?1:.8}));\n    });\n    svg.appendChild(el('line',{x1:X(clock),x2:X(clock),y1:4,y2:H-B+6,stroke:'var(--ow-fg)','stroke-width':1.5,'stroke-dasharray':'3 3'}));\n    rankAt(clock).forEach(function(s,r){svg.appendChild(el('circle',{cx:X(clock),cy:Y(r),r:s===you?6:4.5,fill:s.c,stroke:'var(--ow-panel)','stroke-width':2}))});\n  }\n  function story(){\n    var o0=rankAt(0),now=o0.indexOf(you)+1,parts=['#'+now+' now'],last=now;\n    for(var i=1;i<=96;i++){var r=rankAt(i/4).indexOf(you)+1;if(r!==last){parts.push('#'+r+' at +'+(i/4)+' h');last=r}}\n    if(parts.length>4)parts=parts.slice(0,3).concat(['#'+last+' by +24 h']);\n    var at=rankAt(clock).indexOf(you)+1;\n    say.innerHTML='At '+(clock?fmtH(clock):'this moment')+' your story is <b>#'+at+'</b>. Over the day: '+parts.join(' &rarr; ')+'.';\n  }\n  function render(){\n    var o=rankAt(clock),h=46,g=6;\n    o.forEach(function(s,r){\n      s.el.style.transform='translateY('+(r*(h+g))+'px)';\n      s.el.querySelector('.hn-rk').textContent=(r+1)+'.';\n      s.el.querySelector('.hn-t span').textContent=s.p+(s.p===1?' point':' points')+' · '+ago(s.age+clock)+(s.nourl?' · no URL ×0.4':'');\n      s.el.querySelector('.hn-sc').textContent=score(s,clock).toFixed(2);\n    });\n    chart();story();\n  }\n  function sync(){\n    you.p=pts(+P.value);document.getElementById('hn-po').textContent=you.p;P.setAttribute('aria-valuetext',you.p+' points');\n    you.age=+A.value;document.getElementById('hn-ao').textContent=you.age===0?'just now':ago(you.age);A.setAttribute('aria-valuetext',ago(you.age));\n    clock=+C.value;document.getElementById('hn-co').textContent=fmtH(clock);C.setAttribute('aria-valuetext',fmtH(clock));\n    render();\n  }\n  P.addEventListener('input',sync);A.addEventListener('input',sync);C.addEventListener('input',function(){stop();sync()});\n  U.addEventListener('click',function(){you.nourl=!you.nourl;U.setAttribute('aria-pressed',String(you.nourl));render()});\n  function setClock(t){C.value=Math.max(0,Math.min(24,Math.round(t*4)/4));sync()}\n  var dragging=false;\n  function fromEvent(e){var b=svg.getBoundingClientRect();return((e.clientX-b.left)/b.width*W-L)/(W-L-R)*24}\n  svg.addEventListener('pointerdown',function(e){dragging=true;stop();svg.setPointerCapture(e.pointerId);setClock(fromEvent(e))});\n  svg.addEventListener('pointermove',function(e){if(dragging)setClock(fromEvent(e))});\n  svg.addEventListener('pointerup',function(){dragging=false});\n  var raf=0,go=document.getElementById('hn-go'),ic=document.getElementById('hn-ic');\n  function stop(){if(raf){cancelAnimationFrame(raf);raf=0}ic.setAttribute('d','M5 3l12 7-12 7z');go.setAttribute('aria-label','Play the next 24 hours')}\n  go.addEventListener('click',function(){\n    if(raf){stop();return}\n    if(reduce){setClock(+C.value>=24?0:24);return}\n    var start=+C.value>=24?0:+C.value,t0=null;\n    ic.setAttribute('d','M5 3h3.5v14H5zM11.5 3H15v14h-3.5z');go.setAttribute('aria-label','Pause');\n    function step(ts){if(t0===null)t0=ts;var t=start+(ts-t0)/250;if(t>=24){setClock(24);stop();return}C.value=t;clock=t;document.getElementById('hn-co').textContent=fmtH(Math.round(t*4)/4);render();raf=requestAnimationFrame(step)}\n    raf=requestAnimationFrame(step);\n  });\n  window.addEventListener('resize',chart);\n  sync();\n})();\n</script>\n"
+    },
+    {
+      "kind": "prose",
+      "heading": "The gravity formula",
+      "body": "The HN FAQ says the basic algorithm divides points by a power of the time since a story was submitted [1]. In 2010 Paul Graham posted the code then running: points minus one, raised to 0.8, divided by the age in hours plus two, raised to a gravity of 1.8 [2][3][4]. The often quoted (P−1)/(T+2)^1.8 is the version he called close to the current one, but a little out of date [5]. Compare [[Reddit hot ranking]], which adds time instead of dividing by it.",
+      "sources": [
+        {
+          "url": "https://news.ycombinator.com/newsfaq.html",
+          "title": "Hacker News FAQ",
+          "quote": "The basic algorithm divides points by a power of the time since a story was submitted."
+        },
+        {
+          "url": "https://news.ycombinator.com/item?id=1781013",
+          "title": "Paul Graham's comment with the ranking code (Hacker News, October 2010)",
+          "quote": "gravity* 1.8 timebase* 120"
+        },
+        {
+          "url": "https://news.ycombinator.com/item?id=1781013",
+          "title": "Paul Graham's comment with the ranking code (Hacker News, October 2010)",
+          "quote": "(if (> base 0) (expt base .8) base)"
+        },
+        {
+          "url": "https://news.ycombinator.com/item?id=1781013",
+          "title": "Paul Graham's comment with the ranking code (Hacker News, October 2010)",
+          "quote": "(expt (/ (+ (item-age s) timebase*) 60) gravity)"
+        },
+        {
+          "url": "https://news.ycombinator.com/item?id=1781013",
+          "title": "Paul Graham's comment with the ranking code (Hacker News, October 2010)",
+          "quote": "That's close to the current version, but a little out of date."
+        }
+      ]
+    },
+    {
+      "kind": "prose",
+      "heading": "Penalties and flags",
+      "body": "Votes and age are not the whole story. The FAQ lists user flags, anti-abuse software, software that demotes overheated discussions, account or site weighting, and moderator action [1], and says you can't derive rank from votes and time alone [2]. In the 2010 code a post with no URL was multiplied by 0.4 [3], and a controversy factor was there, in Graham's words, to recognize flamewars [4]. Karma does not help: posts by high-karma users do not rank higher [5].",
+      "sources": [
+        {
+          "url": "https://news.ycombinator.com/newsfaq.html",
+          "title": "Hacker News FAQ",
+          "quote": "Other factors affecting rank include user flags, anti-abuse software, software which demotes overheated discussions, account or site weighting, and moderator action."
+        },
+        {
+          "url": "https://news.ycombinator.com/newsfaq.html",
+          "title": "Hacker News FAQ",
+          "quote": "You can't derive rank from votes and time alone."
+        },
+        {
+          "url": "https://news.ycombinator.com/item?id=1781013",
+          "title": "Paul Graham's comment with the ranking code (Hacker News, October 2010)",
+          "quote": "(blank s!url) nourl-factor*"
+        },
+        {
+          "url": "https://news.ycombinator.com/item?id=1781013",
+          "title": "Paul Graham's comment with the ranking code (Hacker News, October 2010)",
+          "quote": "Its purpose is to recognize flamewars."
+        },
+        {
+          "url": "https://news.ycombinator.com/newsfaq.html",
+          "title": "Hacker News FAQ",
+          "quote": "Do posts by users with more karma rank higher? No."
+        }
+      ]
+    },
+    {
+      "kind": "prose",
+      "heading": "Show HN",
+      "body": "Show HN is for something you've made that other people can play with; blog posts, sign-up pages and newsletters are off topic [1][2]. Every Show HN appears on the shownew list, and once it clears a small points threshold it also appears on the show page in the top bar [3]. Asking friends to upvote is not ok [4], and HN penalizes or bans submissions, accounts and sites that do it [5].",
+      "sources": [
+        {
+          "url": "https://news.ycombinator.com/showhn.html",
+          "title": "Show HN Guidelines (Hacker News)",
+          "quote": "Show HN is for something you've made that other people can play with."
+        },
+        {
+          "url": "https://news.ycombinator.com/showhn.html",
+          "title": "Show HN Guidelines (Hacker News)",
+          "quote": "Off topic: blog posts, sign-up pages, newsletters, lists, and other reading material."
+        },
+        {
+          "url": "https://news.ycombinator.com/showhn.html",
+          "title": "Show HN Guidelines (Hacker News)",
+          "quote": "Once it clears a small points threshold, it will appear on the show page in the top bar."
+        },
+        {
+          "url": "https://news.ycombinator.com/showhn.html",
+          "title": "Show HN Guidelines (Hacker News)",
+          "quote": "Please don't ask friends to upvote or comment."
+        },
+        {
+          "url": "https://news.ycombinator.com/newsfaq.html",
+          "title": "Hacker News FAQ",
+          "quote": "We penalize or ban submissions, accounts, and sites that break this rule"
+        }
+      ]
+    },
+    {
+      "kind": "figure",
+      "heading": "The formula and a day of decay",
+      "body": "<style>\n.hf{box-sizing:border-box;max-width:1040px;margin:0 auto;font-family:var(--ow-font);color:var(--ow-fg);display:grid;gap:18px;grid-template-columns:1fr}\n@media (min-width:760px){.hf{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px;align-items:center}}\n.hf-eq{padding:18px;border-radius:16px;background:var(--ow-panel);border:1px solid var(--ow-line)}\n.hf-f{display:flex;flex-direction:column;align-items:center;font-family:var(--ow-mono);font-size:clamp(17px,4.4vw,24px);line-height:1.2}\n.hf-f .n,.hf-f .d{padding:4px 10px}\n.hf-f .d{border-top:2px solid var(--ow-fg)}\n.hf-f sup{font-size:.6em}\n.hf-f .g{color:var(--ow-accent);font-weight:700}\n.hf-notes{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:8px;font-size:14.5px;line-height:1.4;color:var(--ow-muted)}\n.hf-notes b{color:var(--ow-fg);font-family:var(--ow-mono);font-weight:600}\n.hf-h{margin:0 0 10px;font-size:13px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--ow-muted)}\n.hf ol{list-style:none;margin:0;padding:0;display:grid;gap:7px}\n.hf li{display:grid;grid-template-columns:44px minmax(0,1fr) 48px;align-items:center;gap:10px;font-size:14px}\n.hf .lb{color:var(--ow-muted);text-align:right;font-variant-numeric:tabular-nums}\n.hf .tr{height:14px;border-radius:99px;background:color-mix(in oklch,var(--ow-line) 70%,transparent);overflow:hidden}\n.hf .tr i{display:block;height:100%;border-radius:99px;background:var(--ow-accent)}\n.hf .pc{font-family:var(--ow-mono);font-variant-numeric:tabular-nums;font-size:13px}\n</style>\n<div class=\"hf\" role=\"img\" aria-label=\"The Hacker News ranking formula from Paul Graham's 2010 code, and how much of a story's score is left after 1 to 24 hours with no new votes\">\n  <div class=\"hf-eq\">\n    <div class=\"hf-f\"><span class=\"n\">(points &minus; 1)<sup>0.8</sup></span><span class=\"d\">(hours + 2)<sup class=\"g\">1.8</sup></span></div>\n    <ul class=\"hf-notes\">\n      <li><b>0.8</b> each extra point is worth a little less than the last</li>\n      <li><b>+2</b> the code adds 120 minutes (timebase) to every age</li>\n      <li><b>1.8</b> the gravity: how hard age pulls a story down</li>\n      <li><b>&times;0.4</b> text post with no URL, in the 2010 code</li>\n    </ul>\n  </div>\n  <div>\n    <p class=\"hf-h\">Score left with no new votes</p>\n    <ol><li><span class=\"lb\">now</span><span class=\"tr\"><i style=\"width:100.0%\"></i></span><span class=\"pc\">100%</span></li><li><span class=\"lb\">1 h</span><span class=\"tr\"><i style=\"width:48.2%\"></i></span><span class=\"pc\">48%</span></li><li><span class=\"lb\">2 h</span><span class=\"tr\"><i style=\"width:28.7%\"></i></span><span class=\"pc\">29%</span></li><li><span class=\"lb\">4 h</span><span class=\"tr\"><i style=\"width:13.8%\"></i></span><span class=\"pc\">14%</span></li><li><span class=\"lb\">8 h</span><span class=\"tr\"><i style=\"width:5.5%\"></i></span><span class=\"pc\">6%</span></li><li><span class=\"lb\">12 h</span><span class=\"tr\"><i style=\"width:3.0%\"></i></span><span class=\"pc\">3%</span></li><li><span class=\"lb\">24 h</span><span class=\"tr\"><i style=\"width:1.0%\"></i></span><span class=\"pc\">1.0%</span></li></ol>\n  </div>\n</div>"
+    }
+  ],
+  "data": {
+    "tags": [
+      "hacker-news",
+      "ranking",
+      "algorithm",
+      "time-decay"
+    ],
+    "facts": [
+      {
+        "label": "Gravity",
+        "value": "1.8"
+      },
+      {
+        "label": "Added to age",
+        "value": "2 hours (120 minutes)"
+      },
+      {
+        "label": "Points exponent (2010 code)",
+        "value": "0.8"
+      },
+      {
+        "label": "Post with no URL (2010 code)",
+        "value": "×0.4"
+      },
+      {
+        "label": "Karma",
+        "value": "Does not raise rank"
+      },
+      {
+        "label": "Code posted",
+        "value": "October 2010, by Paul Graham"
+      }
+    ],
+    "see": [
+      "Reddit hot ranking",
+      "PageRank",
+      "X recommendation algorithm",
+      "Bluesky custom feeds",
+      "LinkedIn feed ranking",
+      "tiktok-for-you-feed",
+      "Wilson score interval",
+      "Product Hunt ranking",
+      "Lobsters ranking",
+      "Show HN"
+    ]
+  }
+}

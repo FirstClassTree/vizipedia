@@ -1,0 +1,160 @@
+{
+  "title": "LinkedIn feed ranking",
+  "slug": "linkedin-feed-ranking",
+  "hue": 210,
+  "lede": "LinkedIn ranks your feed in two passes: a fast first pass gathers candidate posts, a second pass scores each one, favoring people you know and posts that start conversations.",
+  "sections": [
+    {
+      "kind": "experience",
+      "heading": "Send a post through both passes",
+      "body": "<style>\n.lf{box-sizing:border-box;max-width:1040px;margin:0 auto;font-family:var(--ow-font);color:var(--ow-fg);display:grid;gap:18px 28px;grid-template-columns:minmax(0,1fr)}\n.lf *{box-sizing:border-box}\n@media (min-width:760px){.lf{grid-template-columns:minmax(0,.95fr) minmax(0,1.1fr);align-items:start}}\n.lf-q{margin:0 0 12px;font-size:18px;line-height:1.35;font-weight:650}\n.lf-h{margin:14px 0 6px;font-size:12.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ow-muted)}\n.lf-seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;padding:4px;border-radius:14px;background:color-mix(in oklch,var(--ow-line) 55%,transparent)}\n.lf-seg button{appearance:none;font:inherit;font-size:14px;font-weight:600;line-height:1.2;min-height:44px;padding:6px 6px;border:0;border-radius:10px;background:transparent;color:var(--ow-muted);cursor:pointer;touch-action:manipulation}\n.lf-seg button[aria-checked=\"true\"]{background:var(--ow-panel);color:var(--ow-fg);box-shadow:0 1px 3px color-mix(in oklch,var(--ow-fg) 18%,transparent)}\n.lf-chips{display:flex;flex-wrap:wrap;gap:8px;margin:0;padding:0;list-style:none}\n.lf-chip{appearance:none;font:inherit;font-size:15px;line-height:1.2;display:inline-flex;align-items:center;gap:8px;min-height:42px;padding:8px 13px;border-radius:999px;border:1.5px solid var(--ow-line);background:var(--ow-panel);color:var(--ow-fg);cursor:pointer;touch-action:manipulation}\n.lf-chip:hover{border-color:color-mix(in oklch,var(--ow-accent) 55%,var(--ow-line))}\n.lf-chip[aria-pressed=\"true\"]{background:var(--ow-accent);border-color:var(--ow-accent);color:var(--ow-accent-ink)}\n.lf-tick{width:16px;height:16px;flex:none;border-radius:50%;border:1.5px solid currentColor;opacity:.55}\n.lf-chip[aria-pressed=\"true\"] .lf-tick{opacity:1;background:currentColor;box-shadow:inset 0 0 0 3px var(--ow-accent)}\n.lf-dw{padding:12px 14px;border-radius:14px;border:1px solid var(--ow-line);background:var(--ow-panel)}\n.lf-dw label{display:flex;justify-content:space-between;gap:10px;font-size:15.5px;font-weight:650}\n.lf-dw output{font-variant-numeric:tabular-nums;font-weight:700;color:var(--ow-accent);white-space:nowrap}\n.lf-track{position:relative;margin-top:8px}\n.lf-skip{position:absolute;left:0;top:7px;height:14px;border-radius:99px;background:repeating-linear-gradient(135deg,color-mix(in oklch,oklch(0.62 0.19 25) 35%,transparent) 0 4px,transparent 4px 8px);pointer-events:none}\n.lf-dw input{position:relative;width:100%;margin:0;height:28px;accent-color:var(--ow-accent);cursor:pointer;background:transparent}\n.lf-dw p{margin:4px 0 0;font-size:13.5px;line-height:1.4;color:var(--ow-muted)}\n.lf-dw p b{color:oklch(0.6 0.19 25)}\n.lf button:focus-visible,.lf input:focus-visible{outline:3px solid color-mix(in oklch,var(--ow-accent) 55%,transparent);outline-offset:2px}\n.lf-right{border-radius:18px;background:var(--ow-panel);border:1px solid var(--ow-line);padding:16px}\n.lf-pipe{display:grid;grid-template-columns:minmax(0,1fr) 18px minmax(0,1fr) 18px minmax(0,1fr);align-items:stretch;gap:4px;margin:0 0 14px}\n.lf-st{position:relative;padding:8px 10px;border-radius:12px;border:1.5px solid var(--ow-line);background:var(--ow-bg);transition:border-color .25s,box-shadow .25s}\n.lf-st b{display:block;font-size:13.5px;line-height:1.2}\n.lf-st small{display:block;font-size:12px;line-height:1.3;color:var(--ow-muted);margin-top:2px}\n.lf-st em{display:block;margin-top:6px;font-style:normal;font-size:13px;font-weight:700}\n.lf-st.ok em{color:oklch(0.6 0.15 150)}.lf-st.no em{color:oklch(0.6 0.19 25)}.lf-st.idle em{color:var(--ow-muted)}\n.lf-st.ok{border-color:color-mix(in oklch,oklch(0.6 0.15 150) 55%,var(--ow-line))}\n.lf-st.no{border-color:color-mix(in oklch,oklch(0.6 0.19 25) 55%,var(--ow-line))}\n.lf-st.pulse{box-shadow:0 0 0 4px color-mix(in oklch,var(--ow-accent) 30%,transparent)}\n.lf-arr{align-self:center;justify-self:center;width:10px;height:10px;border-top:2px solid var(--ow-muted);border-right:2px solid var(--ow-muted);transform:rotate(45deg);opacity:.6}\n.lf-feed{position:relative;margin:0;padding:0;list-style:none}\n.lf-card{position:absolute;left:0;right:0;top:0;height:54px;display:grid;grid-template-columns:24px 34px minmax(0,1fr) 44px;align-items:center;gap:10px;padding:6px 12px 6px 8px;border-radius:12px;background:var(--ow-bg);border:1px solid var(--ow-line);transition:transform .5s cubic-bezier(.2,.8,.2,1),opacity .3s}\n.lf-card.me{box-shadow:0 0 0 2px var(--ow-accent);z-index:1}\n.lf-card.out{opacity:.55;border-style:dashed;box-shadow:0 0 0 2px color-mix(in oklch,oklch(0.6 0.19 25) 60%,transparent)}\n.lf-rank{font-size:18px;font-weight:750;text-align:center;font-variant-numeric:tabular-nums;color:var(--ow-muted)}\n.lf-card.me .lf-rank{color:var(--ow-accent)}\n.lf-av{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:750;color:var(--ow-panel);background:var(--c)}\n.lf-av.sq{border-radius:8px}\n.lf-txt{min-width:0}\n.lf-txt b{display:block;font-size:14.5px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}\n.lf-txt small{display:block;font-size:12.5px;line-height:1.3;color:var(--ow-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}\n.lf-sc{font-family:var(--ow-mono);font-size:13px;text-align:right;color:var(--ow-muted);font-variant-numeric:tabular-nums}\n.lf-why{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 0;padding:0;list-style:none;min-height:28px}\n.lf-why li{font-size:12.5px;font-weight:650;padding:4px 9px;border-radius:999px;background:color-mix(in oklch,oklch(0.6 0.15 150) 14%,transparent);color:oklch(0.55 0.14 150)}\n.lf-why li.neg{background:color-mix(in oklch,oklch(0.6 0.19 25) 14%,transparent);color:oklch(0.58 0.18 25)}\n.lf-key{margin:10px 0 0;font-size:12.5px;line-height:1.45;color:var(--ow-muted)}\n.lf-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}\n@media (max-width:440px){.lf-right{padding:12px}.lf-pipe{grid-template-columns:minmax(0,1fr) 12px minmax(0,1fr) 12px minmax(0,1fr)}.lf-st{padding:7px 7px}.lf-st small{display:none}.lf-card{grid-template-columns:20px 30px minmax(0,1fr) 38px;gap:8px}.lf-av{width:30px;height:30px}.lf-seg button{font-size:13px}}\n@media (prefers-reduced-motion:reduce){.lf-card,.lf-st{transition:none}}\n</style>\n<div class=\"lf\">\n  <div>\n    <p class=\"lf-q\" id=\"lf-q\">Build a post, then watch where LinkedIn's two ranking passes put it in your feed.</p>\n    <p class=\"lf-h\" id=\"lf-wh\">Who posted it?</p>\n    <div class=\"lf-seg\" role=\"radiogroup\" aria-labelledby=\"lf-wh\">\n      <button type=\"button\" role=\"radio\" aria-checked=\"true\" data-a=\"conn\">Your connection</button>\n      <button type=\"button\" role=\"radio\" aria-checked=\"false\" data-a=\"page\">A page you follow</button>\n      <button type=\"button\" role=\"radio\" aria-checked=\"false\" data-a=\"none\">Not in your network</button>\n    </div>\n    <p class=\"lf-h\" id=\"lf-th\">What else is true?</p>\n    <ul class=\"lf-chips\" role=\"group\" aria-labelledby=\"lf-th\">\n      <li><button class=\"lf-chip\" type=\"button\" aria-pressed=\"false\" data-t=\"comment\"><span class=\"lf-tick\" aria-hidden=\"true\"></span>A connection commented</button></li>\n      <li><button class=\"lf-chip\" type=\"button\" aria-pressed=\"false\" data-t=\"question\"><span class=\"lf-tick\" aria-hidden=\"true\"></span>It asks a question</button></li>\n      <li><button class=\"lf-chip\" type=\"button\" aria-pressed=\"false\" data-t=\"tag\"><span class=\"lf-tick\" aria-hidden=\"true\"></span>Hashtag you follow</button></li>\n    </ul>\n    <p class=\"lf-h\">Dwell time</p>\n    <div class=\"lf-dw\">\n      <label for=\"lf-d\"><span>People pause on it for</span><output id=\"lf-do\" for=\"lf-d\">8 sec</output></label>\n      <div class=\"lf-track\"><span class=\"lf-skip\" id=\"lf-skip\"></span><input id=\"lf-d\" type=\"range\" min=\"1\" max=\"20\" step=\"1\" value=\"8\" aria-describedby=\"lf-dn\"></div>\n      <p id=\"lf-dn\">Long enough to count as read.</p>\n    </div>\n  </div>\n  <section class=\"lf-right\" aria-labelledby=\"lf-fh\">\n    <div class=\"lf-pipe\">\n      <div class=\"lf-st\" id=\"lf-s1\"><b>1 · First pass</b><small>Tens of thousands of candidates, a fast ranker keeps the top</small><em></em></div>\n      <span class=\"lf-arr\" aria-hidden=\"true\"></span>\n      <div class=\"lf-st\" id=\"lf-s2\"><b>2 · Second pass</b><small>Predicts clicks, reactions, comments, shares and skips</small><em></em></div>\n      <span class=\"lf-arr\" aria-hidden=\"true\"></span>\n      <div class=\"lf-st\" id=\"lf-s3\"><b>3 · Your feed</b><small>Final order, top first</small><em></em></div>\n    </div>\n    <p class=\"lf-h\" id=\"lf-fh\" style=\"margin-top:0\">Your feed</p>\n    <ol class=\"lf-feed\" id=\"lf-feed\"></ol>\n    <ul class=\"lf-why\" id=\"lf-why\" aria-label=\"Why it scored this way\"></ul>\n    <p class=\"lf-key\">Scores are illustrative. LinkedIn describes the two passes and its signals but publishes no weights or skip threshold.</p>\n    <p class=\"lf-sr\" aria-live=\"polite\" id=\"lf-live\"></p>\n  </section>\n</div>\n<script>\n(function(){\n  var AUTH={conn:{name:'Dana Levi',who:'1st · your connection',ini:'DL',g:.8,s:.3,sq:false},page:{name:'Northwind Labs',who:'Page you follow',ini:'NL',g:.55,s:.2,sq:true},none:{name:'Sam Ortiz',who:'Not connected',ini:'SO',g:.15,s:.12,sq:false}};\n  var OTHERS=[\n    {name:'Priya Shah',what:'Started a new job · 1st',ini:'PS',s:.62,c:'oklch(0.6 0.13 150)'},\n    {name:'Contoso Group',what:'Industry report · page you follow',ini:'CG',s:.47,c:'oklch(0.58 0.12 260)',sq:true},\n    {name:'Lee Wong',what:'Team photo · 1st',ini:'LW',s:.38,c:'oklch(0.62 0.13 60)'},\n    {name:'Trending',what:'Recommended for you',ini:'#',s:.26,c:'oklch(0.58 0.05 250)',sq:true}\n  ];\n  var TSKIP=3,CUT=.4,ROW=60,state={a:'conn',comment:false,question:false,tag:false,dwell:8};\n  var feed=document.getElementById('lf-feed'),why=document.getElementById('lf-why'),live=document.getElementById('lf-live');\n  var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;\n  function card(p,me){var li=document.createElement('li');li.className='lf-card'+(me?' me':'');\n    li.innerHTML='<span class=\"lf-rank\"></span><span class=\"lf-av'+(p.sq?' sq':'')+'\" style=\"--c:'+(p.c||'var(--ow-accent)')+'\">'+p.ini+'</span><span class=\"lf-txt\"><b></b><small></small></span><span class=\"lf-sc\"></span>';\n    li.querySelector('b').textContent=p.name;li.querySelector('small').textContent=p.what||'';feed.appendChild(li);return li}\n  OTHERS.forEach(function(p){p.el=card(p,false)});\n  var mine={el:card({name:'',ini:'',sq:false},true)};\n  feed.style.height=(5*ROW-6)+'px';\n  function compute(){\n    var A=AUTH[state.a],g=A.g,s=A.s,why=[];\n    if(state.comment){g+=.35;s+=.15}\n    if(state.tag){g+=.3;s+=.06}\n    if(state.question)s+=.12;\n    var skipped=state.dwell<TSKIP;\n    if(skipped)s-=.2;else s+=Math.min(.15,(state.dwell-TSKIP)*.012);\n    if(state.a==='conn')why.push(['Someone you know',1]);\n    if(state.a==='page')why.push(['Page you follow',1]);\n    if(state.a==='none')why.push(['Outside your network',-1]);\n    if(state.comment)why.push(['Connection joined the conversation',1]);\n    if(state.question)why.push(['Invites replies',1]);\n    if(state.tag)why.push(['Matches your interests',1]);\n    why.push(skipped?['Likely skipped (short dwell)',-1]:['Holds attention',1]);\n    if(g<CUT)why=[['Outside your network',-1],['No one you know engaged',-1]];\n    return{pass:g>=CUT,s:Math.max(.02,Math.min(.95,s)),why:why,g:g};\n  }\n  var s1=document.getElementById('lf-s1'),s2=document.getElementById('lf-s2'),s3=document.getElementById('lf-s3'),timers=[];\n  function setSt(el,cls,txt){el.className='lf-st '+cls;el.querySelector('em').textContent=txt}\n  function render(animate){\n    var r=compute(),A=AUTH[state.a];\n    mine.el.querySelector('b').textContent=A.name;mine.el.querySelector('small').textContent=A.who+(state.question?' · asks a question':'');\n    var av=mine.el.querySelector('.lf-av');av.textContent=A.ini;av.classList.toggle('sq',A.sq);\n    var list=OTHERS.map(function(p){return{p:p,s:p.s}});\n    if(r.pass)list.push({p:mine,s:r.s});\n    list.sort(function(a,b){return b.s-a.s});\n    list.forEach(function(x,i){x.p.el.style.transform='translateY('+(i*ROW)+'px)';x.p.el.querySelector('.lf-rank').textContent=i+1;x.p.el.querySelector('.lf-sc').textContent=Math.round(x.s*100);x.p.el.classList.remove('out')});\n    var pos=list.findIndex(function(x){return x.p===mine});\n    if(!r.pass){mine.el.style.transform='translateY('+(4*ROW)+'px)';mine.el.classList.add('out');mine.el.querySelector('.lf-rank').textContent='×';mine.el.querySelector('.lf-sc').textContent='';OTHERS[3].el.style.transform='translateY('+(3*ROW)+'px)';}\n    // when the post makes it, the feed shows five rows; otherwise four plus the dropped post\n    feed.style.height=(5*ROW-6)+'px';\n    timers.forEach(clearTimeout);timers=[];\n    var steps=[\n      function(){setSt(s1,r.pass?'ok pulse':'no pulse',r.pass?'✓ Kept':'✗ Not kept')},\n      function(){s1.classList.remove('pulse');if(r.pass)setSt(s2,'ok pulse','Score '+Math.round(r.s*100));else setSt(s2,'idle','Never scored')},\n      function(){s2.classList.remove('pulse');if(r.pass)setSt(s3,'ok pulse','#'+(pos+1)+' of 5');else setSt(s3,'no','Not shown')},\n      function(){s3.classList.remove('pulse')}\n    ];\n    if(animate&&!reduce){setSt(s1,'idle','…');setSt(s2,'idle','');setSt(s3,'idle','');steps.forEach(function(f,i){timers.push(setTimeout(f,120+i*260))})}\n    else{steps.forEach(function(f){f()});[s1,s2,s3].forEach(function(e){e.classList.remove('pulse')})}\n    why.innerHTML='';r.why.forEach(function(w){var li=document.createElement('li');li.textContent=(w[1]>0?'+ ':'− ')+w[0];if(w[1]<0)li.className='neg';why.appendChild(li)});\n    if(animate)live.textContent=r.pass?'Kept by the first pass, scored '+Math.round(r.s*100)+', lands at number '+(pos+1)+' of 5.':'Not kept by the first pass, so it never reaches your feed.';\n  }\n  document.querySelectorAll('.lf-seg button').forEach(function(b){b.addEventListener('click',function(){\n    state.a=b.dataset.a;document.querySelectorAll('.lf-seg button').forEach(function(x){x.setAttribute('aria-checked',String(x===b));x.tabIndex=x===b?0:-1});render(true)});\n    b.addEventListener('keydown',function(e){var bs=[].slice.call(document.querySelectorAll('.lf-seg button')),i=bs.indexOf(b);\n      if(e.key==='ArrowRight'||e.key==='ArrowDown'){e.preventDefault();bs[(i+1)%3].focus();bs[(i+1)%3].click()}\n      if(e.key==='ArrowLeft'||e.key==='ArrowUp'){e.preventDefault();bs[(i+2)%3].focus();bs[(i+2)%3].click()}});\n    b.tabIndex=b.getAttribute('aria-checked')==='true'?0:-1;});\n  document.querySelectorAll('.lf-chip').forEach(function(b){b.addEventListener('click',function(){var k=b.dataset.t;state[k]=!state[k];b.setAttribute('aria-pressed',String(state[k]));render(true)})});\n  var d=document.getElementById('lf-d'),dout=document.getElementById('lf-do'),dn=document.getElementById('lf-dn'),skip=document.getElementById('lf-skip');\n  function dw(animate){state.dwell=+d.value;dout.textContent=state.dwell+' sec';d.setAttribute('aria-valuetext',state.dwell+' seconds');\n    dn.innerHTML=state.dwell<TSKIP?'<b>Skip zone.</b> Viewers scroll past, and LinkedIn lowers the score of posts it predicts will be skipped.':state.dwell>=12?'People stop and read. Longer dwell is a richer signal than a click.':'Long enough to count as read. The striped start of the track is the skip zone.';\n    render(animate)}\n  function placeSkip(){skip.style.width=((TSKIP-1.5)/19*100)+'%'}\n  d.addEventListener('input',function(){dw(true)});\n  placeSkip();dw(false);\n})();\n</script>\n"
+    },
+    {
+      "heading": "Two passes",
+      "body": "When a member opens LinkedIn there are tens of thousands of candidate posts; a first-pass candidate generation layer uses an efficient, lightweight ranker to pick the top ones [1]. LinkedIn describes the system as two passes, the first gathering content from your network and the second ranking it [2]. The second pass predicts actions such as clicks, reactions, comments and shares, combines them into one weighted score, and sorts posts by it [3]. Compare [[Instagram ranking]] and [[TikTok For You feed]].",
+      "sources": [
+        {
+          "url": "https://www.linkedin.com/blog/engineering/feed/understanding-feed-dwell-time",
+          "title": "Understanding dwell time to improve LinkedIn feed ranking (LinkedIn Engineering, May 2020)",
+          "quote": "A first-pass, candidate generation layer applies an efficient and lightweight ranking algorithm to identify the top candidate updates to show her."
+        },
+        {
+          "url": "https://www.linkedin.com/blog/engineering/feed/homepage-feed-multi-task-learning-using-tensorflow",
+          "title": "Homepage feed multi-task learning using TensorFlow (LinkedIn Engineering, June 2021)",
+          "quote": "The LinkedIn homepage feed ranking system consists of two passes"
+        },
+        {
+          "url": "https://www.linkedin.com/blog/engineering/feed/understanding-feed-dwell-time",
+          "title": "Understanding dwell time to improve LinkedIn feed ranking (LinkedIn Engineering, May 2020)",
+          "quote": "The outputs of these models are then synthesized into a single score using a weighted linear combination"
+        }
+      ]
+    },
+    {
+      "heading": "People you know, talking about things you care about",
+      "body": "LinkedIn's product team sums up the feed with the saying \"People You Know, Talking About Things You Care About\", and says the more valuable the conversation, the higher a post goes [1][2]. Ranking starts from your connections, then weighs who you have interacted with directly [3]. A post can also reach you because a connection liked, commented on or shared it, and a connection's post using a hashtag you follow gets an extra boost [4][5]. Its advice to posters: post things that encourage a response [6].",
+      "sources": [
+        {
+          "url": "https://news.linkedin.com/2019/January/what-s-in-your-linkedin-feed--people-you-know--talking-about-thi",
+          "title": "What's in your LinkedIn Feed: People You Know, Talking About Things You Care About (LinkedIn Pressroom, June 2019)",
+          "quote": "This is, simply, how we think about the LinkedIn Feed."
+        },
+        {
+          "url": "https://news.linkedin.com/2019/January/what-s-in-your-linkedin-feed--people-you-know--talking-about-thi",
+          "title": "What's in your LinkedIn Feed: People You Know, Talking About Things You Care About (LinkedIn Pressroom, June 2019)",
+          "quote": "The more valuable the conversation, the higher in your feed the post will be."
+        },
+        {
+          "url": "https://news.linkedin.com/2019/January/what-s-in-your-linkedin-feed--people-you-know--talking-about-thi",
+          "title": "What's in your LinkedIn Feed: People You Know, Talking About Things You Care About (LinkedIn Pressroom, June 2019)",
+          "quote": "We start with your connections, and the assumption that they are people you know, and want to talk with."
+        },
+        {
+          "url": "https://news.linkedin.com/2019/January/what-s-in-your-linkedin-feed--people-you-know--talking-about-thi",
+          "title": "What's in your LinkedIn Feed: People You Know, Talking About Things You Care About (LinkedIn Pressroom, June 2019)",
+          "quote": "Or because a connection liked, commented, or shared someone else's post."
+        },
+        {
+          "url": "https://news.linkedin.com/2019/January/what-s-in-your-linkedin-feed--people-you-know--talking-about-thi",
+          "title": "What's in your LinkedIn Feed: People You Know, Talking About Things You Care About (LinkedIn Pressroom, June 2019)",
+          "quote": "If a connection uses a hashtag you also happen to follow, it gets an extra boost!"
+        },
+        {
+          "url": "https://news.linkedin.com/2019/January/what-s-in-your-linkedin-feed--people-you-know--talking-about-thi",
+          "title": "What's in your LinkedIn Feed: People You Know, Talking About Things You Care About (LinkedIn Pressroom, June 2019)",
+          "quote": "Post things that encourage a response."
+        }
+      ]
+    },
+    {
+      "kind": "figure",
+      "heading": "The two passes, step by step",
+      "body": "<style>\n.lp{box-sizing:border-box;max-width:1040px;margin:0 auto;font-family:var(--ow-font);color:var(--ow-fg)}\n.lp ol{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1.15fr 1.5fr 1fr;gap:16px;align-items:stretch}\n.lp li{position:relative;display:flex;flex-direction:column;justify-content:flex-start;padding:14px 16px;border-radius:14px;background:var(--ow-panel);border:1px solid var(--ow-line)}\n.lp li:not(:last-child)::after{content:\"\";position:absolute;top:50%;right:-13px;width:9px;height:9px;margin-top:-5px;border-top:2px solid var(--ow-muted);border-right:2px solid var(--ow-muted);transform:rotate(45deg);opacity:.6}\n.lp .n{font-size:26px;font-weight:750;line-height:1.1;font-variant-numeric:tabular-nums;color:var(--ow-accent)}\n.lp b{display:block;font-size:16px;line-height:1.3;margin:4px 0}\n.lp span{display:block;font-size:14px;line-height:1.45;color:var(--ow-muted)}\n.lp .f{margin-top:8px;font-family:var(--ow-mono);font-size:13px;line-height:1.6;color:var(--ow-fg);padding:8px 10px;border-radius:10px;background:color-mix(in oklch,var(--ow-accent) 9%,transparent)}\n.lp .f i{font-style:normal;color:oklch(0.6 0.19 25)}\n.lp .bar{display:flex;flex-direction:column;gap:4px;margin-top:8px}\n.lp .bar i{display:block;height:12px;border-radius:4px;background:var(--ow-accent)}\n.lp li:first-child .bar i{background:color-mix(in oklch,var(--ow-muted) 45%,transparent)}\n@media (max-width:760px){.lp ol{grid-template-columns:1fr 1fr}.lp li:nth-child(2)::after{display:none}}\n@media (max-width:460px){.lp ol{grid-template-columns:1fr;gap:12px}.lp li:not(:last-child)::after{display:none}}\n</style>\n<div class=\"lp\" role=\"img\" aria-label=\"LinkedIn feed ranking in two passes: tens of thousands of candidate posts, a lightweight first pass keeps the top candidates, a second pass scores each by predicted actions and their effect on the network minus the chance of a skip, and the feed is sorted by that score.\">\n  <ol>\n    <li><span class=\"n\">10,000s</span><b>Candidate posts</b><span>From connections, follows, groups, and what your network liked or commented on</span><span class=\"bar\" aria-hidden=\"true\"><i style=\"width:100%\"></i></span></li>\n    <li><span class=\"n\">1</span><b>First pass</b><span>A fast, lightweight ranker gathers the top candidates</span><span class=\"bar\" aria-hidden=\"true\"><i style=\"width:38%\"></i></span></li>\n    <li><span class=\"n\">2</span><b>Second pass</b><span>Scores each post, one at a time</span><span class=\"f\">P(click, react, comment, share)<br>+ downstream value to your network<br>+ upstream value to the author<br><i>− P(skip)</i></span></li>\n    <li><span class=\"n\">3</span><b>Your feed</b><span>Sorted by that single score, top first</span><span class=\"bar\" aria-hidden=\"true\"><i style=\"width:80%\"></i><i style=\"width:55%\"></i><i style=\"width:30%\"></i></span></li>\n  </ol>\n</div>\n",
+      "sources": [
+        {
+          "url": "https://www.linkedin.com/blog/engineering/feed/understanding-feed-dwell-time",
+          "title": "Understanding dwell time to improve LinkedIn feed ranking (LinkedIn Engineering, May 2020)",
+          "quote": "there are tens of thousands of candidate posts or updates that could potentially show up in her feed"
+        },
+        {
+          "url": "https://www.linkedin.com/blog/engineering/feed/understanding-feed-dwell-time",
+          "title": "Understanding dwell time to improve LinkedIn feed ranking (LinkedIn Engineering, May 2020)",
+          "quote": "Finally, this score is used to perform a point-wise ranking of all the candidate updates."
+        }
+      ]
+    },
+    {
+      "heading": "Dwell time and skipped posts",
+      "body": "Clicks and reactions are rare for people who mostly read, so LinkedIn also measures dwell time, which on the feed starts when at least half of a post is visible [1][2]. Posts viewed only briefly with no action count as skipped, and a P(skip) model now lowers every post's score in proportion to its predicted chance of being skipped [3]. LinkedIn's Help Center adds that the feed mixes your network's posts with recommended content labeled Trending, Recommended for you or Popular [4]. See also [[Watch time]].",
+      "sources": [
+        {
+          "url": "https://www.linkedin.com/blog/engineering/feed/understanding-feed-dwell-time",
+          "title": "Understanding dwell time to improve LinkedIn feed ranking (LinkedIn Engineering, May 2020)",
+          "quote": "Click and viral actions can be rare, especially for passive consumers of the feed."
+        },
+        {
+          "url": "https://www.linkedin.com/blog/engineering/feed/understanding-feed-dwell-time",
+          "title": "Understanding dwell time to improve LinkedIn feed ranking (LinkedIn Engineering, May 2020)",
+          "quote": "which starts measuring when at least half of a feed update is visible as a member scrolls through their feed"
+        },
+        {
+          "url": "https://www.linkedin.com/blog/engineering/feed/understanding-feed-dwell-time",
+          "title": "Understanding dwell time to improve LinkedIn feed ranking (LinkedIn Engineering, May 2020)",
+          "quote": "reducing the score of all updates by an amount proportional to the predicted P(skip) value"
+        },
+        {
+          "url": "https://www.linkedin.com/help/linkedin/answer/a522870",
+          "title": "Visibility and impact of your social activity on the LinkedIn feed (LinkedIn Help)",
+          "quote": "You may see recommended content with labels such as Trending, Recommended for you, or Popular"
+        }
+      ]
+    }
+  ],
+  "data": {
+    "tags": [
+      "linkedin",
+      "feed",
+      "ranking",
+      "algorithm",
+      "reach"
+    ],
+    "facts": [
+      {
+        "label": "Ranking passes",
+        "value": "Two: gather, then rank"
+      },
+      {
+        "label": "Candidates per visit",
+        "value": "Tens of thousands"
+      },
+      {
+        "label": "Guiding saying",
+        "value": "People You Know, Talking About Things You Care About"
+      },
+      {
+        "label": "Dwell time starts",
+        "value": "When half of a post is visible"
+      },
+      {
+        "label": "Skipped posts",
+        "value": "Score lowered by predicted P(skip)"
+      },
+      {
+        "label": "Post format",
+        "value": "Not favored by the algorithm (LinkedIn, 2019)"
+      }
+    ],
+    "see": [
+      "instagram-ranking",
+      "tiktok-for-you-feed",
+      "X recommendation algorithm",
+      "Watch time",
+      "PageRank",
+      "Hacker News ranking",
+      "Dwell time",
+      "Engagement bait",
+      "LinkedIn creator mode",
+      "Knowledge graph"
+    ]
+  }
+}

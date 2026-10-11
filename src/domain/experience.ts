@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 /**
  * An experience is agent-written code that runs on a public page, so it is hostile by
  * assumption. It gets a document of its own, in a frame with no origin and no network:
@@ -6,6 +8,10 @@
  * Two layers say the same thing on purpose. The frame's `sandbox` attribute covers the
  * page that embeds it; the response's own `Content-Security-Policy: sandbox` covers
  * someone opening the experience URL directly.
+ *
+ * A figure is the same document with one difference: none of the agent's code runs. Its
+ * policy names the wiki's own height script by hash and nothing else, so a figure can be
+ * shown to a reader the moment it is written, by anyone.
  */
 
 export type Surface = "stage" | "sheet";
@@ -29,9 +35,22 @@ export const EXPERIENCE_CSP = [
   "base-uri 'none'",
 ].join("; ");
 
-export const EXPERIENCE_HEADERS: Readonly<Record<string, string>> = {
+/** The one thing a frame says to its host: how tall it is. */
+const HEIGHT_SCRIPT = `(function () {
+  var last = 0;
+  function tell() {
+    var height = Math.ceil(document.documentElement.getBoundingClientRect().height);
+    if (height !== last) { last = height; parent.postMessage({ ow: "height", height: height }, "*"); }
+  }
+  addEventListener("load", tell);
+  if (window.ResizeObserver) new ResizeObserver(tell).observe(document.documentElement);
+})();`;
+
+export const FIGURE_CSP = EXPERIENCE_CSP.replace("script-src 'unsafe-inline'", `script-src 'sha256-${createHash("sha256").update(HEIGHT_SCRIPT).digest("base64")}'`);
+
+const headers = (csp: string): Readonly<Record<string, string>> => ({
   "Content-Type": "text/html; charset=utf-8",
-  "Content-Security-Policy": EXPERIENCE_CSP,
+  "Content-Security-Policy": csp,
   // An allowlist with nothing on it: no connection of any kind may leave this document,
   // including the two CSP does not cover, WebRTC and the frame navigating itself away.
   // Chromium 152+ enforces it; other browsers ignore the header and rely on the CSP above.
@@ -42,7 +61,10 @@ export const EXPERIENCE_HEADERS: Readonly<Record<string, string>> = {
   "Permissions-Policy":
     "accelerometer=(), autoplay=(), camera=(), clipboard-read=(), clipboard-write=(), display-capture=(), fullscreen=(), geolocation=(), gyroscope=(), microphone=(), midi=(), payment=(), usb=(), xr-spatial-tracking=()",
   "X-Robots-Tag": "noindex",
-};
+});
+
+export const EXPERIENCE_HEADERS = headers(EXPERIENCE_CSP);
+export const FIGURE_HEADERS = headers(FIGURE_CSP);
 
 /** The colors an experience draws with, so it belongs to the page that holds it. */
 export function surfaceTokens(hue: number, surface: Surface): Record<string, string> {
@@ -84,6 +106,8 @@ export interface ExperienceContext {
   readonly page: { slug: string; title: string };
   /** The page's data section, parsed; null when the page has none. */
   readonly data: unknown;
+  /** A figure: the fragment is shown, and no script of its own runs. */
+  readonly still?: boolean;
 }
 
 /** The whole document the frame loads: the wiki's shell around the agent's fragment. */
@@ -104,19 +128,10 @@ export function experienceDocument(context: ExperienceContext): string {
 html,body{margin:0;background:transparent;color:var(--ow-fg);font:16px/1.5 var(--ow-font);-webkit-font-smoothing:antialiased}
 body{padding:clamp(14px,3.2vw,26px)}
 button,input,select{font:inherit;color:inherit}
+img,svg,canvas,video{max-width:100%}
 </style>
-<script>
-window.OW = Object.freeze(${ow});
-(function () {
-  var last = 0;
-  function tell() {
-    var height = Math.ceil(document.documentElement.getBoundingClientRect().height);
-    if (height !== last) { last = height; parent.postMessage({ ow: "height", height: height }, "*"); }
-  }
-  addEventListener("load", tell);
-  if (window.ResizeObserver) new ResizeObserver(tell).observe(document.documentElement);
-})();
-</script>
+${context.still ? "" : `<script>window.OW = Object.freeze(${ow});</script>`}
+<script>${HEIGHT_SCRIPT}</script>
 </head>
 <body>
 ${context.fragment}

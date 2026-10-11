@@ -1,0 +1,180 @@
+{
+  "title": "Instagram Reels",
+  "slug": "instagram-reels",
+  "hue": 15,
+  "lede": "Reels is Instagram's feed of short videos, mostly from accounts you don't follow, ranked by how likely you are to reshare, finish and like each one.",
+  "sections": [
+    {
+      "kind": "experience",
+      "heading": "Make a reel, watch its reach",
+      "body": "<style>\n.rl{font-family:var(--ow-font);color:var(--ow-fg);font-size:16px;line-height:1.4;max-width:1040px;margin:0 auto;display:grid;grid-template-columns:200px minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start;-webkit-font-smoothing:antialiased}\n.rl *{box-sizing:border-box}\n.rl-h{margin:0 0 6px;font-size:13px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--ow-muted)}\n.rl-phone{position:relative;width:100%;max-width:200px;aspect-ratio:9/16;border-radius:22px;padding:6px;background:oklch(0.2 0.02 300);box-shadow:0 10px 30px -12px rgb(0 0 0/.45)}\n.rl-phone svg{display:block;width:100%;height:100%;border-radius:17px}\n.rl-ctrl{display:flex;flex-direction:column;gap:12px}\n.rl-ctrl fieldset{margin:0;padding:0;border:0;min-width:0}\n.rl-ctrl legend{padding:0;margin:0 0 5px;font-size:14px;font-weight:650}\n.rl-seg{display:flex;gap:3px;padding:3px;border:1px solid var(--ow-line);border-radius:12px;background:var(--ow-panel)}\n.rl-seg button{flex:1 1 0;min-width:0;appearance:none;border:0;margin:0;min-height:40px;padding:4px 6px;border-radius:9px;background:transparent;color:var(--ow-fg);font:inherit;font-size:14px;font-weight:600;cursor:pointer;touch-action:manipulation;transition:background-color .18s,color .18s}\n.rl-seg button:hover{background:color-mix(in oklch,var(--ow-accent) 10%,transparent)}\n.rl-seg button[aria-checked=\"true\"]{background:var(--ow-accent);color:var(--ow-accent-ink)}\n.rl-seg button:focus-visible,.rl-len input:focus-visible{outline:2px solid var(--ow-accent);outline-offset:2px}\n.rl-len{display:flex;align-items:center;gap:10px}\n.rl-len input{flex:1;min-width:0;height:28px;accent-color:var(--ow-accent);cursor:pointer}\n.rl-len output{font-family:var(--ow-mono);font-size:15px;font-weight:700;min-width:46px;text-align:right}\n.rl-out{display:flex;flex-direction:column;gap:12px}\n.rl-big{display:flex;align-items:baseline;gap:8px}\n.rl-big b{font-family:var(--ow-mono);font-size:34px;line-height:1;font-variant-numeric:tabular-nums}\n.rl-big span{font-size:14px;color:var(--ow-muted)}\n.rl-bar{position:relative;display:flex;height:22px;border-radius:7px;background:color-mix(in oklch,var(--ow-line) 55%,transparent);overflow:hidden}\n.rl-bar i{display:block;height:100%;transition:width .45s cubic-bezier(.2,.8,.2,1)}\n.rl-f{background:var(--ow-muted)}\n.rl-n{background:var(--ow-accent)}\n.rl-key{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;color:var(--ow-muted)}\n.rl-key span::before{content:\"\";display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px;background:var(--k)}\n.rl-why{padding:12px 14px;border-radius:12px;border:1px solid var(--ow-line);background:var(--ow-panel);min-height:112px}\n.rl-why .sig{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;background:color-mix(in oklch,var(--ow-accent) 18%,transparent);color:var(--ow-fg)}\n.rl-why .d{display:inline-block;margin-left:6px;font-family:var(--ow-mono);font-weight:700;font-size:14px}\n.rl-why .up{color:oklch(0.6 0.15 150)}.rl-why .dn{color:oklch(0.6 0.18 25)}\n.rl-why p{margin:8px 0 0;font-size:15px}\n.rl-list{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}\n.rl-list li{font-size:13px;padding:3px 9px;border-radius:99px;border:1px solid var(--ow-line)}\n.rl-list li.dn{border-color:oklch(0.6 0.18 25);color:oklch(0.6 0.18 25)}\n.rl-list li.up{border-color:oklch(0.6 0.15 150);color:oklch(0.6 0.15 150)}\n.rl-note{margin:0;font-size:13px;color:var(--ow-muted)}\n.rl-scene{transition:filter .3s}\n@media (max-width:900px){.rl{grid-template-columns:170px minmax(0,1fr)}.rl-out{grid-column:1/-1}}\n@media (max-width:520px){.rl{grid-template-columns:minmax(0,1fr);gap:16px}.rl-phone{max-width:150px;margin:0 auto}.rl-seg button{font-size:13px;padding:4px 3px}}\n@media (prefers-reduced-motion:reduce){.rl-bar i,.rl-seg button,.rl-scene{transition:none}}\n</style>\n<div class=\"rl\">\n  <div aria-hidden=\"true\">\n    <div class=\"rl-phone\">\n      <svg viewBox=\"0 0 180 320\" id=\"rl-svg\">\n        <defs>\n          <linearGradient id=\"rl-sky\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"oklch(0.72 0.12 30)\"/><stop offset=\"1\" stop-color=\"oklch(0.55 0.16 330)\"/></linearGradient>\n          <filter id=\"rl-blur\"><feGaussianBlur stdDeviation=\"2.6\"/></filter>\n        </defs>\n        <g id=\"rl-scene\" class=\"rl-scene\">\n          <rect width=\"180\" height=\"320\" fill=\"url(#rl-sky)\"/>\n          <circle cx=\"120\" cy=\"110\" r=\"34\" fill=\"oklch(0.92 0.12 85)\"/>\n          <path d=\"M0 230 L50 170 L95 215 L130 180 L180 225 L180 320 L0 320Z\" fill=\"oklch(0.38 0.08 300)\"/>\n          <path d=\"M0 260 L60 225 L120 262 L180 240 L180 320 L0 320Z\" fill=\"oklch(0.28 0.06 300)\"/>\n          <circle cx=\"62\" cy=\"248\" r=\"9\" fill=\"oklch(0.95 0.02 80)\"/><rect x=\"55\" y=\"256\" width=\"14\" height=\"26\" rx=\"5\" fill=\"oklch(0.95 0.02 80)\"/>\n        </g>\n        <g id=\"rl-border\"><rect x=\"0\" y=\"0\" width=\"180\" height=\"58\" fill=\"#000\"/><rect x=\"0\" y=\"262\" width=\"180\" height=\"58\" fill=\"#000\"/></g>\n        <g id=\"rl-text\"><rect x=\"14\" y=\"92\" width=\"152\" height=\"120\" rx=\"8\" fill=\"rgb(255 255 255/.94)\"/><g fill=\"oklch(0.3 0.03 300)\"><rect x=\"26\" y=\"106\" width=\"128\" height=\"9\" rx=\"3\"/><rect x=\"26\" y=\"122\" width=\"112\" height=\"9\" rx=\"3\"/><rect x=\"26\" y=\"138\" width=\"124\" height=\"9\" rx=\"3\"/><rect x=\"26\" y=\"154\" width=\"96\" height=\"9\" rx=\"3\"/><rect x=\"26\" y=\"170\" width=\"118\" height=\"9\" rx=\"3\"/><rect x=\"26\" y=\"186\" width=\"70\" height=\"9\" rx=\"3\"/></g></g>\n        <g id=\"rl-wm\"><rect x=\"84\" y=\"20\" width=\"86\" height=\"22\" rx=\"6\" fill=\"rgb(0 0 0/.55)\"/><circle cx=\"96\" cy=\"31\" r=\"6\" fill=\"oklch(0.8 0.15 190)\"/><text x=\"106\" y=\"35\" font-size=\"10\" font-weight=\"700\" fill=\"#fff\" font-family=\"system-ui,sans-serif\">@reupload</text></g>\n        <g id=\"rl-res\"><rect x=\"10\" y=\"20\" width=\"36\" height=\"18\" rx=\"5\" fill=\"rgb(0 0 0/.55)\"/><text x=\"28\" y=\"33\" text-anchor=\"middle\" font-size=\"10\" font-weight=\"700\" fill=\"#fff\" font-family=\"system-ui,sans-serif\" id=\"rl-rest\">1080p</text></g>\n        <g font-family=\"system-ui,sans-serif\" fill=\"#fff\">\n          <text x=\"12\" y=\"282\" font-size=\"11\" font-weight=\"700\">@you</text>\n          <g id=\"rl-aud\"><path d=\"M14 299v-8l6-2v8\" stroke=\"#fff\" stroke-width=\"1.6\" fill=\"none\"/><circle cx=\"13\" cy=\"300\" r=\"2\" /><circle cx=\"19\" cy=\"298\" r=\"2\"/><text x=\"26\" y=\"302\" font-size=\"9.5\" id=\"rl-audt\">Trending audio</text></g>\n          <g id=\"rl-mute\"><path d=\"M152 287h5l6-5v16l-6-5h-5z\"/><path d=\"M166 285l7 9M173 285l-7 9\" stroke=\"#fff\" stroke-width=\"1.8\"/></g>\n        </g>\n        <rect x=\"10\" y=\"309\" width=\"160\" height=\"3\" rx=\"1.5\" fill=\"rgb(255 255 255/.35)\"/><rect x=\"10\" y=\"309\" width=\"54\" height=\"3\" rx=\"1.5\" fill=\"#fff\"/>\n        <text x=\"170\" y=\"304\" text-anchor=\"end\" font-size=\"9\" fill=\"#fff\" font-family=\"ui-monospace,monospace\" id=\"rl-dur\">0:30</text>\n      </svg>\n    </div>\n  </div>\n  <div class=\"rl-ctrl\">\n    <p class=\"rl-h\">Make a reel</p>\n    <fieldset><legend id=\"l-src\">Source</legend><div class=\"rl-seg\" role=\"radiogroup\" aria-labelledby=\"l-src\" data-k=\"src\"><button type=\"button\" role=\"radio\" data-v=\"orig\">Original</button><button type=\"button\" role=\"radio\" data-v=\"repost\">Repost + watermark</button></div></fieldset>\n    <fieldset><legend id=\"l-aud\">Audio</legend><div class=\"rl-seg\" role=\"radiogroup\" aria-labelledby=\"l-aud\" data-k=\"aud\"><button type=\"button\" role=\"radio\" data-v=\"trend\">Trending</button><button type=\"button\" role=\"radio\" data-v=\"own\">Own sound</button><button type=\"button\" role=\"radio\" data-v=\"mute\">Muted</button></div></fieldset>\n    <fieldset><legend id=\"l-res\">Resolution</legend><div class=\"rl-seg\" role=\"radiogroup\" aria-labelledby=\"l-res\" data-k=\"res\"><button type=\"button\" role=\"radio\" data-v=\"hd\">1080p</button><button type=\"button\" role=\"radio\" data-v=\"low\">Low-res</button></div></fieldset>\n    <fieldset><legend id=\"l-look\">Look</legend><div class=\"rl-seg\" role=\"radiogroup\" aria-labelledby=\"l-look\" data-k=\"look\"><button type=\"button\" role=\"radio\" data-v=\"full\">Full frame</button><button type=\"button\" role=\"radio\" data-v=\"border\">Borders</button><button type=\"button\" role=\"radio\" data-v=\"text\">Mostly text</button></div></fieldset>\n    <fieldset><legend><label for=\"rl-l\">Length</label></legend><div class=\"rl-len\"><input id=\"rl-l\" type=\"range\" min=\"0\" max=\"5\" step=\"1\" value=\"1\"><output id=\"rl-lo\" for=\"rl-l\">0:30</output></div></fieldset>\n  </div>\n  <div class=\"rl-out\">\n    <p class=\"rl-h\">Predicted reach</p>\n    <div class=\"rl-big\"><b id=\"rl-num\">0</b><span>accounts reached (illustrative)</span></div>\n    <div class=\"rl-bar\" role=\"img\" id=\"rl-bar\" aria-label=\"\"><i class=\"rl-f\" id=\"rl-bf\"></i><i class=\"rl-n\" id=\"rl-bn\"></i></div>\n    <div class=\"rl-key\"><span style=\"--k:var(--ow-muted)\">Followers</span><span style=\"--k:var(--ow-accent)\">Non-followers, via recommendation</span></div>\n    <div class=\"rl-why\" aria-live=\"polite\" id=\"rl-why\"></div>\n    <ul class=\"rl-list\" id=\"rl-list\" aria-label=\"What is moving reach now\"></ul>\n    <p class=\"rl-note\">Assumes 1,000 followers see it. Instagram names these signals but publishes no weights, so the sizes of the moves are made up; their direction is Instagram's.</p>\n  </div>\n</div>\n<script>\n(function(){\n  var LENS=[['0:15',15],['0:30',30],['1:00',60],['1:30',90],['3:00',180],['5:00',300]];\n  var state={src:'orig',aud:'own',res:'hd',look:'full',len:1};\n  // Each trait multiplies reach to non-followers; followers still see it in their feeds. Weights are illustrative.\n  var FX={\n    src:{orig:[1],repost:[.15,'Less visible: reposts and watermarks','Instagram aims to make reels already posted on Instagram, and watermarked reels, less visible. Since 2024 an account that mostly reposts others’ reels is not recommended at all.']},\n    aud:{own:[1,'Information about the reel: audio','The audio track is one of the signals about the reel. Your own sound is fine; it is simply not riding a trend.'],\n         trend:[1.3,'Information about the reel: audio','Instagram ranks the audio track with the reel, and says it uses the popularity of trends, detected by audio and hashtags, to decide how to deliver reels that join them.'],\n         mute:[.45,'Less visible: muted reels','Instagram names muted reels among those it makes less visible.']},\n    res:{hd:[1,'Information about the reel: visuals','Instagram tells creators to upload the highest resolution possible.'],low:[.5,'Less visible: low resolution','Instagram names low-resolution reels first among those it makes less visible.']},\n    look:{full:[1,'Information about the reel: visuals','The visuals are read as part of the reel itself.'],border:[.6,'Less visible: borders','Reels that contain borders are on Instagram’s list of reels it makes less visible.'],text:[.5,'Less visible: mostly text','Reels that are majority text are on Instagram’s list of reels it makes less visible.']}\n  };\n  var LABEL={src:{orig:'Original',repost:'Repost + watermark'},aud:{own:'Own sound',trend:'Trending audio',mute:'Muted'},res:{hd:'1080p',low:'Low-res'},look:{full:'Full frame',border:'Borders',text:'Mostly text'}};\n  var BASE_F=1000,BASE_N=6000,MAX=BASE_F+BASE_N*1.3,shown=0,last=null,reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;\n  function $(id){return document.getElementById(id)}\n  function nonFollowerMult(){\n    if(LENS[state.len][1]>180)return 0;\n    var m=1;['src','aud','res','look'].forEach(function(k){m*=FX[k][state[k]][0]});return m;\n  }\n  function fmt(n){return Math.round(n/10)*10>=1000?(Math.round(n/100)/10).toFixed(1).replace(/\\.0$/,'')+'K':String(Math.round(n/10)*10)}\n  function count(to){\n    if(reduce){$('rl-num').textContent=fmt(to);shown=to;return}\n    var from=shown,t0=null;shown=to;\n    function step(t){if(!t0)t0=t;var p=Math.min(1,(t-t0)/450),e=1-Math.pow(1-p,3);$('rl-num').textContent=fmt(from+(to-from)*e);if(p<1)requestAnimationFrame(step)}\n    requestAnimationFrame(step);\n  }\n  function scene(){\n    $('rl-wm').style.display=state.src==='repost'?'':'none';\n    $('rl-scene').setAttribute('filter',state.res==='low'?'url(#rl-blur)':'');\n    $('rl-rest').textContent=state.res==='low'?'360p':'1080p';\n    $('rl-border').style.display=state.look==='border'?'':'none';\n    $('rl-text').style.display=state.look==='text'?'':'none';\n    $('rl-mute').style.display=state.aud==='mute'?'':'none';\n    $('rl-aud').style.display=state.aud==='mute'?'none':'';\n    $('rl-audt').textContent=state.aud==='trend'?'Trending audio':'Original audio';\n    $('rl-dur').textContent=LENS[state.len][0];$('rl-lo').textContent=LENS[state.len][0];\n    $('rl-l').setAttribute('aria-valuetext',LENS[state.len][0]+' long');\n  }\n  function why(k,before,after){\n    var box=$('rl-why'),d=after-before,dd=d===0?'':'<span class=\"d '+(d>0?'up':'dn')+'\">'+(d>0?'▲ +':'▼ −')+fmt(Math.abs(d))+'</span>';\n    var sig,text;\n    if(k==='len'){\n      var long=LENS[state.len][1]>180;\n      sig=long?'Not recommended: over 3 minutes':'Length: 3 minutes or less';\n      text=long?'Instagram recommends videos to accounts that do not follow you only when they are 3 minutes or less. Your followers can still see it.':'Up to 3 minutes a reel can be recommended. Within that, Instagram names no best length; the reel’s length is one input among many.';\n    }else if(k){var f=FX[k][state[k]];sig=f[1]||'Original content';text=f[2]||'Original reels are the ones Instagram wants to recommend; it wants credit and reach to go to the original creator.'}\n    else{sig='Start here';text='Change one trait at a time and watch the accent bar: that is reach from people who do not follow you, the part Reels ranking decides.'}\n    box.innerHTML='<span class=\"sig\">'+sig+'</span>'+dd+'<p>'+text+'</p>';\n  }\n  function list(){\n    var items=[];\n    ['src','aud','res','look'].forEach(function(k){var m=FX[k][state[k]][0];if(m!==1)items.push([m>1?'up':'dn',LABEL[k][state[k]]])});\n    if(LENS[state.len][1]>180)items.push(['dn','Over 3 min']);\n    $('rl-list').innerHTML=items.length?items.map(function(i){return '<li class=\"'+i[0]+'\">'+(i[0]==='up'?'▲ ':'▼ ')+i[1]+'</li>'}).join(''):'<li>No trait is holding it back</li>';\n  }\n  function render(k){\n    var before=last;\n    var n=BASE_N*nonFollowerMult(),total=BASE_F+n;\n    $('rl-bf').style.width=(BASE_F/MAX*100)+'%';$('rl-bn').style.width=(n/MAX*100)+'%';\n    $('rl-bar').setAttribute('aria-label','About '+fmt(total)+' accounts: '+fmt(BASE_F)+' followers and '+fmt(n)+' non-followers');\n    count(total);scene();list();why(k,before===null?total:before,total);last=total;\n  }\n  Array.prototype.forEach.call(document.querySelectorAll('.rl-seg'),function(g){\n    var k=g.getAttribute('data-k'),bs=Array.prototype.slice.call(g.querySelectorAll('button'));\n    function sync(){bs.forEach(function(b){var on=b.getAttribute('data-v')===state[k];b.setAttribute('aria-checked',on?'true':'false');b.tabIndex=on?0:-1})}\n    bs.forEach(function(b,i){\n      b.addEventListener('click',function(){if(state[k]===b.getAttribute('data-v'))return;state[k]=b.getAttribute('data-v');sync();render(k)});\n      b.addEventListener('keydown',function(e){var j=null;if(e.key==='ArrowRight'||e.key==='ArrowDown')j=(i+1)%bs.length;else if(e.key==='ArrowLeft'||e.key==='ArrowUp')j=(i+bs.length-1)%bs.length;if(j!==null){e.preventDefault();bs[j].focus();bs[j].click()}});\n    });\n    sync();\n  });\n  $('rl-l').addEventListener('input',function(){state.len=Number(this.value);render('len')});\n  render(null);\n})();\n</script>\n",
+      "sources": [
+        {
+          "url": "https://about.instagram.com/blog/announcements/instagram-ranking-explained",
+          "title": "Instagram Ranking Explained (Instagram, 2023)",
+          "quote": "such as low-resolution or watermarked reels, reels that are muted or contain borders, reels that are majority text"
+        },
+        {
+          "url": "https://creators.instagram.com/faq?locale=en_US",
+          "title": "Instagram for Creators: Frequently Asked Questions",
+          "quote": "We recommend videos to unconnected audiences that are 3 minutes or less"
+        }
+      ]
+    },
+    {
+      "kind": "prose",
+      "heading": "What Reels ranks on",
+      "body": "Roughly in order, Instagram ranks reels on your activity, your history with the poster, information about the reel such as its audio, visuals and popularity, and information about the poster such as followers [1][2][3]. Its most important predictions are whether you will reshare a reel, watch it to the end, like it, and open its audio page [4]. A light model picks about 100 reels, which are then ordered by a relevance score [5]. Compare the [[TikTok For You feed]] and [[Watch time]].",
+      "sources": [
+        {
+          "url": "https://about.instagram.com/blog/announcements/instagram-ranking-explained",
+          "title": "Instagram Ranking Explained (Instagram, 2023)",
+          "quote": "The most important signals, roughly in order of importance, are: Your activity"
+        },
+        {
+          "url": "https://about.instagram.com/blog/announcements/instagram-ranking-explained",
+          "title": "Instagram Ranking Explained (Instagram, 2023)",
+          "quote": "These are signals about the content within the video such as the audio track or visuals in the video, as well as popularity"
+        },
+        {
+          "url": "https://about.instagram.com/blog/announcements/instagram-ranking-explained",
+          "title": "Instagram Ranking Explained (Instagram, 2023)",
+          "quote": "We consider popularity signals such as number of followers or level of engagement"
+        },
+        {
+          "url": "https://about.instagram.com/blog/announcements/instagram-ranking-explained",
+          "title": "Instagram Ranking Explained (Instagram, 2023)",
+          "quote": "The most important predictions we make are how likely you are to reshare a reel, watch a reel all the way through, like it, and go to the audio page"
+        },
+        {
+          "url": "https://transparency.meta.com/features/explaining-ranking/ig-reels-chaining/",
+          "title": "Instagram Reels Chaining AI system (Meta Transparency Center, updated 2025)",
+          "quote": "the system calculates a relevance score for about 100 reels and puts them in order by this score"
+        }
+      ]
+    },
+    {
+      "kind": "prose",
+      "heading": "What gets demoted",
+      "body": "Instagram aims to make some reels less visible: low-resolution or watermarked reels, muted reels or ones with borders, reels that are mostly text, and reels already posted on Instagram [1]. Reels over 3 minutes are not recommended to people who don't follow you [2]. Its creator FAQ adds three tips: drop third-party watermarks, upload the highest resolution possible, and know that trending audio can affect distribution [3][4][5].",
+      "sources": [
+        {
+          "url": "https://about.instagram.com/blog/announcements/instagram-ranking-explained",
+          "title": "Instagram Ranking Explained (Instagram, 2023)",
+          "quote": "We aim to make certain reels less visible for other reasons, such as low-resolution or watermarked reels, reels that are muted or contain borders, reels that are majority text, or reels that have already been posted on Instagram"
+        },
+        {
+          "url": "https://creators.instagram.com/faq?locale=en_US",
+          "title": "Instagram for Creators: Frequently Asked Questions",
+          "quote": "We recommend videos to unconnected audiences that are 3 minutes or less"
+        },
+        {
+          "url": "https://creators.instagram.com/faq?locale=en_US",
+          "title": "Instagram for Creators: Frequently Asked Questions",
+          "quote": "The 3rd party watermark on your reel may be impacting its reach"
+        },
+        {
+          "url": "https://creators.instagram.com/faq?locale=en_US",
+          "title": "Instagram for Creators: Frequently Asked Questions",
+          "quote": "Upload the highest resolution possible"
+        },
+        {
+          "url": "https://creators.instagram.com/faq?locale=en_US",
+          "title": "Instagram for Creators: Frequently Asked Questions",
+          "quote": "Using trending audio can also impact distribution"
+        }
+      ]
+    },
+    {
+      "kind": "prose",
+      "heading": "Originality and views, 2024 to 2026",
+      "body": "In 2024 Instagram stopped recommending accounts that mostly repost others' reels, and in April 2026 it extended the rule to photos and carousels; an account becomes eligible again once most of what it posted over 30 days is original [1][2]. Instagram says 75% of its US recommendations now come from original posts [3]. In January 2025 its insights API added a views metric, and impressions and plays were retired for all versions on April 21, 2025 [4][5].",
+      "sources": [
+        {
+          "url": "https://creators.instagram.com/blog/rewarding-original-creators-on-instagram",
+          "title": "Rewarding original creators on Instagram (Instagram for Creators, 2026)",
+          "quote": "The same protections we introduced to reels in 2024 will now apply to photos and carousels"
+        },
+        {
+          "url": "https://creators.instagram.com/blog/rewarding-original-creators-on-instagram",
+          "title": "Rewarding original creators on Instagram (Instagram for Creators, 2026)",
+          "quote": "can become eligible again when most of their recently posted photos, carousels, and reels are considered original in a 30-day period"
+        },
+        {
+          "url": "https://creators.instagram.com/blog/rewarding-original-creators-on-instagram",
+          "title": "Rewarding original creators on Instagram (Instagram for Creators, 2026)",
+          "quote": "with 75% of recommendations in the US now coming from original posts"
+        },
+        {
+          "url": "https://developers.facebook.com/docs/instagram-platform/changelog/",
+          "title": "Instagram Platform changelog (Meta for Developers)",
+          "quote": "Introducing the following metrics field for media and user insights: * `views`"
+        },
+        {
+          "url": "https://developers.facebook.com/docs/instagram-platform/changelog/",
+          "title": "Instagram Platform changelog (Meta for Developers)",
+          "quote": "Will apply to all versions April 21, 2025._ * `clips_replays_count` on media insights * `ig_reels_aggregated_all_plays_count` on media insights * `impressions` on media and user insights * `plays` on media insights"
+        }
+      ]
+    },
+    {
+      "kind": "figure",
+      "heading": "Six kinds of reel Instagram shows less",
+      "body": "<style>\n.dm{font-family:var(--ow-font);color:var(--ow-fg);max-width:900px;margin:0 auto}\n.dm *{box-sizing:border-box}\n.dm ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}\n.dm li{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;font-size:14px;font-weight:600;line-height:1.25}\n.dm svg{display:block;width:100%;max-width:96px;height:auto;border-radius:12px;box-shadow:0 6px 16px -10px rgb(0 0 0/.5)}\n.dm .cap{margin:14px 0 0;font-size:14px;color:var(--ow-muted);text-align:center}\n@media (max-width:640px){.dm ul{grid-template-columns:repeat(3,minmax(0,1fr))}}\n</style>\n<div class=\"dm\" role=\"img\" aria-label=\"Six kinds of reel Instagram makes less visible: low resolution, watermarked, muted, with borders, mostly text, and already posted on Instagram.\">\n  <svg width=\"0\" height=\"0\" style=\"position:absolute\" aria-hidden=\"true\"><defs>\n    <linearGradient id=\"dm-g\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"oklch(0.72 0.12 30)\"/><stop offset=\"1\" stop-color=\"oklch(0.55 0.16 330)\"/></linearGradient>\n    <filter id=\"dm-b\"><feGaussianBlur stdDeviation=\"2.4\"/></filter>\n    <g id=\"dm-s\"><rect width=\"90\" height=\"160\" fill=\"url(#dm-g)\"/><circle cx=\"60\" cy=\"56\" r=\"17\" fill=\"oklch(0.92 0.12 85)\"/><path d=\"M0 115 L25 85 L48 108 L65 90 L90 112 L90 160 L0 160Z\" fill=\"oklch(0.38 0.08 300)\"/></g>\n  </defs></svg>\n  <ul>\n    <li><svg viewBox=\"0 0 90 160\"><use href=\"#dm-s\" filter=\"url(#dm-b)\"/><rect x=\"6\" y=\"8\" width=\"26\" height=\"13\" rx=\"4\" fill=\"rgb(0 0 0/.55)\"/><text x=\"19\" y=\"18\" text-anchor=\"middle\" font-size=\"8\" font-weight=\"700\" fill=\"#fff\" font-family=\"system-ui,sans-serif\">360p</text></svg>Low resolution</li>\n    <li><svg viewBox=\"0 0 90 160\"><use href=\"#dm-s\"/><rect x=\"40\" y=\"8\" width=\"44\" height=\"14\" rx=\"4\" fill=\"rgb(0 0 0/.55)\"/><circle cx=\"48\" cy=\"15\" r=\"4\" fill=\"oklch(0.8 0.15 190)\"/><text x=\"54\" y=\"18.5\" font-size=\"7.5\" font-weight=\"700\" fill=\"#fff\" font-family=\"system-ui,sans-serif\">@other</text></svg>Watermarked</li>\n    <li><svg viewBox=\"0 0 90 160\"><use href=\"#dm-s\"/><circle cx=\"45\" cy=\"80\" r=\"18\" fill=\"rgb(0 0 0/.5)\"/><path d=\"M35 75h5l7-6v22l-7-6h-5z\" fill=\"#fff\"/><path d=\"M50 74l8 12M58 74l-8 12\" stroke=\"#fff\" stroke-width=\"2.4\" stroke-linecap=\"round\"/></svg>Muted</li>\n    <li><svg viewBox=\"0 0 90 160\"><use href=\"#dm-s\"/><rect width=\"90\" height=\"38\" fill=\"#111\"/><rect y=\"122\" width=\"90\" height=\"38\" fill=\"#111\"/></svg>Borders</li>\n    <li><svg viewBox=\"0 0 90 160\"><use href=\"#dm-s\"/><rect x=\"8\" y=\"34\" width=\"74\" height=\"92\" rx=\"6\" fill=\"rgb(255 255 255/.95)\"/><g fill=\"oklch(0.3 0.03 300)\"><rect x=\"15\" y=\"44\" width=\"60\" height=\"6\" rx=\"2\"/><rect x=\"15\" y=\"56\" width=\"52\" height=\"6\" rx=\"2\"/><rect x=\"15\" y=\"68\" width=\"58\" height=\"6\" rx=\"2\"/><rect x=\"15\" y=\"80\" width=\"44\" height=\"6\" rx=\"2\"/><rect x=\"15\" y=\"92\" width=\"56\" height=\"6\" rx=\"2\"/><rect x=\"15\" y=\"104\" width=\"34\" height=\"6\" rx=\"2\"/></g></svg>Mostly text</li>\n    <li><svg viewBox=\"0 0 90 160\"><use href=\"#dm-s\"/><rect x=\"10\" y=\"62\" width=\"70\" height=\"36\" rx=\"8\" fill=\"rgb(0 0 0/.55)\"/><text x=\"45\" y=\"77\" text-anchor=\"middle\" font-size=\"9\" font-weight=\"700\" fill=\"#fff\" font-family=\"system-ui,sans-serif\">Already</text><text x=\"45\" y=\"89\" text-anchor=\"middle\" font-size=\"9\" font-weight=\"700\" fill=\"#fff\" font-family=\"system-ui,sans-serif\">on Instagram</text></svg>Already posted</li>\n  </ul>\n  <p class=\"cap\">The six kinds of reel Instagram says it aims to make less visible (Instagram, May 2023).</p>\n</div>\n",
+      "sources": [
+        {
+          "url": "https://about.instagram.com/blog/announcements/instagram-ranking-explained",
+          "title": "Instagram Ranking Explained (Instagram, 2023)",
+          "quote": "We aim to make certain reels less visible for other reasons, such as low-resolution or watermarked reels"
+        }
+      ]
+    }
+  ],
+  "data": {
+    "tags": [
+      "instagram",
+      "reels",
+      "short-video",
+      "ranking",
+      "reach"
+    ],
+    "facts": [
+      {
+        "label": "First signal",
+        "value": "Your activity"
+      },
+      {
+        "label": "Top prediction",
+        "value": "Reshare"
+      },
+      {
+        "label": "Longest reel recommended",
+        "value": "3 minutes"
+      },
+      {
+        "label": "Candidates scored",
+        "value": "About 100"
+      },
+      {
+        "label": "US recommendations that are original",
+        "value": "75% (2026)"
+      },
+      {
+        "label": "Impressions retired (API)",
+        "value": "April 21, 2025"
+      }
+    ],
+    "see": [
+      "instagram-ranking",
+      "Instagram Explore",
+      "tiktok-for-you-feed",
+      "YouTube Shorts recommendations",
+      "Watch time",
+      "Hook (short video)",
+      "Trial reels",
+      "Trending audio",
+      "Average view duration",
+      "Retention curve"
+    ]
+  }
+}

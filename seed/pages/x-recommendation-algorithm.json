@@ -1,0 +1,168 @@
+{
+  "title": "X recommendation algorithm",
+  "slug": "x-recommendation-algorithm",
+  "hue": 250,
+  "lede": "X's For You timeline gathers posts from accounts you follow and accounts you don't, then ranks them by how likely you are to reply, repost, like or linger.",
+  "sections": [
+    {
+      "kind": "experience",
+      "heading": "Score your post",
+      "body": "<style>\n.xr{--in:oklch(0.56 0.14 250);--oon:oklch(0.62 0.15 55);--neg:oklch(0.58 0.19 25);--row:52px;--gap:8px;box-sizing:border-box;max-width:1040px;margin:0 auto;display:grid;gap:20px;grid-template-columns:1fr;font-family:var(--ow-font);color:var(--ow-fg)}\n.xr *{box-sizing:border-box}\n@media (min-width:740px){.xr{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px;align-items:start}}\n.xr-q{margin:0 0 12px;font-size:18px;line-height:1.35;font-weight:600}\n.xr-post{border-radius:16px;border:1.5px solid var(--ow-accent);background:var(--ow-panel);padding:14px 16px;margin-bottom:14px}\n.xr-ph{display:flex;align-items:center;gap:10px;font-size:15px}\n.xr-av{width:34px;height:34px;border-radius:50%;flex:none;display:grid;place-items:center;font-weight:750;font-size:12px;color:#fff;background:var(--in)}\n.xr-ph b{font-weight:700}.xr-ph span{color:var(--ow-muted)}.xr-ph .xr-av{color:#fff}\n.xr-pt{margin:8px 0 0;font-size:16px;line-height:1.4}\n.xr-chips{display:flex;flex-wrap:wrap;gap:8px;margin:0;padding:0;list-style:none}\n.xr-chip{appearance:none;font:inherit;font-size:15px;line-height:1.2;display:inline-flex;align-items:center;gap:7px;min-height:44px;padding:8px 13px;border-radius:999px;border:1.5px solid var(--ow-line);background:var(--ow-panel);color:var(--ow-fg);cursor:pointer;touch-action:manipulation;transition:background .15s,border-color .15s,color .15s}\n.xr-chip:hover{border-color:color-mix(in oklch,var(--ow-accent) 55%,var(--ow-line))}\n.xr-chip:focus-visible,.xr-sw:focus-visible,.xr-reset:focus-visible{outline:3px solid color-mix(in oklch,var(--ow-accent) 60%,transparent);outline-offset:2px}\n.xr-chip[aria-pressed=\"true\"]{background:var(--ow-accent);border-color:var(--ow-accent);color:var(--ow-accent-ink)}\n.xr-chip[data-neg][aria-pressed=\"true\"]{background:var(--neg);border-color:var(--neg);color:#fff}\n.xr-w{font-family:var(--ow-mono);font-size:12.5px;font-weight:700;padding:2px 7px;border-radius:999px;background:color-mix(in oklch,currentColor 13%,transparent)}\n.xr-sw{appearance:none;font:inherit;margin-top:14px;width:100%;display:flex;align-items:center;gap:12px;min-height:52px;padding:10px 14px;border-radius:14px;border:1px dashed var(--ow-line);background:color-mix(in oklch,var(--ow-panel) 70%,transparent);color:var(--ow-fg);cursor:pointer;text-align:left;font-size:16px;font-weight:600}\n.xr-tog{width:44px;height:26px;flex:none;border-radius:99px;background:var(--oon);position:relative;transition:background .2s}\n.xr-tog::after{content:\"\";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s}\n.xr-sw[aria-checked=\"true\"] .xr-tog{background:var(--in)}\n.xr-sw[aria-checked=\"true\"] .xr-tog::after{transform:translateX(18px)}\n.xr-sw small{display:block;font-weight:500;font-size:14px;color:var(--ow-muted);margin-top:2px}\n.xr-sum{margin:14px 0 0;font-family:var(--ow-mono);font-size:13.5px;line-height:1.55;color:var(--ow-muted);overflow-wrap:anywhere}\n.xr-sum b{color:var(--ow-fg);font-size:15px}\n.xr-feed{border-radius:18px;background:var(--ow-panel);border:1px solid var(--ow-line);padding:18px}\n.xr-row{display:flex;justify-content:space-between;align-items:baseline;gap:12px}\n.xr-h{margin:0;font-size:13px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--ow-muted)}\n.xr-reset{appearance:none;font:inherit;font-size:14px;font-weight:600;color:var(--ow-muted);background:none;border:0;padding:6px 2px;cursor:pointer;text-decoration:underline;text-underline-offset:3px}\n.xr-split{display:flex;height:10px;border-radius:99px;overflow:hidden;margin:12px 0 6px;background:var(--ow-line)}\n.xr-split i{display:block;height:100%;transition:width .4s cubic-bezier(.2,.8,.2,1)}\n.xr-split .a{background:var(--in)}.xr-split .b{background:var(--oon)}\n.xr-leg{display:flex;justify-content:space-between;gap:10px;font-size:14px;color:var(--ow-muted);margin:0}\n.xr-leg span::before{content:\"\";display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;background:var(--c);vertical-align:-1px}\n.xr-stack{position:relative;margin:12px 0 0;padding:0;list-style:none;height:calc(var(--row)*7 + var(--gap)*6)}\n.xr-card{position:absolute;left:0;right:0;top:0;height:var(--row);display:grid;grid-template-columns:22px 30px minmax(0,1fr) auto;align-items:center;gap:10px;padding:6px 12px 6px 8px;border-radius:12px;background:var(--ow-bg);border:1px solid var(--ow-line);border-left:5px solid var(--c);transition:transform .45s cubic-bezier(.2,.8,.2,1),box-shadow .3s}\n.xr-card.me{box-shadow:0 0 0 2px var(--ow-accent)}\n.xr-rank{font-size:17px;font-weight:750;text-align:center;color:var(--ow-muted);font-variant-numeric:tabular-nums}\n.xr-card .xr-av{width:30px;height:30px;font-size:11px;color:#fff;background:var(--c)}\n.xr-tag{font-size:12.5px;font-weight:600;color:var(--c);margin-left:6px}\n@media (max-width:520px){.xr-tag{display:none}}\n.xr-m{min-width:0}\n.xr-n{display:block;font-size:15px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}\n.xr-bar{display:block;margin-top:5px;height:6px;border-radius:99px;background:color-mix(in oklch,var(--ow-line) 70%,transparent);overflow:hidden}\n.xr-bar i{display:block;height:100%;width:0;background:var(--c);border-radius:inherit;transition:width .45s cubic-bezier(.2,.8,.2,1)}\n.xr-sc{font-family:var(--ow-mono);font-size:13px;font-variant-numeric:tabular-nums;color:var(--ow-muted);text-align:right;min-width:3.6em}\n.xr-key{margin:12px 0 0;font-size:13.5px;line-height:1.45;color:var(--ow-muted)}\n.xr-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}\n@media (max-width:400px){.xr-feed{padding:14px}.xr-chip{font-size:14px;padding:8px 11px}.xr-q{font-size:17px}}\n@media (prefers-reduced-motion:reduce){.xr-card,.xr-bar i,.xr-split i,.xr-tog,.xr-tog::after,.xr-chip{transition:none}}\n</style>\n<div class=\"xr\">\n  <div>\n    <p class=\"xr-q\" id=\"xr-q\">The ranker predicts what this viewer will do with your post. Tap what it expects.</p>\n    <div class=\"xr-post\" aria-hidden=\"true\">\n      <div class=\"xr-ph\"><span class=\"xr-av\">YOU</span><b>Your post</b><span>· 2h</span></div>\n      <p class=\"xr-pt\">Shipped a tiny side project today. Ask me anything about how it works.</p>\n    </div>\n    <ul class=\"xr-chips\" role=\"group\" aria-labelledby=\"xr-q\">\n      <li><button class=\"xr-chip\" type=\"button\" aria-pressed=\"false\" data-s=\"reply\">Likely reply <span class=\"xr-w\">×5</span></button></li>\n      <li><button class=\"xr-chip\" type=\"button\" aria-pressed=\"false\" data-s=\"repost\">Likely repost <span class=\"xr-w\">×1</span></button></li>\n      <li><button class=\"xr-chip\" type=\"button\" aria-pressed=\"false\" data-s=\"like\">Likely like <span class=\"xr-w\">×0.5</span></button></li>\n      <li><button class=\"xr-chip\" type=\"button\" aria-pressed=\"false\" data-s=\"dwell\">Likely dwell <span class=\"xr-w\">×0.05</span></button></li>\n      <li><button class=\"xr-chip\" type=\"button\" aria-pressed=\"false\" data-s=\"ni\" data-neg>Likely \"not interested\" <span class=\"xr-w\">×−47.5</span></button></li>\n    </ul>\n    <button class=\"xr-sw\" type=\"button\" role=\"switch\" aria-checked=\"true\" id=\"xr-f\"><span class=\"xr-tog\" aria-hidden=\"true\"></span><span><span id=\"xr-fl\">Viewer follows you: in-network</span><small id=\"xr-fs\">Found by Thunder, no discount.</small></span></button>\n    <p class=\"xr-sum\" id=\"xr-sum\"></p>\n  </div>\n  <section class=\"xr-feed\" aria-labelledby=\"xr-fh\">\n    <div class=\"xr-row\"><p class=\"xr-h\" id=\"xr-fh\">This viewer's For You</p><button class=\"xr-reset\" type=\"button\" id=\"xr-r\">Reset</button></div>\n    <div class=\"xr-split\" aria-hidden=\"true\"><i class=\"a\" id=\"xr-sa\"></i><i class=\"b\" id=\"xr-sb\"></i></div>\n    <p class=\"xr-leg\"><span style=\"--c:var(--in)\" id=\"xr-li\">In-network 4</span><span style=\"--c:var(--oon)\" id=\"xr-lo\">Out-of-network 3</span></p>\n    <ol class=\"xr-stack\" id=\"xr-s\"></ol>\n    <p class=\"xr-key\">Weights are X's published defaults (param.rs, 2026). Probabilities and the out-of-network factor are illustrative.</p>\n    <p class=\"xr-sr\" aria-live=\"polite\" id=\"xr-live\"></p>\n  </section>\n</div>\n<script>\n(function(){\n  // Weights copied from xai-org/x-algorithm home-mixer/params/param.rs (Oct 2026).\n  var W={reply:5,repost:1,like:0.5,dwell:0.05,ni:-47.52};\n  // Illustrative predicted probabilities: low by default, high when the chip is on.\n  var LO={reply:.004,repost:.004,like:.04,dwell:.3,ni:.0006},HI={reply:.12,repost:.15,like:.4,dwell:.9,ni:.05};\n  var OON=0.75; // X says \"a factor below 1\"; its value is not in the repo.\n  var others=[\n    {n:'@maya',s:.52,inn:true,a:'M'},\n    {n:'@devnews',s:.44,inn:false,a:'D'},\n    {n:'@sam',s:.31,inn:true,a:'S'},\n    {n:'@astro_pics',s:.22,inn:false,a:'A'},\n    {n:'@lee',s:.12,inn:true,a:'L'},\n    {n:'@memes',s:.07,inn:false,a:'Ms'}\n  ];\n  var me={n:'Your post',me:true,inn:true,a:'YOU'},all=others.concat([me]);\n  var on={},stack=document.getElementById('xr-s'),live=document.getElementById('xr-live'),prev=null;\n  all.forEach(function(p){\n    var li=document.createElement('li');li.className='xr-card'+(p.me?' me':'');\n    li.innerHTML='<span class=\"xr-rank\"></span><span class=\"xr-av\" aria-hidden=\"true\">'+p.a+'</span><span class=\"xr-m\"><span class=\"xr-n\">'+p.n+'<span class=\"xr-tag\"></span></span><span class=\"xr-bar\"><i></i></span></span><span class=\"xr-sc\"></span>';\n    p.el=li;stack.appendChild(li);\n  });\n  function myScore(){\n    var raw=0,parts=[];\n    for(var k in W){var p=on[k]?HI[k]:LO[k];raw+=W[k]*p;parts.push(W[k]+'×'+p);}\n    return {raw:raw,parts:parts,final:me.inn?raw:raw*OON};\n  }\n  function fmt(x){return (x<0?'−':'')+Math.abs(x).toFixed(2)}\n  function render(announce){\n    var m=myScore();me.s=m.final;\n    all.forEach(function(p){p.el.style.setProperty('--c',p.inn?'var(--in)':'var(--oon)')});\n    var ranked=all.slice().sort(function(a,b){return b.s-a.s});\n    var h=stack.querySelector('.xr-card').offsetHeight,gap=8;\n    ranked.forEach(function(p,i){\n      p.el.style.transform='translateY('+(i*(h+gap))+'px)';\n      p.el.querySelector('.xr-rank').textContent=i+1;\n      p.el.querySelector('.xr-bar i').style.width=Math.max(2,Math.min(100,p.s/1.1*100))+'%';\n      p.el.querySelector('.xr-sc').textContent=fmt(p.s);\n      p.el.querySelector('.xr-tag').textContent=p.inn?'following':'recommended';\n    });\n    var ins=all.filter(function(p){return p.inn}).length;\n    document.getElementById('xr-sa').style.width=(ins/7*100)+'%';\n    document.getElementById('xr-sb').style.width=((7-ins)/7*100)+'%';\n    document.getElementById('xr-li').textContent='In-network '+ins;\n    document.getElementById('xr-lo').textContent='Out-of-network '+(7-ins);\n    var pos=ranked.indexOf(me)+1;\n    document.getElementById('xr-sum').innerHTML='score = Σ weight × P(action)<br><b>'+fmt(m.raw)+'</b>'+(me.inn?'':' × '+OON+' out-of-network = <b>'+fmt(m.final)+'</b>')+' → <b>#'+pos+'</b> of 7';\n    if(announce&&pos!==prev)live.textContent='Your post is now number '+pos+' of 7, score '+fmt(m.final)+'.';\n    prev=pos;\n  }\n  document.querySelectorAll('.xr-chip').forEach(function(b){\n    b.addEventListener('click',function(){var k=b.dataset.s;on[k]=!on[k];b.setAttribute('aria-pressed',String(on[k]));render(true);});\n  });\n  var sw=document.getElementById('xr-f');\n  sw.addEventListener('click',function(){\n    me.inn=!me.inn;sw.setAttribute('aria-checked',String(me.inn));\n    document.getElementById('xr-fl').textContent=me.inn?'Viewer follows you: in-network':'Viewer does not follow you: out-of-network';\n    document.getElementById('xr-fs').textContent=me.inn?'Found by Thunder, no discount.':'Found by Phoenix retrieval or SimClusters, score × a factor below 1.';\n    render(true);\n  });\n  document.getElementById('xr-r').addEventListener('click',function(){\n    on={};me.inn=true;sw.setAttribute('aria-checked','true');\n    document.querySelectorAll('.xr-chip').forEach(function(b){b.setAttribute('aria-pressed','false')});\n    document.getElementById('xr-fl').textContent='Viewer follows you: in-network';\n    document.getElementById('xr-fs').textContent='Found by Thunder, no discount.';\n    render(true);\n  });\n  window.addEventListener('resize',function(){render(false)});\n  render(false);\n})();\n</script>"
+    },
+    {
+      "heading": "Two halves of the pool",
+      "body": "For each request, Twitter said in 2023, it pulls about 1,500 candidate posts from people you follow (in-network) and people you don't (out-of-network) [1]. On average the timeline was half and half, though this varied by user [2], and the in-network search index supplied about 50% of posts [3]. The 2026 code keeps the split: recent posts from followed accounts, plus posts found by ML retrieval for accounts you don't follow [4].",
+      "sources": [
+        {
+          "url": "https://web.archive.org/web/20240609004425/https://blog.x.com/engineering/en_us/topics/open-source/2023/twitter-recommendation-algorithm",
+          "title": "Twitter's Recommendation Algorithm (Twitter Engineering blog, March 2023, archived)",
+          "quote": "For each request, we attempt to extract the best 1500 Tweets from a pool of hundreds of millions through these sources."
+        },
+        {
+          "url": "https://web.archive.org/web/20240609004425/https://blog.x.com/engineering/en_us/topics/open-source/2023/twitter-recommendation-algorithm",
+          "title": "Twitter's Recommendation Algorithm (Twitter Engineering blog, March 2023, archived)",
+          "quote": "the For You timeline consists of 50% In-Network Tweets and 50% Out-of-Network Tweets on average, though this may vary from user to user"
+        },
+        {
+          "url": "https://github.com/twitter/the-algorithm",
+          "title": "twitter/the-algorithm README (GitHub, 2023)",
+          "quote": "Find and rank In-Network posts. ~50% of posts come from this candidate source."
+        },
+        {
+          "url": "https://raw.githubusercontent.com/xai-org/x-algorithm/main/README.md",
+          "title": "xai-org/x-algorithm README (X For You feed algorithm, 2026)",
+          "quote": "It combines in-network content (from accounts the viewer follows) with out-of-network content (discovered through ML-based retrieval and other mechanisms)"
+        }
+      ]
+    },
+    {
+      "heading": "How a post is scored",
+      "body": "In 2023 the heavy ranker was a neural network of about 48 million parameters [1] whose ten outputs were each the probability of an engagement [2]. The 2026 code ranks with a transformer and adds the predictions up as weight times probability [3][4]. A reply is weighted 5.0 against 0.5 for a like [5][6], and X notes the weights multiply your own predicted probability, not raw counts [7]. Posts from accounts you don't follow are then multiplied by a factor below 1 [8].",
+      "sources": [
+        {
+          "url": "https://web.archive.org/web/20240609004425/https://blog.x.com/engineering/en_us/topics/open-source/2023/twitter-recommendation-algorithm",
+          "title": "Twitter's Recommendation Algorithm (Twitter Engineering blog, March 2023, archived)",
+          "quote": "Ranking is achieved with a ~48M parameter neural network that is continuously trained on Tweet interactions"
+        },
+        {
+          "url": "https://web.archive.org/web/20240609004425/https://blog.x.com/engineering/en_us/topics/open-source/2023/twitter-recommendation-algorithm",
+          "title": "Twitter's Recommendation Algorithm (Twitter Engineering blog, March 2023, archived)",
+          "quote": "outputs ten labels to give each Tweet a score, where each label represents the probability of an engagement"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/xai-org/x-algorithm/main/README.md",
+          "title": "xai-org/x-algorithm README (X For You feed algorithm, 2026)",
+          "quote": "filters content based on a variety of inputs, and ranks posts using a transformer model"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/xai-org/x-algorithm/main/README.md",
+          "title": "xai-org/x-algorithm README (X For You feed algorithm, 2026)",
+          "quote": "Final Score = Σ (weight_i × P(action_i))"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/xai-org/x-algorithm/main/home-mixer/params/param.rs",
+          "title": "xai-org/x-algorithm home-mixer/params/param.rs (ranking weights, 2026)",
+          "quote": "\"rust_home_mixer_reply_weight\", 5.0"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/xai-org/x-algorithm/main/home-mixer/params/param.rs",
+          "title": "xai-org/x-algorithm home-mixer/params/param.rs (ranking weights, 2026)",
+          "quote": "\"rust_home_mixer_favorite_weight\", 0.5"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/xai-org/x-algorithm/main/README.md",
+          "title": "xai-org/x-algorithm README (X For You feed algorithm, 2026)",
+          "quote": "The weights are a multiple on your own predicted probability of Liking, Reporting, etc, which is substantially driven by your own behavior."
+        },
+        {
+          "url": "https://raw.githubusercontent.com/xai-org/x-algorithm/main/README.md",
+          "title": "xai-org/x-algorithm README (X For You feed algorithm, 2026)",
+          "quote": "posts from accounts the viewer does not follow are multiplied by a factor below 1"
+        }
+      ]
+    },
+    {
+      "heading": "Filters and what X published",
+      "body": "Before scoring, the 2026 pipeline drops duplicates, posts older than 48 hours and the viewer's own posts [1]. Whether a post may be shown at all is a separate decision, made by visibility filtering [2]. Twitter first released its recommendation code in March 2023 [3]. xAI's newer repository adds the weights that blend predictions into a score [4], while some spam rules stay private to make the system harder to game [5].",
+      "sources": [
+        {
+          "url": "https://raw.githubusercontent.com/xai-org/x-algorithm/main/README.md",
+          "title": "xai-org/x-algorithm README (X For You feed algorithm, 2026)",
+          "quote": "duplicates across sources · older than 48 hours · the viewer's own"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/xai-org/x-algorithm/main/README.md",
+          "title": "xai-org/x-algorithm README (X For You feed algorithm, 2026)",
+          "quote": "Ranking decides the order. Visibility filtering decides whether a post can be shown at all."
+        },
+        {
+          "url": "https://web.archive.org/web/20240609004425/https://blog.x.com/engineering/en_us/topics/open-source/2023/twitter-recommendation-algorithm",
+          "title": "Twitter's Recommendation Algorithm (Twitter Engineering blog, March 2023, archived)",
+          "quote": "released the code powering our recommendations"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/xai-org/x-algorithm/main/README.md",
+          "title": "xai-org/x-algorithm README (X For You feed algorithm, 2026)",
+          "quote": "Adds key configuration parameters (including weights used to blend predicted action values into a score for a post)"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/xai-org/x-algorithm/main/README.md",
+          "title": "xai-org/x-algorithm README (X For You feed algorithm, 2026)",
+          "quote": "To reduce the risk of gaming to circumvent these systems, some rules aren't currently in this repository."
+        }
+      ]
+    },
+    {
+      "kind": "figure",
+      "heading": "The For You pipeline",
+      "body": "<style>\n.xp{--in:oklch(0.56 0.14 250);--oon:oklch(0.62 0.15 55);box-sizing:border-box;max-width:1040px;margin:0 auto;font-family:var(--ow-font);color:var(--ow-fg)}\n.xp *{box-sizing:border-box}\n.xp ol{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1.35fr repeat(4,minmax(0,1fr));gap:12px;counter-reset:xp}\n.xp li{position:relative;padding:14px 14px 16px;border-radius:14px;background:var(--ow-panel);border:1px solid var(--ow-line);counter-increment:xp}\n.xp li::before{content:counter(xp);display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--ow-accent);color:var(--ow-accent-ink);font-weight:750;font-size:14px;margin-bottom:10px}\n.xp li:not(:last-child)::after{content:\"\";position:absolute;top:28px;right:-10px;width:9px;height:9px;border-top:2px solid var(--ow-muted);border-right:2px solid var(--ow-muted);transform:rotate(45deg);opacity:.6}\n.xp b{display:block;font-size:16px;line-height:1.3;margin-bottom:6px}\n.xp span{display:block;font-size:14px;line-height:1.45;color:var(--ow-muted)}\n.xp .two{display:grid;grid-template-columns:1fr;gap:8px;margin-top:8px}\n.xp .src{border-radius:10px;padding:7px 10px;font-size:13.5px;line-height:1.35;color:var(--ow-fg);border-left:4px solid var(--c);background:color-mix(in oklch,var(--c) 10%,var(--ow-bg))}\n.xp .src em{display:block;font-style:normal;font-weight:700;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--c);margin-bottom:2px}\n.xp .foot{margin:12px 0 0;font-size:13.5px;color:var(--ow-muted)}\n@media (max-width:820px){.xp ol{grid-template-columns:1fr 1fr}.xp li:first-child{grid-column:1/-1}.xp li::after{display:none}}\n@media (max-width:820px){.xp .two{grid-template-columns:1fr 1fr}}@media (max-width:440px){.xp ol{grid-template-columns:1fr}.xp .two{grid-template-columns:1fr}}\n</style>\n<div class=\"xp\" role=\"img\" aria-label=\"X For You pipeline: candidate sources split into in-network (Thunder) and out-of-network (Phoenix retrieval, SimClusters, popular posts); filters such as 48-hour age, blocks, mutes and already seen; Phoenix scoring into a weighted sum; top K selection; visibility filtering and blending with ads.\">\n  <ol>\n    <li><b>Find candidates</b><span>Two halves, queried in parallel.</span>\n      <div class=\"two\"><div class=\"src\" style=\"--c:var(--in)\"><em>In-network</em>Thunder: recent posts from accounts you follow</div><div class=\"src\" style=\"--c:var(--oon)\"><em>Out-of-network</em>Phoenix retrieval, SimClusters, popular posts</div></div></li>\n    <li><b>Filter</b><span>Duplicates, older than 48 hours, blocked or muted authors, muted words, already seen.</span></li>\n    <li><b>Score</b><span>Phoenix predicts each action; a weighted sum makes one score. Out-of-network × a factor below 1.</span></li>\n    <li><b>Select</b><span>Sort by score, keep the top K, rerank for variety.</span></li>\n    <li><b>Check and blend</b><span>Visibility filtering drops or labels posts; ads and Who to Follow are mixed in.</span></li>\n  </ol>\n  <p class=\"foot\">As described in the xai-org/x-algorithm README, 2026.</p>\n</div>"
+    }
+  ],
+  "data": {
+    "tags": [
+      "twitter",
+      "for-you-feed",
+      "recommendation",
+      "algorithm",
+      "open-source"
+    ],
+    "facts": [
+      {
+        "label": "Candidates per request (2023)",
+        "value": "About 1,500"
+      },
+      {
+        "label": "In- vs out-of-network (2023 average)",
+        "value": "50 / 50"
+      },
+      {
+        "label": "Reply vs like weight (2026 code)",
+        "value": "5.0 vs 0.5"
+      },
+      {
+        "label": "Oldest post considered (2026 code)",
+        "value": "48 hours"
+      },
+      {
+        "label": "Ranking model (2026)",
+        "value": "Phoenix, a transformer"
+      },
+      {
+        "label": "Source code",
+        "value": "github.com/xai-org/x-algorithm"
+      }
+    ],
+    "see": [
+      "Bluesky custom feeds",
+      "tiktok-for-you-feed",
+      "instagram-ranking",
+      "LinkedIn feed ranking",
+      "Hacker News ranking",
+      "PageRank",
+      "Community Notes",
+      "Engagement bait",
+      "Shadowban",
+      "Two-tower model"
+    ]
+  }
+}
