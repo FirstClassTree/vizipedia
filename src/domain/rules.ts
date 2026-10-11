@@ -104,7 +104,7 @@ export function pageFacts(sections: readonly Section[], hidden: boolean, textOf:
     playable: experience !== undefined,
     verified,
     indexable: !hidden && openFlags === 0 && experience !== undefined && verified >= INDEX_MIN_VERIFIED,
-    cover: first ? { version: first.current.id, kind: first.section.kind as Cover["kind"], gated: first.section.kind === "experience" && !first.current.established } : null,
+    cover: first ? { version: first.current.id, kind: first.section.kind as Cover["kind"], gated: first.section.kind === "experience" && !first.current.established, poster: first.current.poster } : null,
   };
 }
 

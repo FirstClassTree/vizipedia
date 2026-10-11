@@ -118,6 +118,11 @@ create table if not exists settings (
 create index if not exists events_owner_at on events (owner_id, at desc);
 create index if not exists events_page_at on events (page_id, at desc);
 create index if not exists versions_section on versions (section_id, number desc);
+create table if not exists posters (
+  version_id uuid primary key references versions(id),
+  image bytea not null,
+  created_at timestamptz not null default now()
+);
 create index if not exists links_target on links (target_slug);
 `;
 

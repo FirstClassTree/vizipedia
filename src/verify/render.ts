@@ -10,8 +10,16 @@ import { experienceDocument } from "../domain/experience.ts";
  * chromium`); without it the gate is off and the server says so at boot.
  */
 
-/** Why a fragment does not render, in words an agent can act on; null when it renders. */
-export type Renderer = (fragment: string, kind: "experience" | "figure") => Promise<string | null>;
+/**
+ * What the check found: why a fragment does not render, in words an agent can act on (null when
+ * it renders), and when it does, its poster: the first screen as the browser drew it, which cards,
+ * link previews and the run gate show so no reader ever meets an empty tile.
+ */
+export interface Rendered {
+  readonly trouble: string | null;
+  readonly poster: Uint8Array | null;
+}
+export type Renderer = (fragment: string, kind: "experience" | "figure") => Promise<Rendered>;
 
 export interface RenderCheck {
   readonly render: Renderer;
@@ -19,7 +27,9 @@ export interface RenderCheck {
   close(): Promise<void>;
 }
 
-export const noRenderer: Renderer = async () => null;
+export const noRenderer: Renderer = async () => ({ trouble: null, poster: null });
+/** The poster's size: the frame's width on a laptop, cropped to what fits a card. */
+export const POSTER = { width: 900, minHeight: 300, maxHeight: 560 } as const;
 
 interface Browser {
   isConnected(): boolean;
@@ -30,6 +40,7 @@ interface Browser {
       on(event: "console", handler: (message: { type(): string; text(): string }) => void): void;
       route(url: string, handler: (route: { abort(): Promise<void> }) => void): Promise<void>;
       setContent(html: string, options: { waitUntil: "load"; timeout: number }): Promise<void>;
+      screenshot(options: { type: "jpeg"; quality: number; clip: { x: number; y: number; width: number; height: number } }): Promise<Uint8Array>;
       waitForTimeout(ms: number): Promise<void>;
       evaluate<T>(fn: () => T): Promise<T>;
     }>;
@@ -87,11 +98,11 @@ export async function browserRenderer(): Promise<RenderCheck | null> {
   const renderOne: Renderer = async (fragment, kind) => {
     let context: Awaited<ReturnType<Browser["newContext"]>>;
     try {
-      context = await (await open()).newContext({ viewport: { width: 900, height: 700 }, offline: true });
+      context = await (await open()).newContext({ viewport: { width: POSTER.width, height: 700 }, offline: true });
     } catch (error) {
       // The gate itself is broken, not the write: say so in the log and let the write through unopened.
       console.error("render check: could not open a browser, accepting unopened:", error);
-      return null;
+      return { trouble: null, poster: null };
     }
     try {
       const page = await context.newPage();
@@ -106,10 +117,10 @@ export async function browserRenderer(): Promise<RenderCheck | null> {
       try {
         await page.setContent(shell, { waitUntil: "load", timeout: LOAD_MS });
       } catch {
-        return "it did not finish loading within 8 seconds";
+        return { trouble: "it did not finish loading within 8 seconds", poster: null };
       }
       await page.waitForTimeout(SETTLE_MS);
-      if (trouble[0]) return trouble[0];
+      if (trouble[0]) return { trouble: trouble[0], poster: null };
       const measure = page.evaluate(() => {
         const body = document.body;
         const box = body.getBoundingClientRect();
@@ -122,9 +133,11 @@ export async function browserRenderer(): Promise<RenderCheck | null> {
       });
       const late = new Promise<null>((resolve) => setTimeout(() => resolve(null), MEASURE_MS).unref?.());
       const drawn = await Promise.race([measure, late]);
-      if (drawn === null) return `it keeps the browser busy: ${MEASURE_MS / 1000} seconds after loading it still has not answered`;
-      if (drawn.children === 0 || drawn.height < 24 || (drawn.text === 0 && drawn.pixels === 0)) return "it draws nothing: the frame is empty after loading";
-      return null;
+      if (drawn === null) return { trouble: `it keeps the browser busy: ${MEASURE_MS / 1000} seconds after loading it still has not answered`, poster: null };
+      if (drawn.children === 0 || drawn.height < 24 || (drawn.text === 0 && drawn.pixels === 0)) return { trouble: "it draws nothing: the frame is empty after loading", poster: null };
+      const height = Math.min(POSTER.maxHeight, Math.max(POSTER.minHeight, drawn.height));
+      const poster = await page.screenshot({ type: "jpeg", quality: 82, clip: { x: 0, y: 0, width: POSTER.width, height } }).catch(() => null);
+      return { trouble: null, poster };
     } finally {
       await context.close();
     }

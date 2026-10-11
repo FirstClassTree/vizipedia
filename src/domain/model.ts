@@ -58,6 +58,8 @@ export interface Version {
   /** When this version is a revert, the version it brought back. */
   readonly revertOf: string | null;
   readonly createdAt: string;
+  /** For code: the render check kept a picture of its first screen. */
+  readonly poster: boolean;
   readonly flags: number;
   readonly hidden: boolean;
 }
@@ -80,6 +82,8 @@ export interface Cover {
   readonly kind: "experience" | "figure";
   /** Code by an owner not yet established: it waits for a click on its page, so a card shows a plain tile. */
   readonly gated: boolean;
+  /** The render check kept a picture of it (GET /x/<version>/poster). */
+  readonly poster: boolean;
 }
 
 export interface PageSummary {

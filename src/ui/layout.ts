@@ -8,6 +8,8 @@ export interface Frame {
   /** Path after the base, e.g. "/tiktok-for-you-feed". */
   readonly path: string;
   readonly robots?: string;
+  /** An absolute image URL for link previews: a page's cover as the render check drew it. */
+  readonly image?: string;
   readonly jsonLd?: object;
   /** When this is a page: its slug, and the newest event on it, so the browser listens from there. */
   readonly page?: { readonly slug: string; readonly lastEvent: number };
@@ -50,6 +52,7 @@ ${frame.robots ? html`<meta name="robots" content="${frame.robots}">` : ""}
 <meta property="og:url" content="${canonical}">
 <meta property="og:site_name" content="${site.name}">
 <meta property="og:type" content="${frame.page ? "article" : "website"}">
+${frame.image ? html`<meta property="og:image" content="${frame.image}"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="${frame.image}">` : ""}
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="${site.assets.icon}" type="image/svg+xml">
 <link rel="preload" href="${site.assets.font}" as="font" type="font/woff2" crossorigin>

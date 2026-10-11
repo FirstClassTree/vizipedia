@@ -99,6 +99,8 @@ interface CheckedSection {
   links: readonly WikiLink[];
   sources: Source[];
   note: string | null;
+  /** The render check's picture of code, kept with the version. */
+  poster?: Uint8Array | null;
 }
 
 interface SectionRow {
@@ -115,7 +117,7 @@ const iso = (value: unknown): string => (value instanceof Date ? value.toISOStri
 const list = (ids: readonly string[]): string => ids.join(",");
 const PAGE_COLUMNS = "slug, title, hue, lede, created_at, updated_at, sections, owners, playable, verified, indexable, cover_version_id, cover_kind, tags, facts";
 /** The cover's writer, so a list can tell whether that code may run without a click. */
-const COVER_OWNER = "(select jsonb_build_object('handle', o.handle, 'writes', o.writes, 'createdAt', o.created_at) from versions v join owners o on o.id = v.owner_id where v.id = p.cover_version_id) as cover_owner";
+const COVER_OWNER = "(select jsonb_build_object('handle', o.handle, 'writes', o.writes, 'createdAt', o.created_at) from versions v join owners o on o.id = v.owner_id where v.id = p.cover_version_id) as cover_owner, exists(select 1 from posters x where x.version_id = p.cover_version_id) as cover_poster";
 const P_COLUMNS = `${PAGE_COLUMNS.split(", ")
   .map((column) => `p.${column}`)
   .join(", ")}, ${COVER_OWNER}`;
@@ -143,6 +145,7 @@ const summaryOf = (row: Record<string, unknown>, established: Standing): PageSum
         version: String(row.cover_version_id),
         kind: row.cover_kind as Cover["kind"],
         gated: row.cover_kind === "experience" && !established(row.cover_owner as { handle: string; writes: number; createdAt: string }),
+        poster: Boolean(row.cover_poster),
       }
     : null,
   tags: (row.tags as string[] | null) ?? [],
@@ -606,7 +609,14 @@ export class Wiki {
     const refused = await this.screen(checked.body);
     if (refused) return fail(422, `The version was refused by the content screen: ${refused}.`);
     const sources = await this.check(checked.sources);
-    const draft = { kind: section.kind, body: checked.body, html: checked.rendered.html, links: checked.rendered.links, sources, note };
+    const draft: { kind: SectionKind; body: string; html: string; links: readonly WikiLink[]; sources: Source[]; note: string | null; poster?: Uint8Array | null } = {
+      kind: section.kind,
+      body: checked.body,
+      html: checked.rendered.html,
+      links: checked.rendered.links,
+      sources,
+      note,
+    };
     const broken = await this.rendered(draft);
     if (broken) return broken;
 
@@ -753,10 +763,13 @@ export class Wiki {
   }
 
   /** Code is opened in a real browser before it is accepted: a frame that throws or stays blank is refused with the reason. */
-  private async rendered(draft: { kind: SectionKind; body: string; heading?: string }): Promise<Result<never> | null> {
+  /** Opens code in the browser; on success the draft carries the picture the check took. */
+  private async rendered(draft: { kind: SectionKind; body: string; heading?: string; poster?: Uint8Array | null }): Promise<Result<never> | null> {
     if (draft.kind !== "experience" && draft.kind !== "figure") return null;
-    const trouble = await this.render(draft.body, draft.kind);
-    return trouble ? fail(422, `The ${draft.kind} does not render: ${trouble}`, [trouble]) : null;
+    const { trouble, poster } = await this.render(draft.body, draft.kind);
+    if (trouble) return fail(422, `The ${draft.kind} does not render: ${trouble}`, [trouble]);
+    draft.poster = poster;
+    return null;
   }
 
   private async insertSection(
@@ -786,7 +799,7 @@ export class Wiki {
     tx: Queryable,
     caller: Caller,
     sectionId: string,
-    draft: { body: string; html: string; links: readonly WikiLink[]; sources: readonly Source[]; note: string | null },
+    draft: { body: string; html: string; links: readonly WikiLink[]; sources: readonly Source[]; note: string | null; poster?: Uint8Array | null },
     revertOf: string | null,
   ): Promise<string> {
     const made = await tx.query<{ id: string }>(
@@ -796,6 +809,9 @@ export class Wiki {
     );
     const versionId = made.rows[0]?.id;
     if (!versionId) throw new Error("version insert returned no id");
+    if (draft.poster) await tx.query("insert into posters (version_id, image) values ($1, $2)", [versionId, draft.poster]);
+    // A revert brings back what a reader saw, picture included.
+    else if (revertOf) await tx.query("insert into posters (version_id, image) select $1, image from posters where version_id = $2", [versionId, revertOf]);
     return versionId;
   }
 
@@ -894,7 +910,8 @@ export class Wiki {
     const rows = await q.query<Record<string, unknown>>(
       `select v.id, v.section_id, v.model, v.client, v.body, v.html, v.links, v.sources, v.note, v.number, v.revert_of, v.created_at, v.hidden_at,
               o.handle, o.writes, o.created_at as owner_created_at,
-              (select count(*) from flags f where f.version_id = v.id and f.resolved_at is null) as flags
+              (select count(*) from flags f where f.version_id = v.id and f.resolved_at is null) as flags,
+              exists(select 1 from posters x where x.version_id = v.id) as poster
          from versions v join sections s on s.id = v.section_id join owners o on o.id = v.owner_id
         where ${where} order by v.number`,
       params,
@@ -913,9 +930,19 @@ export class Wiki {
       number: Number(row.number),
       revertOf: (row.revert_of as string | null) ?? null,
       createdAt: iso(row.created_at),
+      poster: Boolean(row.poster),
       flags: Number(row.flags),
       hidden: row.hidden_at !== null,
     }));
+  }
+
+  /** The render check's picture of a version of code, or null when there is none. */
+  async poster(versionId: string): Promise<Uint8Array | null> {
+    const found = await this.db.query<{ image: Uint8Array }>(
+      "select x.image from posters x join versions v on v.id = x.version_id join sections s on s.id = v.section_id join pages p on p.id = s.page_id where x.version_id = $1 and v.hidden_at is null and p.hidden_at is null",
+      [versionId],
+    );
+    return found.rows[0]?.image ?? null;
   }
 
   /** Every derived fact about a page, recomputed by the rules from what its sections now show. The one place they apply. */

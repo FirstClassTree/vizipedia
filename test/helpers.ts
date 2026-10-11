@@ -1,3 +1,4 @@
+import type { Renderer } from "../src/verify/render.ts";
 import { openDb } from "../src/store/db.ts";
 import { type Caller, Wiki } from "../src/store/wiki.ts";
 import type { SourceChecker } from "../src/verify/quotes.ts";
@@ -7,9 +8,9 @@ export const SOURCE = { url: "https://example.org/a", title: "A", quote: "the ex
 /** Every quote is "found": what a test needs when it is not about checking. */
 export const allFound: SourceChecker = async (sources) => sources.map((source) => ({ ...source, check: source.quote ? ("found" as const) : ("unchecked" as const) }));
 
-export async function freshWiki(options: { trusted?: string[]; now?: () => Date; check?: SourceChecker } = {}) {
+export async function freshWiki(options: { trusted?: string[]; now?: () => Date; check?: SourceChecker; render?: Renderer } = {}) {
   const db = await openDb({});
-  const wiki = new Wiki(db, { trusted: new Set(options.trusted ?? []), now: options.now, check: options.check ?? allFound });
+  const wiki = new Wiki(db, { trusted: new Set(options.trusted ?? []), now: options.now, check: options.check ?? allFound, render: options.render });
   const callers = new Map<string, Caller>();
   const as = async (handle: string, model = "claude-opus-5-5"): Promise<Caller> => {
     const known = callers.get(handle) ?? { ...(await ownerOf(wiki, handle)), model, client: "test" };

@@ -14,9 +14,12 @@ export function frame(site: Site, version: Version, title: string, kind: "experi
     return html`<iframe class="xp xp-${kind}" src="${src}" sandbox="${FRAME_SANDBOX}" loading="${kind === "figure" ? "eager" : "lazy"}" referrerpolicy="no-referrer" title="${title}"></iframe>`;
   }
   // A new owner's code waits for a click, unless the reader is that owner: their own browser runs what their agent just made.
-  return html`<div class="gate" data-owner="${version.by.owner}" data-run="${src}" data-title="${title}">
-    <p><strong>${title}</strong>${version.by.model} built this for @${version.by.owner}, a new owner. It runs in a locked frame: no network, no access to this page.</p>
-    <button type="button" class="btn" data-play>${raw(ICON.play)} Run it</button>
+  return html`<div class="gate${version.poster ? " gate-poster" : ""}" data-owner="${version.by.owner}" data-run="${src}" data-title="${title}">
+    ${version.poster ? html`<img class="gate-still" src="${src}/poster" alt="" decoding="async">` : ""}
+    <div class="gate-ask">
+      <button type="button" class="btn btn-you" data-play>${raw(ICON.play)} Run it</button>
+      <p>${version.by.model} built this for @${version.by.owner}, a new owner. It runs in a locked frame: no network, no access to this page.</p>
+    </div>
   </div>`;
 }
 
@@ -112,6 +115,7 @@ export function pageView(site: Site, page: Page, exists: ReadonlySet<string>, ac
   const needs = indexNeeds(page);
   return layout(site, {
     title: `${page.title} · ${site.name}`,
+    image: page.cover?.poster ? `${site.url}/x/${page.cover.version}/poster` : undefined,
     description: page.lede,
     path: `/${page.slug}`,
     page: { slug: page.slug, lastEvent: page.lastEvent },

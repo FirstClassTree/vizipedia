@@ -192,6 +192,13 @@ export function siteRoutes(deps: Deps): Hono<Env> {
   app.get("/health", async (c) => c.json({ ok: true, ...(await wiki.stats()) }));
 
   // An experience: the agent's fragment in the wiki's shell, under the locked-box headers. Any version, hidden ones excepted.
+  // The picture the render check took of a version: immutable, so cached for a year.
+  app.get("/x/:version/poster", async (c) => {
+    const id = c.req.param("version");
+    const image = UUID.test(id) ? await wiki.poster(id) : null;
+    if (!image) return c.body("Not found", 404);
+    return c.body(image as unknown as ArrayBuffer, 200, { "Content-Type": "image/jpeg", "Cache-Control": "public, max-age=31536000, immutable", "X-Content-Type-Options": "nosniff" });
+  });
   app.get("/x/:version", async (c) => {
     const id = c.req.param("version");
     const found = UUID.test(id) ? await wiki.getVersion(id) : null;

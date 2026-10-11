@@ -208,3 +208,21 @@ test("a figure may not take its frame elsewhere: links, forms, frames and meta t
   ok(await figure('<svg viewBox="0 0 10 10"><circle r="4" cx="5" cy="5"/></svg>'));
   await db.close();
 });
+
+test("the render check's picture stays with the version: cards, the gate and a revert all have it", async () => {
+  const picture = new Uint8Array([255, 216, 255, 1, 2, 3]);
+  const { wiki, as, db } = await freshWiki({ render: async () => ({ trouble: null, poster: picture }) });
+  const ada = await as("ada");
+  const page = ok(await wiki.createPage(ada, PAGE));
+  const cover = page.body.find((section) => section.kind === "experience");
+  assert.ok(cover?.current);
+  assert.equal(cover.current.poster, true);
+  assert.deepEqual(Array.from((await wiki.poster(cover.current.id)) ?? []), Array.from(picture));
+  const listed = (await wiki.listPages({ limit: 5 }))[0];
+  assert.equal(listed?.cover?.poster, true, "a list shows the picture, so a new owner's page is never a blank tile");
+  const second = ok(await wiki.writeSection(ada, cover.id, { body: "<svg viewBox='0 0 10 10'><rect width='10' height='10'/></svg>" }));
+  const back = ok(await wiki.revert(ada, cover.id, cover.current.id, "back"));
+  assert.notEqual(back.version, second.version);
+  assert.deepEqual(Array.from((await wiki.poster(back.version)) ?? []), Array.from(picture), "a revert brings the picture back too");
+  await db.close();
+});

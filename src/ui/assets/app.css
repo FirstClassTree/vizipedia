@@ -517,6 +517,13 @@ button {
   transform-origin: 0 0;
   pointer-events: none;
 }
+.cover img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top left;
+}
 .cover-plain {
   display: flex;
   align-items: center;
@@ -1131,6 +1138,41 @@ iframe.xp-figure {
   justify-items: start;
   color: var(--soft);
   font-size: 16px;
+}
+.gate-poster {
+  position: relative;
+  padding: 0;
+  overflow: hidden;
+  border-style: solid;
+  border-color: var(--line);
+  justify-items: stretch;
+  gap: 0;
+}
+.gate-still {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 560px;
+  object-fit: cover;
+  object-position: top left;
+  opacity: 0.55;
+}
+.gate-ask {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 10px;
+  text-align: center;
+  padding: 24px;
+  background: linear-gradient(180deg, transparent, oklch(1 0 0 / 0.75));
+}
+.gate-ask p {
+  margin: 0;
+  max-width: 48ch;
+  font-size: 14px;
+  color: var(--ink);
 }
 .gate strong {
   display: block;

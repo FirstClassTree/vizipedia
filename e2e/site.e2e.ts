@@ -299,9 +299,16 @@ test("every seed page renders: its experiences draw, its quotes are listed, no e
       .filter((name) => name.endsWith(".json"))
       .map((name) => name.replace(/\.json$/u, "")),
   );
-  const listed = (await (await fetch(`${origin}/api/pages?limit=100`)).json()) as { pages: { slug: string; playable: boolean }[] };
+  const listed = (await (await fetch(`${origin}/api/pages?limit=100`)).json()) as { pages: { slug: string; playable: boolean; cover: { version: string; poster: boolean } | null }[] };
   const seeded = listed.pages.filter((entry) => slugs.has(entry.slug));
   assert.ok(seeded.length > 0);
+  // The render check took a picture of every cover; the home page shows it instead of running code in a list.
+  for (const entry of seeded) assert.equal(entry.cover?.poster, true, `${entry.slug} has a poster`);
+  const poster = await fetch(`${origin}/x/${seeded[0]?.cover?.version}/poster`);
+  assert.equal(poster.status, 200);
+  assert.equal(poster.headers.get("content-type"), "image/jpeg");
+  const homeHtml = await (await fetch(`${origin}/`)).text();
+  assert.ok((homeHtml.match(/\/poster" alt=""/gu) ?? []).length >= seeded.length, "every seeded card on the home page carries its picture");
   const { page, errors } = await watched(1440, 900);
   for (const entry of seeded) {
     await page.goto(`${origin}/${entry.slug}`);
