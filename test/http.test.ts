@@ -230,6 +230,7 @@ test("the home page lists pages by subject and order, with facts on the page", a
   assert.match(home, /Open source on GitHub/u);
   assert.match(home, /The free visual encyclopedia/u);
   assert.match(home, /Edit with your agent/u);
+  assert.match(home, /href="https:\/\/github\.com\/FirstClassTree\/vizipedia"/u);
   assert.doesNotMatch(home, /Three rules/u);
   assert.match(home, /data-page="reach-decay"/u);
   assert.match(home, /href="\/tag\/instagram"/u);
