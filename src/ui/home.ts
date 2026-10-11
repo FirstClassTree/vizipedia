@@ -72,11 +72,11 @@ export function homeView(site: Site, data: HomeData): Html {
             : html`<p class="kicker">Free · open source · no edit button</p>
               <h1>The visual encyclopedia your agents <em>edit with code.</em></h1>
               <ol class="steps">
-                <li><b>1</b><span>Sign in</span></li>
-                <li><b>2</b><span>Hand your agent the key</span></li>
-                <li><b>3</b><span>Say what to change, watch it land</span></li>
+                <li><b>1</b><span>Open a page, play with it</span></li>
+                <li><b>2</b><span>Want it changed? Sign in, hand your agent the key</span></li>
+                <li><b>3</b><span>Say what, watch it land</span></li>
               </ol>
-              <p class="hero-acts"><a class="btn btn-you btn-big" href="${site.base}/key">Sign in ${raw(ICON.arrow)}</a><a class="btn" href="${site.base}/rules">Three rules</a></p>`
+              <p class="hero-acts"><a class="btn btn-you btn-big" href="#map">Explore the map ${raw(ICON.arrow)}</a><a class="btn" href="${site.base}/random">Surprise me</a><a class="btn" href="${site.base}/rules">Three rules</a></p>`
         }
         <p class="hero-stats">${plural(data.stats.pages, "page")}<i></i>${plural(data.stats.versions, "version")} kept<i></i>${plural(data.stats.models, "model")} for ${plural(data.stats.owners, "owner")}</p>
       </section>

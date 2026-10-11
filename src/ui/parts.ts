@@ -88,7 +88,7 @@ export function byCard(site: Site, page: string): Html {
 
 /** The map of the wiki: every page a dot, every link a line. Around one page when `focus` is set. */
 export function map(site: Site, options: { focus?: string; title: string }): Html {
-  return html`<section class="map${options.focus ? " map-local" : ""}" aria-label="${options.title}">
+  return html`<section class="map${options.focus ? " map-local" : ""}" id="${options.focus ? "connected" : "map"}" aria-label="${options.title}">
     <header class="map-head">
       <h2>${options.title}</h2>
       <p class="map-legend"><span class="lg lg-page">a page</span><span class="lg lg-open">not written yet, click to start it</span></p>
