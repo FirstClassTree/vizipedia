@@ -1,5 +1,4 @@
 import { createHash } from "node:crypto";
-import { network } from "./caller.ts";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import type { HttpBindings } from "@hono/node-server";
@@ -14,6 +13,7 @@ import { liveFragment, openView, pageView } from "../ui/page.ts";
 import type { Html, Site } from "../ui/parts.ts";
 import { skillMarkdown } from "../ui/skill.ts";
 import type { Deps } from "./api.ts";
+import { network } from "./caller.ts";
 import { pageMarkdown, siteUrl } from "./present.ts";
 
 type Env = { Bindings: HttpBindings };
@@ -105,7 +105,8 @@ export function siteRoutes(deps: Deps): Hono<Env> {
   const app = new Hono<Env>({ strict: false });
   const page = async (c: Ctx, view: Html, status: 200 | 404 = 200) =>
     c.html(await view, status, { ...HTML_HEADERS, ...(config.indexing === "none" ? { "X-Robots-Tag": "noindex" } : {}) });
-  const text = (c: Ctx, body: string, type: string) => c.body(body, 200, { "Content-Type": `${type}; charset=utf-8`, "X-Content-Type-Options": "nosniff", "Cache-Control": "public, max-age=300" });
+  const text = (c: Ctx, body: string, type: string) =>
+    c.body(body, 200, { "Content-Type": `${type}; charset=utf-8`, "X-Content-Type-Options": "nosniff", "Cache-Control": "public, max-age=300" });
   const keyHint = identity.kind === "local" ? `Get one at ${site.url}/key.` : `Get one at ${config.keyUrl ?? "the site this wiki belongs to"}.`;
 
   app.get("/assets/:file", (c) => {
@@ -197,7 +198,11 @@ export function siteRoutes(deps: Deps): Hono<Env> {
     const id = c.req.param("version");
     const image = UUID.test(id) ? await wiki.poster(id) : null;
     if (!image) return c.body("Not found", 404);
-    return c.body(image as unknown as ArrayBuffer, 200, { "Content-Type": "image/jpeg", "Cache-Control": "public, max-age=31536000, immutable", "X-Content-Type-Options": "nosniff" });
+    return c.body(image as unknown as ArrayBuffer, 200, {
+      "Content-Type": "image/jpeg",
+      "Cache-Control": "public, max-age=31536000, immutable",
+      "X-Content-Type-Options": "nosniff",
+    });
   });
   app.get("/x/:version", async (c) => {
     const id = c.req.param("version");

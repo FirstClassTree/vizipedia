@@ -1,7 +1,7 @@
-import type { Renderer } from "../src/verify/render.ts";
 import { openDb } from "../src/store/db.ts";
 import { type Caller, Wiki } from "../src/store/wiki.ts";
 import type { SourceChecker } from "../src/verify/quotes.ts";
+import type { Renderer } from "../src/verify/render.ts";
 
 export const SOURCE = { url: "https://example.org/a", title: "A", quote: "the exact words this claim rests on" };
 

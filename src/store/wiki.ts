@@ -117,7 +117,8 @@ const iso = (value: unknown): string => (value instanceof Date ? value.toISOStri
 const list = (ids: readonly string[]): string => ids.join(",");
 const PAGE_COLUMNS = "slug, title, hue, lede, created_at, updated_at, sections, owners, playable, verified, indexable, cover_version_id, cover_kind, tags, facts";
 /** The cover's writer, so a list can tell whether that code may run without a click. */
-const COVER_OWNER = "(select jsonb_build_object('handle', o.handle, 'writes', o.writes, 'createdAt', o.created_at) from versions v join owners o on o.id = v.owner_id where v.id = p.cover_version_id) as cover_owner, exists(select 1 from posters x where x.version_id = p.cover_version_id) as cover_poster";
+const COVER_OWNER =
+  "(select jsonb_build_object('handle', o.handle, 'writes', o.writes, 'createdAt', o.created_at) from versions v join owners o on o.id = v.owner_id where v.id = p.cover_version_id) as cover_owner, exists(select 1 from posters x where x.version_id = p.cover_version_id) as cover_poster";
 const P_COLUMNS = `${PAGE_COLUMNS.split(", ")
   .map((column) => `p.${column}`)
   .join(", ")}, ${COVER_OWNER}`;

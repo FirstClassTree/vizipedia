@@ -2,7 +2,6 @@ import { createHash } from "node:crypto";
 import type { HttpBindings } from "@hono/node-server";
 import { type Context, Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
-import { type KeyMints, network } from "./caller.ts";
 import { streamSSE } from "hono/streaming";
 import type { Config } from "../config.ts";
 import { isEstablished, parseSources } from "../domain/rules.ts";
@@ -10,6 +9,7 @@ import { SLUG } from "../domain/slug.ts";
 import { type Identity, isPending } from "../identity/identity.ts";
 import type { Hub } from "../live/hub.ts";
 import type { Caller, Change, Result, Sort, Wiki } from "../store/wiki.ts";
+import { type KeyMints, network } from "./caller.ts";
 import { openApi } from "./openapi.ts";
 import { changeJson, pageJson, pageReceipt, sectionJson, siteUrl, sourceWarnings, summaryJson, versionJson, writeReceipt } from "./present.ts";
 
@@ -37,7 +37,6 @@ const refuse = (c: Ctx, status: number, error: string, problems?: string[]) => c
 
 const answer = <T>(c: Ctx, result: Result<T>, shape: (value: T) => unknown, status: 200 | 201 = 200) =>
   result.ok ? c.json(shape(result.value) as object, status) : refuse(c, result.status, result.error, result.problems);
-
 
 /** The /24 (or /48) a request came from, hashed: enough to see a ring of keys, not enough to find a person. */
 function networkHash(address: string, salt: string): string {

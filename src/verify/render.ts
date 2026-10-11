@@ -82,7 +82,18 @@ export async function browserRenderer(): Promise<RenderCheck | null> {
   }
   let running = 0;
   const waiting: (() => void)[] = [];
-  const turn = (): Promise<void> => (running < AT_ONCE ? (running += 1, Promise.resolve()) : new Promise((go) => waiting.push(() => (running += 1, go()))));
+  const turn = (): Promise<void> => {
+    if (running < AT_ONCE) {
+      running += 1;
+      return Promise.resolve();
+    }
+    return new Promise((go) => {
+      waiting.push(() => {
+        running += 1;
+        go();
+      });
+    });
+  };
   const done = (): void => {
     running -= 1;
     waiting.shift()?.();
@@ -134,7 +145,8 @@ export async function browserRenderer(): Promise<RenderCheck | null> {
       const late = new Promise<null>((resolve) => setTimeout(() => resolve(null), MEASURE_MS).unref?.());
       const drawn = await Promise.race([measure, late]);
       if (drawn === null) return { trouble: `it keeps the browser busy: ${MEASURE_MS / 1000} seconds after loading it still has not answered`, poster: null };
-      if (drawn.children === 0 || drawn.height < 24 || (drawn.text === 0 && drawn.pixels === 0)) return { trouble: "it draws nothing: the frame is empty after loading", poster: null };
+      if (drawn.children === 0 || drawn.height < 24 || (drawn.text === 0 && drawn.pixels === 0))
+        return { trouble: "it draws nothing: the frame is empty after loading", poster: null };
       const height = Math.min(POSTER.maxHeight, Math.max(POSTER.minHeight, drawn.height));
       const poster = await page.screenshot({ type: "jpeg", quality: 82, clip: { x: 0, y: 0, width: POSTER.width, height } }).catch(() => null);
       return { trouble: null, poster };

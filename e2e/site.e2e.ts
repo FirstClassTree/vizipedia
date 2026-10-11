@@ -299,7 +299,9 @@ test("every seed page renders: its experiences draw, its quotes are listed, no e
       .filter((name) => name.endsWith(".json"))
       .map((name) => name.replace(/\.json$/u, "")),
   );
-  const listed = (await (await fetch(`${origin}/api/pages?limit=100`)).json()) as { pages: { slug: string; playable: boolean; cover: { version: string; poster: boolean } | null }[] };
+  const listed = (await (await fetch(`${origin}/api/pages?limit=100`)).json()) as {
+    pages: { slug: string; playable: boolean; cover: { version: string; poster: boolean } | null }[];
+  };
   const seeded = listed.pages.filter((entry) => slugs.has(entry.slug));
   assert.ok(seeded.length > 0);
   // The render check took a picture of every cover; the home page shows it instead of running code in a list.

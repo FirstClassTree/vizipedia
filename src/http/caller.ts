@@ -1,5 +1,5 @@
-import type { Context } from "hono";
 import type { HttpBindings } from "@hono/node-server";
+import type { Context } from "hono";
 
 /**
  * Where a request came from, for rate limits and the log's network hash. A proxy that knows the

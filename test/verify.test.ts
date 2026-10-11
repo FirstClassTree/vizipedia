@@ -22,7 +22,8 @@ test("only public addresses are fetchable: no loopback, private ranges, metadata
   }
   for (const address of ["93.184.216.34", "8.8.8.8", "2606:4700:4700::1111", "::ffff:8.8.8.8", "::ffff:808:808"]) assert.equal(isPublicAddress(address), true, address);
   // The other spellings and ranges a private address can hide in.
-  for (const address of ["::ffff:7f00:1", "::ffff:a00:1", "::7f00:1", "::10.0.0.1", "2002:a00:1::", "64:ff9b:1::a", "fec0::1"]) assert.equal(isPublicAddress(address), false, address);
+  for (const address of ["::ffff:7f00:1", "::ffff:a00:1", "::7f00:1", "::10.0.0.1", "2002:a00:1::", "64:ff9b:1::a", "fec0::1"])
+    assert.equal(isPublicAddress(address), false, address);
   for (const url of [
     "http://127.0.0.1/",
     "http://[::1]/",
