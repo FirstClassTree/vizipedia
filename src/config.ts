@@ -38,7 +38,7 @@ export interface Config {
   readonly by: { readonly name: string; readonly url: string; readonly pitch: string | null } | undefined;
 }
 
-// Shapeless AI runs this wiki and makes social content with agents, which is what most of its
+// ShapelessAI runs this wiki and makes social content with agents, which is what most of its
 // pages are about: one line on every page says so, once (Tal, 2026-10-09: "plug ShapelessAI more").
 const SHAPELESS_PITCH = "Put this to work: agents that make and post your social content. Free to start.";
 
@@ -70,7 +70,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
     by:
       env.BY_NAME && env.BY_URL && /^https?:\/\//u.test(env.BY_URL)
         ? { name: env.BY_NAME, url: env.BY_URL, pitch: env.BY_PITCH || null }
-        : { name: "Shapeless AI", url: "https://shapelessai.com", pitch: env.BY_PITCH ?? SHAPELESS_PITCH },
+        : { name: "ShapelessAI", url: "https://shapelessai.com", pitch: env.BY_PITCH ?? SHAPELESS_PITCH },
   };
 }
 

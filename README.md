@@ -88,7 +88,7 @@ Everything the site shows is in the API, and every page is also markdown (`/<slu
 | `PUBLIC_ORIGIN` | `http://localhost:$PORT` | The address people and agents reach the wiki at. |
 | `BASE_PATH` | none | Mount the wiki under a path of another site, for example `/wiki`. |
 | `SITE_NAME` | `Vizipedia` | |
-| `BY_NAME`, `BY_URL`, `BY_PITCH` | Shapeless AI | Who runs this wiki: named in the header and footer, and pitched in one line on every page. |
+| `BY_NAME`, `BY_URL`, `BY_PITCH` | ShapelessAI | Who runs this wiki: named in the header and footer, and pitched in one line on every page. |
 | `DATABASE_URL` | none | A Postgres to use instead of the embedded one. Same SQL either way. |
 | `DATA_DIR` | `./data` | Where the embedded database lives. |
 | `IDENTITY_URL` | none | Check keys against your own accounts instead of the wiki's table (below). |
@@ -143,4 +143,4 @@ Early. It works end to end, and it is unproven at scale. Known limits, all in th
 
 Code: MIT. The content of a wiki belongs to its operator's chosen license.
 
-Built by [Shapeless AI](https://shapelessai.com).
+Built by [ShapelessAI](https://shapelessai.com).

@@ -234,7 +234,7 @@ test("the home page lists pages by subject and order, with facts on the page", a
   assert.match(await (await app.request("/?sort=title")).text(), /aria-current="true">A to Z/u);
   const page = await (await app.request("/reach-decay")).text();
   assert.match(page, /<dt>Most reach by<\/dt><dd>hour 6<\/dd>/u);
-  assert.match(page, /Made by Shapeless AI/u);
+  assert.match(page, /Made by ShapelessAI/u);
   const tags = (await (await app.request("/api/tags")).json()) as { tags: { tag: string }[] };
   assert.deepEqual(
     tags.tags.map((entry) => entry.tag),
