@@ -11,7 +11,7 @@ import type { Sort } from "../store/wiki.ts";
 import { cards, homeView, tick } from "../ui/home.ts";
 import { historyView, keyView, rulesView, searchView, wireView } from "../ui/lists.ts";
 import { liveFragment, openView, pageView } from "../ui/page.ts";
-import type { Html, Site } from "../ui/parts.ts";
+import { canonicalUrl, type Html, type Site } from "../ui/parts.ts";
 import { skillMarkdown } from "../ui/skill.ts";
 import type { Deps } from "./api.ts";
 import { network } from "./caller.ts";
@@ -190,7 +190,10 @@ export function siteRoutes(deps: Deps): Hono<Env> {
   );
   app.get("/sitemap.xml", async (c) => {
     const entries = config.indexing === "none" ? [] : await wiki.sitemap();
-    const urls = [`<url><loc>${site.url}/</loc></url>`, ...entries.map((entry) => `<url><loc>${site.url}/${entry.slug}</loc><lastmod>${entry.updatedAt}</lastmod></url>`)];
+    const urls = [
+      `<url><loc>${canonicalUrl(site, "/")}</loc></url>`,
+      ...entries.map((entry) => `<url><loc>${canonicalUrl(site, `/${entry.slug}`)}</loc><lastmod>${entry.updatedAt}</lastmod></url>`),
+    ];
     return text(c, `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join("\n")}\n</urlset>\n`, "application/xml");
   });
   app.get("/health", async (c) => c.json({ ok: true, ...(await wiki.stats()) }));
