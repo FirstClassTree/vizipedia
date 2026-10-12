@@ -23,6 +23,9 @@ export interface Site {
   readonly assets: Readonly<Record<"css" | "js" | "graph" | "font" | "text" | "icon", string>>;
 }
 
+/** The one address a view is known by: the home is the bare base (the site 308s "/vizipedia/" to "/vizipedia"), so a sitemap and a canonical tag never disagree. */
+export const canonicalUrl = (site: Site, path: string): string => `${site.url}${path === "/" ? "" : path}`;
+
 const DATE = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 const DATE_TIME = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
 

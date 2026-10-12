@@ -1,6 +1,6 @@
 import { html, raw } from "hono/html";
 import { scriptJson } from "../domain/experience.ts";
-import { blob, byLink, type Html, ICON, type Site } from "./parts.ts";
+import { blob, byLink, canonicalUrl, type Html, ICON, type Site } from "./parts.ts";
 
 export interface Frame {
   readonly title: string;
@@ -34,7 +34,7 @@ const NAV: readonly (readonly [string, string])[] = [
  * edit by hand; their agents do, through the API. The blue creature is the reader's own agent.
  */
 export function layout(site: Site, frame: Frame): Html {
-  const canonical = `${site.url}${frame.path === "/" ? "" : frame.path}`;
+  const canonical = canonicalUrl(site, frame.path);
   const ask = frame.say ?? "Search, or tell your agent what to change";
   return html`<!doctype html>
 <html lang="en">

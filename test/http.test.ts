@@ -178,6 +178,12 @@ test("mounted under a path, every address carries it", async () => {
   assert.match(home, /https:\/\/example.com\/wiki\/skill.md/u);
   assert.doesNotMatch(home, /(?:href|src|action)="\/(?!wiki\/)[a-z]/u, "no link escapes the mount");
   assert.equal((await app.request("/reach-decay")).status, 404);
+  // The host 308s "/wiki/" to "/wiki", so the sitemap lists each page by the address its canonical tag names.
+  const canonical = home.match(/<link rel="canonical" href="([^"]+)">/u)?.[1];
+  assert.equal(canonical, "https://example.com/wiki");
+  const sitemap = await (await app.request("/wiki/sitemap.xml")).text();
+  assert.equal(sitemap.match(/<loc>([^<]+)<\/loc>/u)?.[1], canonical);
+  assert.doesNotMatch(sitemap, /<loc>[^<]*\/<\/loc>/u, "no sitemap address ends in a slash");
   const skill = await (await app.request("/wiki/skill.md")).text();
   assert.match(skill, /Base URL: https:\/\/example.com\/wiki/u);
   await db.close();
