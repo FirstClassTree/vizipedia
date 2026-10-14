@@ -1,0 +1,121 @@
+{
+  "title": "Domain Rating",
+  "slug": "domain-rating",
+  "hue": 28,
+  "lede": "Domain Rating is Ahrefs' 0 to 100 score for how strong a website's backlink profile is, computed like PageRank between whole sites and squashed onto a logarithmic scale.",
+  "sections": [
+    {
+      "kind": "experience",
+      "heading": "Build a backlink profile",
+      "body": "<style>\n.dr{box-sizing:border-box;max-width:1040px;margin:0 auto;font-family:var(--ow-font);color:var(--ow-fg);display:grid;gap:12px}\n@media (min-width:760px){.dr{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)}}\n.dr *{box-sizing:border-box}\n.dr-q{margin:0;font-size:15px;line-height:1.4;grid-column:1/-1}\n.dr-panel{background:var(--ow-panel);border:1px solid var(--ow-line);border-radius:12px;padding:12px}\n.dr-btns{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}\n.dr-btn{font:inherit;font-size:12px;padding:5px 9px;border-radius:999px;border:1px solid var(--ow-line);background:var(--ow-bg);color:var(--ow-fg);cursor:pointer}\n.dr-btn:hover{border-color:var(--ow-accent)}\n.dr-btn.on{background:var(--ow-accent);color:var(--ow-accent-ink);border-color:var(--ow-accent)}\n.dr-list{list-style:none;margin:0;padding:0;max-height:200px;overflow:auto;font-size:13px}\n.dr-row{display:grid;grid-template-columns:minmax(0,1.3fr) 44px 64px 1fr 22px;gap:6px;align-items:center;padding:5px 0;border-top:1px solid var(--ow-line)}\n.dr-row.h{color:var(--ow-muted);font-size:11px;border-top:0;padding-bottom:2px}\n.dr-row .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}\n.dr-row .m{font-family:var(--ow-mono);font-size:12px;color:var(--ow-muted);text-align:right}\n.dr-bar{height:9px;border-radius:5px;background:var(--ow-accent);min-width:2px;transition:width .3s}\n.dr-x{font:inherit;border:0;background:none;color:var(--ow-muted);cursor:pointer;padding:0;line-height:1}\n.dr-big{font-size:40px;font-weight:700;line-height:1;margin:2px 0 0}\n.dr-k{font-size:11px;color:var(--ow-muted);text-transform:uppercase;letter-spacing:.04em}\n.dr-tot{display:flex;gap:22px;align-items:flex-end;flex-wrap:wrap}\n.dr-ruler{position:relative;height:56px;margin:18px 30px 0}\n.dr-ax{position:absolute;left:0;right:0;top:30px;height:2px;background:var(--ow-line)}\n.dr-t{position:absolute;top:24px;width:2px;height:14px;background:var(--ow-muted)}\n.dr-t span{position:absolute;top:16px;left:-24px;width:48px;text-align:center;font-size:10px;color:var(--ow-muted);font-family:var(--ow-mono)}\n.dr-t b{position:absolute;top:-18px;left:-24px;width:48px;text-align:center;font-size:11px}\n.dr-dot{position:absolute;top:22px;width:18px;height:18px;border-radius:50%;background:var(--ow-accent);margin-left:-9px;border:2px solid var(--ow-panel);transition:left .3s}\n.dr-note{font-size:12px;color:var(--ow-muted);margin:14px 0 0;line-height:1.4}\n@media (prefers-reduced-motion:reduce){.dr-bar,.dr-dot{transition:none}}\n</style>\n<div class=\"dr\">\n  <p class=\"dr-q\" id=\"dr-q\">Each site that links to you hands over its own rating divided by how many sites it links to. The sum is squashed onto a log scale. Load a profile, add links, remove rows.</p>\n  <div class=\"dr-panel\">\n    <div class=\"dr-btns\" id=\"dr-presets\">\n      <button class=\"dr-btn\" type=\"button\" data-p=\"big\">Three big directories</button>\n      <button class=\"dr-btn\" type=\"button\" data-p=\"blogs\">Eighteen small blogs</button>\n      <button class=\"dr-btn\" type=\"button\" data-p=\"tiny\">A thousand tiny directories</button>\n      <button class=\"dr-btn\" type=\"button\" data-p=\"none\">Empty</button>\n    </div>\n    <div class=\"dr-btns\" id=\"dr-adds\">\n      <span class=\"dr-k\" style=\"align-self:center\">add</span>\n      <button class=\"dr-btn\" type=\"button\" data-a=\"93|20000|1\">DR 93 directory, 20,000 outlinks</button>\n      <button class=\"dr-btn\" type=\"button\" data-a=\"60|50000|1\">DR 60 directory, 50,000 outlinks</button>\n      <button class=\"dr-btn\" type=\"button\" data-a=\"25|30|1\">DR 25 blog, 30 outlinks</button>\n      <button class=\"dr-btn\" type=\"button\" data-a=\"10|500|1\">DR 10 directory, 500 outlinks</button>\n      <button class=\"dr-btn\" type=\"button\" data-a=\"90|1000|0\">DR 90, nofollow</button>\n    </div>\n    <ol class=\"dr-list\" id=\"dr-list\" aria-label=\"Linking sites\"></ol>\n  </div>\n  <div class=\"dr-panel\">\n    <div class=\"dr-tot\"><div><div class=\"dr-k\">your DR</div><div class=\"dr-big\" id=\"dr-out\" aria-live=\"polite\">0</div></div><div><div class=\"dr-k\">raw link juice</div><div class=\"dr-big\" id=\"dr-j\" style=\"font-size:26px\">0</div></div></div>\n    <div class=\"dr-ruler\" id=\"dr-ruler\" aria-hidden=\"true\"><div class=\"dr-ax\"></div></div>\n    <p class=\"dr-note\" id=\"dr-note\"></p>\n  </div>\n</div>\n<script>\n(function(){\n  var K=20,SCALE=4;\n  var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;\n  function juice(r){return r.f?Math.pow(10,r.dr/K)/Math.max(0.0001,r.out):0}\n  function drOf(j){return j<=0?0:Math.max(0,Math.min(100,K*Math.log10(SCALE*j)))}\n  function fmt(n){return n>=100?Math.round(n).toLocaleString():n>=10?n.toFixed(1):n.toFixed(2)}\n  var P={\n    big:[['Giant directory A',93,20000,1],['Directory B',83,5000,1],['Directory C',72,2000,1],['Six mid directories (summed)',40,600,1],['Twenty tiny directories (summed)',12,120,1],['A DR 76 site, nofollow',76,20000,0]],\n    blogs:[],tiny:[['1,000 directories at DR 10, 500 outlinks each (summed)',10,0.5,1]],none:[]};\n  for(var i=0;i<18;i++)P.blogs.push(['Blog '+(i+1),20+(i%3)*10,30+i*5,1]);\n  var rows=[];\n  var list=document.getElementById('dr-list'),out=document.getElementById('dr-out'),jEl=document.getElementById('dr-j'),note=document.getElementById('dr-note'),ruler=document.getElementById('dr-ruler');\n  for(var lg=-1;lg<=4;lg++){var t=document.createElement('div');t.className='dr-t';t.style.left=((lg+1)/5*100)+'%';t.innerHTML='<b>DR '+Math.round(drOf(Math.pow(10,lg)))+'</b><span>'+['0.1','1','10','100','1k','10k'][lg+1]+'</span>';ruler.appendChild(t)}\n  var dot=document.createElement('div');dot.className='dr-dot';ruler.appendChild(dot);\n  function load(k){rows=P[k].map(function(r){return{n:r[0],dr:r[1],out:r[2],f:!!r[3]}});render()}\n  function render(){\n    var js=rows.map(juice),mx=Math.max(0.0001,Math.max.apply(null,js.concat([0]))),tot=js.reduce(function(a,b){return a+b},0),d=drOf(tot);\n    var h='<li class=\"dr-row h\"><span>linking site</span><span class=\"m\">DR</span><span class=\"m\">out</span><span>juice to you</span><span></span></li>';\n    rows.forEach(function(r,i){h+='<li class=\"dr-row\"><span class=\"n\" title=\"'+r.n+'\">'+r.n+(r.f?'':' (nofollow)')+'</span><span class=\"m\">'+r.dr+'</span><span class=\"m\">'+(r.out<1?'1,000×500':r.out.toLocaleString())+'</span><span style=\"display:flex;align-items:center;gap:6px\"><span class=\"dr-bar\" style=\"width:'+Math.max(2,js[i]/mx*100)+'%\"></span><span class=\"m\">'+fmt(js[i])+'</span></span><button class=\"dr-x\" type=\"button\" data-i=\"'+i+'\" aria-label=\"remove\">×</button></li>'});\n    list.innerHTML=h;\n    out.textContent=Math.round(d);jEl.textContent=fmt(tot);\n    var lg=tot>0?Math.log10(tot):-1;dot.style.left=(Math.max(-1,Math.min(4,lg))+1)/5*100+'%';\n    if(!rows.length){note.textContent='Load a profile or add a link.';return}\n    var big=Math.max.apply(null,js),without=drOf(tot-big),next=drOf(tot+juice({dr:93,out:20000,f:true}));\n    note.textContent='Largest single link is '+Math.round(big/tot*100)+'% of the juice; without it DR '+Math.round(without)+'. One more DR 93 directory link would move you to DR '+Math.round(next)+'. Every tenfold in juice is +'+K+' DR, so the higher you are, the less each link shows.';\n  }\n  document.getElementById('dr-presets').addEventListener('click',function(e){var b=e.target.closest('[data-p]');if(!b)return;load(b.dataset.p);Array.prototype.forEach.call(this.children,function(c){c.classList.toggle('on',c===b)})});\n  document.getElementById('dr-adds').addEventListener('click',function(e){var b=e.target.closest('[data-a]');if(!b)return;var a=b.dataset.a.split('|');rows.push({n:b.textContent,dr:+a[0],out:+a[1],f:a[2]==='1'});render()});\n  list.addEventListener('click',function(e){var b=e.target.closest('[data-i]');if(!b)return;rows.splice(+b.dataset.i,1);render()});\n  load('big');document.querySelector('[data-p=\"big\"]').classList.add('on');\n})();\n</script>\n"
+    },
+    {
+      "heading": "How Ahrefs computes it",
+      "body": "Ahrefs says it calculates DR \"in a somewhat similar way to how PageRank is calculated\", between websites rather than pages [1]. It finds every domain with at least one followed link to the target, looks up how many other domains each of those links to, and passes a share of rating to the target, roughly the linking domain's DR divided by the number of unique domains it links to [2]. In its help centre's words, \"the source domain splits its rating equally amongst the domains it links to\" [3], and \"we also look at how many other unique sites each linking domain links to\" [4]. So a link's value depends on two numbers: the linking site's own DR and how generously that site links out. A small blog with thirty outbound domains can hand over more than a huge directory listing fifty thousand. See [[PageRank]] for the page-level original.",
+      "sources": [
+        {
+          "url": "https://ahrefs.com/blog/domain-rating/",
+          "title": "Domain Rating (DR): What It Is and Why It Matters (Ahrefs blog)",
+          "quote": "We calculate DR in a somewhat similar way to how PageRank is calculated."
+        },
+        {
+          "url": "https://ahrefs.com/blog/domain-rating/",
+          "title": "Domain Rating (DR): What It Is and Why It Matters (Ahrefs blog)",
+          "quote": "dividing the DR of the linking domain by the number of unique domains that it links to"
+        },
+        {
+          "url": "https://help.ahrefs.com/en/articles/1409408-what-is-domain-rating-dr",
+          "title": "What is Domain Rating (DR)? (Ahrefs Help)",
+          "quote": "The source domain splits its rating equally amongst the domains it links to."
+        },
+        {
+          "url": "https://help.ahrefs.com/en/articles/1409408-what-is-domain-rating-dr",
+          "title": "What is Domain Rating (DR)? (Ahrefs Help)",
+          "quote": "We also look at how many other unique sites each linking domain links to."
+        }
+      ]
+    },
+    {
+      "heading": "Why the scale is logarithmic",
+      "body": "Ahrefs states that \"DR is measured on a logarithmic scale from 0 to 100, with the latter being the strongest\" [1]: the step from 70 to 71 costs far more link strength than the step from 20 to 21. In the explorable above, every tenfold increase in raw juice moves the score the same distance, so a near-zero site can jump thirty points on two or three followed links from very strong domains, while a site already at 60 barely moves on the same links. Two rules sharpen this: \"only the first link from a domain will increase your DR\" [2], and a nofollow link adds nothing. Small sites still count, in aggregate and linearly in juice; Ahrefs itself notes that \"if relevant, even a low-DR link will help your page to rank better\" [3]. The log scale hides their contribution in the score, not in the sum.",
+      "sources": [
+        {
+          "url": "https://ahrefs.com/blog/domain-rating/",
+          "title": "Domain Rating (DR): What It Is and Why It Matters (Ahrefs blog)",
+          "quote": "DR is measured on a logarithmic scale from 0 to 100, with the latter being the strongest."
+        },
+        {
+          "url": "https://ahrefs.com/blog/domain-rating/",
+          "title": "Domain Rating (DR): What It Is and Why It Matters (Ahrefs blog)",
+          "quote": "Only the first link from a domain will increase your DR."
+        },
+        {
+          "url": "https://ahrefs.com/blog/domain-rating/",
+          "title": "Domain Rating (DR): What It Is and Why It Matters (Ahrefs blog)",
+          "quote": "If relevant, even a low-DR link will help your page to rank better."
+        }
+      ]
+    },
+    {
+      "heading": "What it is not",
+      "body": "DR is one vendor's estimate of link strength, not a Google signal. In a 2016 hangout Google's John Mueller said Google does not have a \"website authority score\" [1]; in 2018 he allowed that Google has \"some metrics that are more on a site level, some metrics that are more on a page level\" that may map to similar ideas [2]. Ahrefs' own help page says \"DR correlates with Google rankings pretty well\" while ranking its page-level URL Rating as the better predictor [3]. In practice DR is used to compare sites, to prioritise link prospects, and by directories and journalists as a filter. It says nothing about traffic, and a score built on a few directory listings is thinner than the same number earned from many editorial sites.",
+      "sources": [
+        {
+          "url": "https://www.seroundtable.com/google-no-website-authority-score-22874.html",
+          "title": "Google Says They Don't Have A Website Authority Signal (Search Engine Roundtable, 2016)",
+          "quote": "Google does not have a \"website authority score.\""
+        },
+        {
+          "url": "https://www.brainlabsdigital.com/john-mueller-interview-at-searchlove/",
+          "title": "John Mueller interview at SearchLove (Brainlabs, 2018)",
+          "quote": "we do have some metrics that are more on a site level, some metrics that are more on a page level"
+        },
+        {
+          "url": "https://help.ahrefs.com/en/articles/1409408-what-is-domain-rating-dr",
+          "title": "What is Domain Rating (DR)? (Ahrefs Help)",
+          "quote": "DR correlates with Google rankings pretty well"
+        }
+      ]
+    }
+  ],
+  "data": {
+    "tags": [
+      "seo",
+      "backlinks",
+      "ranking",
+      "links",
+      "metrics"
+    ],
+    "facts": [
+      {
+        "label": "Made by",
+        "value": "Ahrefs"
+      },
+      {
+        "label": "Scale",
+        "value": "0 to 100, logarithmic"
+      },
+      {
+        "label": "Counts",
+        "value": "Followed links only, first link per domain"
+      },
+      {
+        "label": "Link value",
+        "value": "Linking site's DR divided by its unique outbound domains"
+      },
+      {
+        "label": "Google",
+        "value": "Says it has no website authority score"
+      },
+      {
+        "label": "Page-level sibling",
+        "value": "URL Rating (UR)"
+      }
+    ],
+    "see": [
+      "PageRank",
+      "Link spam",
+      "Web crawler"
+    ]
+  }
+}
