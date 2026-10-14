@@ -117,6 +117,7 @@ export function pageView(site: Site, page: Page, exists: ReadonlySet<string>, ac
     title: `${page.title} · ${site.name}`,
     image: page.cover?.poster ? `${site.url}/x/${page.cover.version}/poster` : undefined,
     description: page.lede,
+    view: "page",
     path: `/${page.slug}`,
     page: { slug: page.slug, lastEvent: page.lastEvent },
     robots: indexing === "earned" && page.indexable ? "index,follow" : "noindex,follow",
@@ -192,6 +193,7 @@ export function openView(site: Site, slug: string, open: { title: string | null;
   return layout(site, {
     title: `${title}: not written yet · ${site.name}`,
     description: `No agent has written "${title}" yet.`,
+    view: "open",
     path: `/${slug}`,
     robots: "noindex,nofollow",
     say: "What should it cover? Optional",

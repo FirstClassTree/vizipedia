@@ -7,6 +7,7 @@ import { existsSync, readdirSync } from "node:fs";
 import type { AddressInfo } from "node:net";
 import { after, before, test } from "node:test";
 import { serve } from "@hono/node-server";
+import { Hono } from "hono";
 import { type Browser, chromium, type Page } from "playwright";
 import { seedDir } from "../seed/seed.ts";
 import { build } from "../src/server.ts";
@@ -371,4 +372,110 @@ test("the map: pages are dots joined by their links, and naming a page puts it o
   assert.match((await page.locator("#sheet-prompt").textContent()) ?? "", /Your task: write the page/u);
   assert.deepEqual(errors, []);
   await page.close();
+});
+
+test("with a PostHog key the page reports what the reader does to that host and nowhere else; the key-less wiki above reports nothing", async (t) => {
+  // A stand-in PostHog: it serves the library the loader asks for and keeps every event it is sent.
+  // The library it serves is the smallest thing that honours what the wiki configured: before_send
+  // on every event, a pageview on load, capture() for the page's own events.
+  const sent: { event: string; properties: Record<string, unknown> }[] = [];
+  const batched: { event: string; properties: Record<string, unknown> }[] = [];
+  const library = `(() => {
+    const [key, config] = window.posthog._i[0];
+    const send = (event, properties = {}) => {
+      const out = config.before_send({ event, properties: { ...properties, token: key } });
+      if (out) fetch(config.api_host + "/e/", { method: "POST", body: JSON.stringify(out), keepalive: true });
+    };
+    // Calls made before the library arrived sit in the snippet's queue; the real library replays them too.
+    const queued = Array.isArray(window.posthog) ? window.posthog.filter((entry) => entry[0] === "capture") : [];
+    window.posthog = { capture: send, __stub: true };
+    if (config.capture_pageview) send("$pageview", { $current_url: location.href });
+    for (const [, event, properties] of queued) send(event, properties);
+  })();`;
+  const sink = new Hono();
+  sink.get("/static/array.js", (c) => c.body(library, 200, { "content-type": "text/javascript", "access-control-allow-origin": "*" }));
+  // Answered as PostHog answers: with the CORS header a cross-origin page needs.
+  sink.post("/e/", async (c) => {
+    sent.push((await c.req.json()) as (typeof sent)[number]);
+    return c.text("ok", 200, { "access-control-allow-origin": "*" });
+  });
+  sink.post("/batch/", async (c) => {
+    batched.push(...((await c.req.json()) as { batch: typeof batched }).batch);
+    return c.text("ok");
+  });
+  const port = async (): Promise<number> => {
+    const listening = Promise.withResolvers<AddressInfo>();
+    const probe = serve({ fetch: () => new Response(""), port: 0 }, (info) => listening.resolve(info));
+    const { port } = await listening.promise;
+    probe.close();
+    return port;
+  };
+  const sinkPort = await port();
+  // One address, by number: on a CI runner "localhost" can resolve to ::1 while the server listens on IPv4.
+  const sinkServer = serve({ fetch: sink.fetch, port: sinkPort, hostname: "127.0.0.1" });
+  t.after(() => sinkServer.close());
+  const host = `http://127.0.0.1:${sinkPort}`;
+
+  // A second wiki, with the key, on its own port and in its own memory.
+  const wikiPort = await port();
+  const wiki = `http://localhost:${wikiPort}`;
+  const { app, close: shutdown } = await build({
+    DATA_DIR: ":memory:",
+    VERIFY_SOURCES: "off",
+    VERIFY_RENDER: "off",
+    PORT: String(wikiPort),
+    TRUSTED_OWNERS: "ada",
+    POSTHOG_KEY: "phc_e2e",
+    POSTHOG_HOST: host,
+  });
+  const server = serve({ fetch: app.fetch, port: wikiPort });
+  let stopped = false;
+  t.after(async () => {
+    server.close();
+    if (!stopped) await shutdown();
+  });
+  const minted = await fetch(`${wiki}/api/keys`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ handle: "ada" }) });
+  const key = ((await minted.json()) as { key: string }).key;
+  const created = await fetch(`${wiki}/api/pages`, { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${key}` }, body: JSON.stringify(PAGE) });
+  assert.equal(created.status, 201, await created.text());
+
+  const { page, errors, requests } = await watched(1440, 900);
+  t.after(() => page.close());
+  await page.goto(`${wiki}/reach-decay`);
+  await page.waitForFunction(() => (window as unknown as { posthog?: { __stub?: boolean } }).posthog?.__stub === true);
+  const block = page.locator("#the-curve");
+  await block.locator(".fold > summary").click();
+  await block.hover();
+  await block.locator('[data-order="change"]').click();
+  await page.locator("#sheet-prompt").waitFor();
+  // Experiences count when they reach the screen: the cover is on screen from the start, the figure once scrolled to.
+  await page.locator("iframe.xp-figure").scrollIntoViewIfNeeded();
+  const seenKinds = () => new Set(sent.filter((event) => event.event === "wiki_experience_seen").map((event) => event.properties.kind));
+  const until = async (what: string, test: () => boolean) => {
+    for (let waited = 0; !test() && waited < 5000; waited += 100) await page.waitForTimeout(100);
+    assert.ok(test(), `${what}: ${JSON.stringify(sent.map((event) => [event.event, event.properties.kind]))}`);
+  };
+  await until(
+    "the pageview, the task opened and both frames seen arrive",
+    () => ["$pageview", "wiki_task_opened"].every((name) => sent.some((event) => event.event === name)) && seenKinds().size === 2,
+  );
+
+  const pageview = sent.find((event) => event.event === "$pageview")?.properties ?? {};
+  assert.equal(pageview.wiki, "Vizipedia");
+  assert.equal(pageview.wiki_view, "page");
+  assert.equal(pageview.wiki_slug, "reach-decay");
+  assert.equal(pageview.wiki_handle, null, "a reader with no key is nobody");
+  assert.equal(pageview.token, "phc_e2e", "the loader was given the configured key");
+  assert.equal(sent.find((event) => event.event === "wiki_task_opened")?.properties.kind, "change");
+  assert.deepEqual([...seenKinds()].sort(), ["experience", "figure"]);
+
+  const foreign = requests.filter((url) => !url.startsWith(wiki) && !url.startsWith("data:") && !url.startsWith("blob:"));
+  assert.ok(foreign.length > 0 && foreign.every((url) => url.startsWith(host)), `only the analytics host is spoken to: ${foreign.join(" ")}`);
+  assert.deepEqual(errors, [], "the policy admits the host, so nothing is blocked");
+
+  stopped = true;
+  await shutdown();
+  // The server half: the page's own search fetch and the two API calls above were counted, the HTML page was not.
+  assert.ok(batched.some((event) => event.event === "wiki_write" && event.properties.kind === "page.create" && event.properties.model === "claude-opus-5-5"));
+  assert.equal(batched.filter((event) => event.properties.path === "/reach-decay").length, 0);
 });

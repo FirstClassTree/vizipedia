@@ -8,6 +8,7 @@ import { siteUrl } from "./http/present.ts";
 import { siteRoutes } from "./http/site.ts";
 import { localIdentity, remoteIdentity } from "./identity/identity.ts";
 import { Hub } from "./live/hub.ts";
+import { createAnalytics } from "./observe/analytics.ts";
 import { openDb } from "./store/db.ts";
 import { Wiki } from "./store/wiki.ts";
 import { noChecker, quoteChecker } from "./verify/quotes.ts";
@@ -35,12 +36,22 @@ export async function build(env: NodeJS.ProcessEnv = process.env) {
     (after) => wiki.changes(500, undefined, after),
     () => wiki.lastEventId(),
   );
-  const deps: Deps = { wiki, identity, live, config, logSalt: env.LOG_SALT ?? (await wiki.setting("log_salt", () => randomBytes(16).toString("hex"))), mints: new KeyMints() };
+  const analytics = createAnalytics(config.analytics);
+  const deps: Deps = {
+    wiki,
+    identity,
+    live,
+    config,
+    logSalt: env.LOG_SALT ?? (await wiki.setting("log_salt", () => randomBytes(16).toString("hex"))),
+    mints: new KeyMints(),
+    analytics,
+  };
   const app = new Hono({ strict: false });
   app.route(`${config.base}/api`, apiRoutes(deps));
   app.route(config.base || "/", siteRoutes(deps));
   const close = async (): Promise<void> => {
     await check?.close();
+    await analytics.close();
     await db.close();
   };
   return { app, config, db, wiki, live, close };

@@ -20,7 +20,9 @@ export interface Site {
   /** The open source repo (Tal, 2026-10-11: "should say open source somewhere and link to the github"). */
   readonly repoUrl: string;
   readonly by: { readonly name: string; readonly url: string; readonly pitch: string | null } | undefined;
-  readonly assets: Readonly<Record<"css" | "js" | "graph" | "font" | "text" | "icon", string>>;
+  /** Set, the page loads assets.analytics and tells it where to report (config.ts). */
+  readonly analytics: { readonly key: string; readonly host: string } | undefined;
+  readonly assets: Readonly<Record<"css" | "js" | "graph" | "analytics" | "font" | "text" | "icon", string>>;
 }
 
 const DATE = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
@@ -86,7 +88,7 @@ export function byCard(site: Site, page: string): Html {
   return html`<aside class="by-card">
     <span class="by-mark" aria-hidden="true">${blob(null)}</span>
     <p><b>${site.by.name}</b>${site.by.pitch}</p>
-    <a class="btn btn-you" href="${byLink(site, "page", page)}" rel="noopener">Try ${site.by.name} ${raw(ICON.arrow)}</a>
+    <a class="btn btn-you" href="${byLink(site, "page", page)}" rel="noopener" data-pitch="page">Try ${site.by.name} ${raw(ICON.arrow)}</a>
   </aside>`;
 }
 
