@@ -386,8 +386,11 @@ test("with a PostHog key the page reports what the reader does to that host and 
       const out = config.before_send({ event, properties: { ...properties, token: key } });
       if (out) fetch(config.api_host + "/e/", { method: "POST", body: JSON.stringify(out), keepalive: true });
     };
+    // Calls made before the library arrived sit in the snippet's queue; the real library replays them too.
+    const queued = Array.isArray(window.posthog) ? window.posthog.filter((entry) => entry[0] === "capture") : [];
     window.posthog = { capture: send, __stub: true };
     if (config.capture_pageview) send("$pageview", { $current_url: location.href });
+    for (const [, event, properties] of queued) send(event, properties);
   })();`;
   const sink = new Hono();
   sink.get("/static/array.js", (c) => c.body(library, 200, { "content-type": "text/javascript", "access-control-allow-origin": "*" }));
@@ -408,9 +411,10 @@ test("with a PostHog key the page reports what the reader does to that host and 
     return port;
   };
   const sinkPort = await port();
-  const sinkServer = serve({ fetch: sink.fetch, port: sinkPort });
+  // One address, by number: on a CI runner "localhost" can resolve to ::1 while the server listens on IPv4.
+  const sinkServer = serve({ fetch: sink.fetch, port: sinkPort, hostname: "127.0.0.1" });
   t.after(() => sinkServer.close());
-  const host = `http://localhost:${sinkPort}`;
+  const host = `http://127.0.0.1:${sinkPort}`;
 
   // A second wiki, with the key, on its own port and in its own memory.
   const wikiPort = await port();
@@ -444,13 +448,16 @@ test("with a PostHog key the page reports what the reader does to that host and 
   await block.hover();
   await block.locator('[data-order="change"]').click();
   await page.locator("#sheet-prompt").waitFor();
-  // Experiences count when they reach the screen; the cover is on screen from the start.
+  // Experiences count when they reach the screen: the cover is on screen from the start, the figure once scrolled to.
+  await page.locator("iframe.xp-figure").scrollIntoViewIfNeeded();
+  const seenKinds = () => new Set(sent.filter((event) => event.event === "wiki_experience_seen").map((event) => event.properties.kind));
   const until = async (what: string, test: () => boolean) => {
     for (let waited = 0; !test() && waited < 5000; waited += 100) await page.waitForTimeout(100);
-    assert.ok(test(), `${what}: ${JSON.stringify(sent.map((event) => event.event))}`);
+    assert.ok(test(), `${what}: ${JSON.stringify(sent.map((event) => [event.event, event.properties.kind]))}`);
   };
-  await until("the pageview, the experience seen and the task opened arrive", () =>
-    ["$pageview", "wiki_experience_seen", "wiki_task_opened"].every((name) => sent.some((event) => event.event === name)),
+  await until(
+    "the pageview, the task opened and both frames seen arrive",
+    () => ["$pageview", "wiki_task_opened"].every((name) => sent.some((event) => event.event === name)) && seenKinds().size === 2,
   );
 
   const pageview = sent.find((event) => event.event === "$pageview")?.properties ?? {};
@@ -460,9 +467,7 @@ test("with a PostHog key the page reports what the reader does to that host and 
   assert.equal(pageview.wiki_handle, null, "a reader with no key is nobody");
   assert.equal(pageview.token, "phc_e2e", "the loader was given the configured key");
   assert.equal(sent.find((event) => event.event === "wiki_task_opened")?.properties.kind, "change");
-  // Both frames on the page reached the screen: the cover experience and the eager figure.
-  const seenKinds = new Set(sent.filter((event) => event.event === "wiki_experience_seen").map((event) => event.properties.kind));
-  assert.deepEqual([...seenKinds].sort(), ["experience", "figure"]);
+  assert.deepEqual([...seenKinds()].sort(), ["experience", "figure"]);
 
   const foreign = requests.filter((url) => !url.startsWith(wiki) && !url.startsWith("data:") && !url.startsWith("blob:"));
   assert.ok(foreign.length > 0 && foreign.every((url) => url.startsWith(host)), `only the analytics host is spoken to: ${foreign.join(" ")}`);
