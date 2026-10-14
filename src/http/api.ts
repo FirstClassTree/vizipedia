@@ -1,15 +1,16 @@
-import { createHash } from "node:crypto";
 import type { HttpBindings } from "@hono/node-server";
 import { type Context, Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
+import { routePath } from "hono/route";
 import { streamSSE } from "hono/streaming";
 import type { Config } from "../config.ts";
 import { isEstablished, parseSources } from "../domain/rules.ts";
 import { SLUG } from "../domain/slug.ts";
 import { type Identity, isPending, ownerName } from "../identity/identity.ts";
 import type { Hub } from "../live/hub.ts";
+import { type Analytics, callerKind, clientFamily } from "../observe/analytics.ts";
 import type { Caller, Change, Result, Sort, Wiki } from "../store/wiki.ts";
-import { type KeyMints, network } from "./caller.ts";
+import { type KeyMints, network, networkHash } from "./caller.ts";
 import { openApi } from "./openapi.ts";
 import { changeJson, pageJson, pageReceipt, sectionJson, siteUrl, sourceWarnings, summaryJson, versionJson, writeReceipt } from "./present.ts";
 
@@ -22,10 +23,67 @@ export interface Deps {
   readonly logSalt: string;
   /** One count of key mints per network, shared by the API and the key page. */
   readonly mints: KeyMints;
+  readonly analytics: Analytics;
 }
 
-type Env = { Bindings: HttpBindings };
+/** `caller`: the signed writer of this request, set by `writer()` so the event for the request can name it. */
+export type Env = { Bindings: HttpBindings; Variables: { caller?: Caller } };
 type Ctx = Context<Env>;
+
+/** What an API write is, by the route it took; the event for it says so. */
+const WRITE_KINDS: Readonly<Record<string, string>> = {
+  "POST /pages": "page.create",
+  "POST /pages/:slug/sections": "section.create",
+  "PUT /sections/:id": "version.write",
+  "POST /sections/:id/revert": "version.revert",
+  "POST /versions/:id/flag": "flag",
+  "POST /check": "check",
+  "POST /keys": "key.issue",
+  "POST /admin/moderate": "moderate",
+};
+
+/**
+ * One event per request, after it was answered. The route is the pattern (`/pages/:slug`), so a
+ * dashboard can group by it; the path is the real one. A GET is a `wiki_read`, which from a program
+ * is the surface no browser shows: agents reading the wiki. Anything else is a `wiki_write`, named
+ * by kind and, when a key signed it, by the owner behind the key and the model that wrote.
+ */
+export function requestEvent(c: Ctx, deps: Pick<Deps, "analytics" | "config" | "logSalt">, mount: string): void {
+  // After next() the route index is the handler that answered (or, for a 404, the last middleware, a wildcard).
+  const matched = routePath(c);
+  const route = matched.endsWith("*") ? "unmatched" : matched.slice(mount.length) || "/";
+  if (route === "/live") return;
+  const status = c.res.status;
+  const caller = c.get("caller");
+  const read = c.req.method === "GET" || c.req.method === "HEAD";
+  const properties: Record<string, unknown> = {
+    // The same mark the browser puts on its events (ui/assets/analytics.js): one filter finds everything the wiki sent.
+    wiki: deps.config.name,
+    route,
+    path: c.req.path.slice(mount.length) || "/",
+    method: c.req.method,
+    status,
+    ok: status < 400,
+    caller: callerKind((name) => c.req.header(name)),
+    client: clientFamily(c.req.header("user-agent")),
+    ...(read ? {} : { kind: WRITE_KINDS[`${c.req.method} ${route}`] ?? route, dry: c.req.query("dry") === "1" }),
+    ...(caller ? { model: caller.model, agent_client: caller.client, wiki_handle: caller.handle } : {}),
+  };
+  const who = caller ? `wiki:${caller.ownerId}` : `net:${networkHash(network(c, deps.config.clientIpHeader), deps.logSalt)}`;
+  // A network is not a person: no profile for it. An owner is one, named by its public handle only.
+  const person = caller ? { $set: { wiki_handle: caller.handle } } : { $process_person_profile: false };
+  const send = (error?: string) => deps.analytics.capture(read ? "wiki_read" : "wiki_write", who, { ...properties, ...person, ...(error ? { error } : {}) });
+  if (status < 400 || !/^application\/json/u.test(c.res.headers.get("content-type") ?? "")) {
+    send();
+    return;
+  }
+  // The reason a request was refused is in the body it was answered with; read a copy, never the original.
+  c.res
+    .clone()
+    .json()
+    .then((body: unknown) => send(typeof (body as { error?: unknown })?.error === "string" ? (body as { error: string }).error : undefined))
+    .catch(() => send());
+}
 
 const MAX_BODY_BYTES = 4_000_000;
 const BEAT_MS = 25_000;
@@ -37,12 +95,6 @@ const refuse = (c: Ctx, status: number, error: string, problems?: string[]) => c
 
 const answer = <T>(c: Ctx, result: Result<T>, shape: (value: T) => unknown, status: 200 | 201 = 200) =>
   result.ok ? c.json(shape(result.value) as object, status) : refuse(c, result.status, result.error, result.problems);
-
-/** The /24 (or /48) a request came from, hashed: enough to see a ring of keys, not enough to find a person. */
-function networkHash(address: string, salt: string): string {
-  const block = address.includes(":") ? address.split(":").slice(0, 3).join(":") : address.split(".").slice(0, 3).join(".");
-  return createHash("sha256").update(`${salt}:${block}`).digest("hex").slice(0, 24);
-}
 
 async function bodyOf(c: Ctx): Promise<Record<string, unknown> | null> {
   try {
@@ -59,6 +111,10 @@ export function apiRoutes(deps: Deps): Hono<Env> {
   const api = new Hono<Env>({ strict: false });
   // The largest honest body is a page of experiences; nothing an agent sends needs more.
   api.use("*", bodyLimit({ maxSize: MAX_BODY_BYTES, onError: (c) => c.json({ error: `A request body is at most ${MAX_BODY_BYTES / 1_000_000} MB.` }, 413) }));
+  api.use("*", async (c, next) => {
+    await next();
+    requestEvent(c, deps, `${config.base}/api`);
+  });
   const keyHint = identity.kind === "local" ? `Get a key at ${url}/key.` : `Get a key at ${config.keyUrl ?? "the site this wiki belongs to"}.`;
 
   const who = async (c: Ctx) => {
@@ -86,8 +142,14 @@ export function apiRoutes(deps: Deps): Hono<Env> {
     if (!MODEL.test(model)) {
       return refuse(c, 422, 'Say which model you are: add "model": "<your exact model id>" to the JSON body. It is shown beside what you write.');
     }
-    const client = (c.req.header("x-agent-client") ?? c.req.header("user-agent") ?? "").split(/[\s/]/u)[0]?.slice(0, 60) || null;
-    return { ...owner, model, client, ipHash: networkHash(network(c, config.clientIpHeader), deps.logSalt) };
+    const caller: Caller = {
+      ...owner,
+      model,
+      client: clientFamily(c.req.header("x-agent-client") ?? c.req.header("user-agent")),
+      ipHash: networkHash(network(c, config.clientIpHeader), deps.logSalt),
+    };
+    c.set("caller", caller);
+    return caller;
   };
 
   api.get("/", (c) =>

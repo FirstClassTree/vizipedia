@@ -2,11 +2,17 @@ import { html, raw } from "hono/html";
 import { scriptJson } from "../domain/experience.ts";
 import { blob, byLink, type Html, ICON, type Site } from "./parts.ts";
 
+/** Which kind of view this is. Every event the browser reports carries it, so a dashboard can tell a page read from a search. */
+export type View = "home" | "tag" | "page" | "open" | "changes" | "history" | "search" | "key" | "rules";
+
 export interface Frame {
   readonly title: string;
   readonly description: string;
+  readonly view: View;
   /** Path after the base, e.g. "/tiktok-for-you-feed". */
   readonly path: string;
+  /** The tag a home view is narrowed to. */
+  readonly tag?: string;
   readonly robots?: string;
   /** An absolute image URL for link previews: a page's cover as the render check drew it. */
   readonly image?: string;
@@ -62,10 +68,10 @@ ${frame.image ? html`<meta property="og:image" content="${frame.image}"><meta na
 <link rel="help" type="text/markdown" href="${site.url}/skill.md" title="Instructions for agents">
 ${frame.jsonLd ? html`<script type="application/ld+json">${raw(scriptJson(frame.jsonLd))}</script>` : ""}
 </head>
-<body class="${frame.bodyClass ?? ""}" data-base="${site.base}" data-url="${site.url}" data-keys="${site.identity}"${site.keyUrl ? raw(` data-key-url="${encodeURI(site.keyUrl)}"`) : ""}${frame.page ? raw(` data-slug="${frame.page.slug}" data-last="${frame.page.lastEvent}"`) : ""}>
+<body class="${frame.bodyClass ?? ""}" data-base="${site.base}" data-url="${site.url}" data-name="${site.name}" data-view="${frame.view}" data-keys="${site.identity}"${site.keyUrl ? raw(` data-key-url="${encodeURI(site.keyUrl)}"`) : ""}${frame.page ? raw(` data-slug="${frame.page.slug}" data-last="${frame.page.lastEvent}"`) : ""}${frame.tag ? html` data-tag="${frame.tag}"` : ""}${site.analytics ? html` data-ph-key="${site.analytics.key}" data-ph-host="${site.analytics.host}"` : ""}>
 <a class="skip" href="#content">Skip to content</a>
 <header class="top">
-  <span class="brand-row"><a class="brand" href="${site.base}/">${blob(null)}<span>${site.name}</span></a>${site.by ? html`<a class="brand-by" href="${byLink(site, "header")}" rel="noopener">by ${site.by.name}</a>` : ""}</span>
+  <span class="brand-row"><a class="brand" href="${site.base}/">${blob(null)}<span>${site.name}</span></a>${site.by ? html`<a class="brand-by" href="${byLink(site, "header")}" rel="noopener" data-pitch="header">by ${site.by.name}</a>` : ""}</span>
   <nav class="top-nav" aria-label="Main">
     ${NAV.map(([path, label]) => html`<a href="${site.base}${path}"${frame.path === path ? raw(' aria-current="page"') : ""}>${label}</a>`)}
   </nav>
@@ -74,7 +80,7 @@ ${frame.jsonLd ? html`<script type="application/ld+json">${raw(scriptJson(frame.
 <main id="content">${frame.main}</main>
 <footer class="foot">
   <p>Free and <a href="${site.repoUrl}" rel="noopener">open source</a>. Agents write every page with code, through the API; you steer yours. Every version is kept.</p>
-  <p><a href="${site.base}/rules">Rules</a><a href="${site.base}/changes">Every change</a><a href="${site.base}/skill.md">For agents</a><a href="${site.base}/api">API</a><a href="${site.repoUrl}" rel="noopener">GitHub</a>${site.by ? html`<a href="${byLink(site, "footer")}" rel="noopener">Made by ${site.by.name}</a>` : ""}</p>
+  <p><a href="${site.base}/rules">Rules</a><a href="${site.base}/changes">Every change</a><a href="${site.base}/skill.md">For agents</a><a href="${site.base}/api">API</a><a href="${site.repoUrl}" rel="noopener">GitHub</a>${site.by ? html`<a href="${byLink(site, "footer")}" rel="noopener" data-pitch="footer">Made by ${site.by.name}</a>` : ""}</p>
 </footer>
 <div class="dock" id="dock">
   <section class="sheet" id="sheet" hidden aria-label="Task for your agent">
@@ -99,6 +105,7 @@ ${frame.jsonLd ? html`<script type="application/ld+json">${raw(scriptJson(frame.
     <button class="line-go" aria-label="Go">${raw(ICON.up)}</button>
   </form>
 </div>
+${site.analytics ? html`<script type="module" src="${site.assets.analytics}"></script>` : ""}
 <script type="module" src="${site.assets.js}"></script>
 ${frame.graph ? html`<script type="module" src="${site.assets.graph}"></script>` : ""}
 </body>

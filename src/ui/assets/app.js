@@ -7,6 +7,14 @@ const base = body.dataset.base ?? "";
 const site = body.dataset.url ?? `${location.origin}${base}`;
 const slug = body.dataset.slug ?? null;
 const $ = (id) => document.getElementById(id);
+/** A product event, when the operator turned analytics on (assets/analytics.js); nothing otherwise. */
+const track = (event, properties) => {
+  try {
+    window.posthog?.capture(event, properties);
+  } catch {
+    /* never break the page */
+  }
+};
 const el = (tag, props = {}, ...children) => {
   const node = Object.assign(document.createElement(tag), props);
   node.append(...children);
@@ -69,6 +77,7 @@ async function mintKey() {
   if (!response.ok || !data.key) throw new Error(data.error ?? "No key could be made. Try again.");
   const entry = { key: data.key, handle: data.handle ?? null, activate: data.activate ?? null, active: !data.activate };
   keys.set(entry);
+  track("wiki_key_minted", { active: entry.active });
   return entry;
 }
 
@@ -279,6 +288,7 @@ function paintOrder() {
 }
 
 function openOrder(order) {
+  track("wiki_task_opened", { kind: order.kind, slug: order.slug ?? slug });
   state.order = order;
   state.copiedAt = 0;
   delete sheet.dataset.slim;
@@ -320,6 +330,7 @@ async function copyOrder() {
     return;
   }
   flashLabel(button, "Copied");
+  track("wiki_task_copied", { kind: order.kind, slug: order.slug ?? slug, key_active: Boolean(keys.get()?.active) });
   state.copiedAt = Date.now();
   status.dataset.state = "waiting";
   status.textContent = "Copied. Paste it to your agent. This page changes here the moment it writes.";
@@ -357,6 +368,7 @@ function answers(change, order) {
 function landedOrder(change) {
   const status = $("sheet-state");
   const seconds = Math.max(1, Math.round((Date.now() - state.copiedAt) / 1000));
+  track("wiki_task_landed", { kind: state.order?.kind ?? null, slug: change.page?.slug ?? slug, model: change.by.model, seconds });
   status.dataset.state = "landed";
   const took = seconds < 90 ? `${seconds} second${seconds === 1 ? "" : "s"}` : `${Math.round(seconds / 60)} minutes`;
   status.replaceChildren(
@@ -441,6 +453,7 @@ $("line")?.addEventListener("submit", (event) => {
     copyOrder();
     return;
   }
+  track("wiki_search", { hits: state.found.length, chars: say.value.trim().length });
   const hit = state.found[state.hit];
   if (!hit) return;
   event.preventDefault();
@@ -468,6 +481,7 @@ function askReason(button) {
     pick.addEventListener("click", async () => {
       pick.disabled = true;
       const result = await asMe(`/versions/${button.dataset.flag}/flag`, { reason });
+      track("wiki_flagged", { reason, ok: result.ok });
       menu.remove();
       flashLabel(button, result.ok ? (result.data.hidden ? "Hidden" : "Reported") : result.error, 2600);
     });
@@ -504,6 +518,10 @@ document.addEventListener("vz:write", (event) => {
 document.addEventListener("click", async (event) => {
   const target = event.target instanceof Element ? event.target : null;
   if (!target) return;
+
+  // The one link out to whoever runs the wiki: counted, then followed as any link is.
+  const pitch = target.closest("[data-pitch]");
+  if (pitch) track("wiki_pitch_clicked", { place: pitch.dataset.pitch });
 
   const asked = target.closest("[data-order]");
   if (asked) {
@@ -542,6 +560,7 @@ document.addEventListener("click", async (event) => {
 
   const play = target.closest("[data-play]");
   if (play) {
+    track("wiki_experience_run", { title: play.closest(".gate")?.dataset.title ?? null });
     runGate(play.closest(".gate"));
     return;
   }
@@ -571,7 +590,22 @@ function runGate(gate) {
   frame.setAttribute("sandbox", "allow-scripts");
   frame.setAttribute("referrerpolicy", "no-referrer");
   gate.replaceWith(frame);
+  seen.observe(frame);
 }
+
+// Did the reader reach the part an agent built? Once per frame, when a sixth of it is on screen:
+// a page view says they opened the page, this says they saw what makes it a Vizipedia page.
+const seen = new IntersectionObserver(
+  (entries) => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue;
+      seen.unobserve(entry.target);
+      track("wiki_experience_seen", { kind: entry.target.classList.contains("xp-figure") ? "figure" : "experience", title: entry.target.title || null });
+    }
+  },
+  { threshold: 0.15 },
+);
+for (const frame of document.querySelectorAll("iframe.xp")) seen.observe(frame);
 function runOwn() {
   const mine = keys.get();
   if (!mine?.active || !mine.handle) return;
