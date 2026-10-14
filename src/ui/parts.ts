@@ -20,6 +20,7 @@ export interface Site {
   /** The open source repo (Tal, 2026-10-11: "should say open source somewhere and link to the github"). */
   readonly repoUrl: string;
   readonly by: { readonly name: string; readonly url: string; readonly pitch: string | null } | undefined;
+  readonly live: "stream" | "poll";
   readonly assets: Readonly<Record<"css" | "js" | "graph" | "font" | "text" | "icon", string>>;
 }
 

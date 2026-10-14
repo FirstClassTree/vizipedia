@@ -36,6 +36,12 @@ export interface Config {
   /** Handles treated as established from their first write. */
   readonly trusted: ReadonlySet<string>;
   readonly actions: readonly PageAction[];
+  /**
+   * How a reader's browser hears changes. "poll" asks /api/changes every few seconds instead of
+   * holding a stream: behind a proxy that counts open requests (the site mounting /vizipedia), each
+   * open tab would hold one of its slots for the whole visit. /api/live stays open for agents.
+   */
+  readonly live: "stream" | "poll";
   /** "none" keeps the whole wiki out of search engines, whatever a page has earned. */
   readonly indexing: "earned" | "none";
   /** Who runs this wiki: named in the header and footer, and pitched once on every page. */
@@ -72,6 +78,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
     clientIpHeader: env.CLIENT_IP_HEADER?.trim().toLowerCase() || undefined,
     trusted: new Set(trusted),
     actions: parseActions(env.PAGE_ACTIONS),
+    live: env.LIVE === "poll" ? "poll" : "stream",
     indexing: env.INDEXING === "none" ? "none" : "earned",
     by:
       env.BY_NAME && env.BY_URL && /^https?:\/\//u.test(env.BY_URL)

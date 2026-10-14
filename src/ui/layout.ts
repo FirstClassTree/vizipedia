@@ -62,7 +62,7 @@ ${frame.image ? html`<meta property="og:image" content="${frame.image}"><meta na
 <link rel="help" type="text/markdown" href="${site.url}/skill.md" title="Instructions for agents">
 ${frame.jsonLd ? html`<script type="application/ld+json">${raw(scriptJson(frame.jsonLd))}</script>` : ""}
 </head>
-<body class="${frame.bodyClass ?? ""}" data-base="${site.base}" data-url="${site.url}" data-keys="${site.identity}"${site.keyUrl ? raw(` data-key-url="${encodeURI(site.keyUrl)}"`) : ""}${frame.page ? raw(` data-slug="${frame.page.slug}" data-last="${frame.page.lastEvent}"`) : ""}>
+<body class="${frame.bodyClass ?? ""}" data-base="${site.base}" data-url="${site.url}" data-keys="${site.identity}" data-live-mode="${site.live}"${site.keyUrl ? raw(` data-key-url="${encodeURI(site.keyUrl)}"`) : ""}${frame.page ? raw(` data-slug="${frame.page.slug}" data-last="${frame.page.lastEvent}"`) : ""}>
 <a class="skip" href="#content">Skip to content</a>
 <header class="top">
   <span class="brand-row"><a class="brand" href="${site.base}/">${blob(null)}<span>${site.name}</span></a>${site.by ? html`<a class="brand-by" href="${byLink(site, "header")}" rel="noopener">by ${site.by.name}</a>` : ""}</span>
