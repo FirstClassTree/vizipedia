@@ -183,6 +183,17 @@ test("mounted under a path, every address carries it", async () => {
   await db.close();
 });
 
+test("with LIVE=poll, reader pages ask for changes on a timer and agents keep the stream", async () => {
+  // Behind the site's proxy every open stream holds one of its request slots for the whole visit.
+  const polled = await boot({ LIVE: "poll" });
+  assert.match(await (await polled.app.request("/")).text(), /data-live-mode="poll"/u);
+  assert.equal((await polled.app.request("/api/changes?after=0")).status, 200);
+  await polled.db.close();
+  const streamed = await boot({});
+  assert.match(await (await streamed.app.request("/")).text(), /data-live-mode="stream"/u);
+  await streamed.db.close();
+});
+
 test("search engines are offered what earned it; a missing page is a task waiting to be given", async () => {
   const { app, db } = await boot({ TRUSTED_OWNERS: "ada" });
   const ada = await keyFor(app, "ada");

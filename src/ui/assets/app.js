@@ -877,6 +877,7 @@ function startPolling() {
 }
 
 function listen() {
+  if (body.dataset.liveMode === "poll") return startPolling();
   if (stream || poll || !window.EventSource) return;
   const query = new URLSearchParams();
   if (slug) query.set("page", slug);
