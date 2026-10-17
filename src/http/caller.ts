@@ -1,5 +1,12 @@
+import { createHash } from "node:crypto";
 import type { HttpBindings } from "@hono/node-server";
 import type { Context } from "hono";
+
+/** The /24 (or /48) a request came from, hashed: enough to see a ring of keys, not enough to find a person. */
+export function networkHash(address: string, salt: string): string {
+  const block = address.includes(":") ? address.split(":").slice(0, 3).join(":") : address.split(".").slice(0, 3).join(".");
+  return createHash("sha256").update(`${salt}:${block}`).digest("hex").slice(0, 24);
+}
 
 /**
  * Where a request came from, for rate limits and the log's network hash. A proxy that knows the
@@ -7,7 +14,7 @@ import type { Context } from "hono";
  * Otherwise the last X-Forwarded-For entry: the one the nearest hop appended, which a caller
  * cannot choose, unlike the first.
  */
-export function network(c: Context<{ Bindings: HttpBindings }>, header: string | undefined): string {
+export function network(c: Pick<Context<{ Bindings: HttpBindings }>, "req" | "env">, header: string | undefined): string {
   const named = header ? c.req.header(header)?.trim() : undefined;
   const forwarded = c.req.header("x-forwarded-for")?.split(",").at(-1)?.trim();
   return named || forwarded || (c.env as Partial<HttpBindings> | undefined)?.incoming?.socket?.remoteAddress || "unknown";

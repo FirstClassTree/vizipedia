@@ -1,9 +1,9 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
-import type { HttpBindings } from "@hono/node-server";
 import { type Context, Hono } from "hono";
 import { html } from "hono/html";
+import type { Config } from "../config.ts";
 import { EXPERIENCE_HEADERS, experienceDocument, FIGURE_HEADERS } from "../domain/experience.ts";
 import { SLUG } from "../domain/slug.ts";
 import { ownerName } from "../identity/identity.ts";
@@ -13,38 +13,43 @@ import { historyView, keyView, rulesView, searchView, wireView } from "../ui/lis
 import { liveFragment, openView, pageView } from "../ui/page.ts";
 import type { Html, Site } from "../ui/parts.ts";
 import { skillMarkdown } from "../ui/skill.ts";
-import type { Deps } from "./api.ts";
+import { type Deps, type Env, requestEvent } from "./api.ts";
 import { network } from "./caller.ts";
 import { pageMarkdown, siteUrl } from "./present.ts";
 
-type Env = { Bindings: HttpBindings };
 type Ctx = Context<Env>;
 
 /**
- * The reading side's own policy: only this origin's scripts, styles, fonts and frames.
- * The frames it allows are the experience documents, which carry a far stricter policy
- * of their own (see domain/experience.ts).
+ * The reading side's own policy: only this origin's scripts, styles, fonts and frames, plus the
+ * analytics host when one is configured, for its script and the events sent to it. The frames
+ * it allows are the experience documents, which carry a far stricter policy of their own (see
+ * domain/experience.ts).
  */
-const PAGE_CSP = [
-  "default-src 'none'",
-  "script-src 'self'",
-  "style-src 'self'",
-  "style-src-attr 'unsafe-inline'",
-  "img-src 'self' data:",
-  "font-src 'self'",
-  "connect-src 'self'",
-  "frame-src 'self'",
-  "form-action 'self'",
-  "base-uri 'none'",
-  "frame-ancestors 'self'",
-].join("; ");
+export function pageCsp(analytics: Config["analytics"]): string {
+  // PostHog's loader fetches its script from the "-assets" twin of a *.i.posthog.com host.
+  const hosts = analytics ? [...new Set([analytics.host, analytics.host.replace(".i.posthog.com", "-assets.i.posthog.com")])] : [];
+  const own = (...more: string[]) => ["'self'", ...more].join(" ");
+  return [
+    "default-src 'none'",
+    `script-src ${own(...hosts)}`,
+    "style-src 'self'",
+    "style-src-attr 'unsafe-inline'",
+    "img-src 'self' data:",
+    "font-src 'self'",
+    `connect-src ${own(...hosts)}`,
+    "frame-src 'self'",
+    "form-action 'self'",
+    "base-uri 'none'",
+    "frame-ancestors 'self'",
+  ].join("; ");
+}
 
-const HTML_HEADERS: Readonly<Record<string, string>> = {
-  "Content-Security-Policy": PAGE_CSP,
+const htmlHeaders = (csp: string): Readonly<Record<string, string>> => ({
+  "Content-Security-Policy": csp,
   "X-Content-Type-Options": "nosniff",
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "Cache-Control": "public, max-age=0, s-maxage=30, stale-while-revalidate=300",
-};
+});
 
 interface Asset {
   readonly body: Uint8Array | string;
@@ -85,6 +90,7 @@ function loadAssets(base: string): { files: Map<string, Asset>; urls: Site["asse
       css: add("app.css", css, "text/css; charset=utf-8"),
       js: add("app.js", here("app.js"), "text/javascript; charset=utf-8"),
       graph: add("graph.js", here("graph.js"), "text/javascript; charset=utf-8"),
+      analytics: add("analytics.js", here("analytics.js"), "text/javascript; charset=utf-8"),
       icon: add("icon.svg", ICON_SVG, "image/svg+xml"),
     },
   };
@@ -103,9 +109,17 @@ export function siteRoutes(deps: Deps): Hono<Env> {
     repoUrl: config.repoUrl,
     by: config.by,
     live: config.live,
+    analytics: config.analytics,
     assets: assets.urls,
   };
+  const HTML_HEADERS = htmlHeaders(pageCsp(config.analytics));
   const app = new Hono<Env>({ strict: false });
+  // Pages report themselves from the browser. The markdown ones (a page as `.md`, skill.md, llms.txt)
+  // are read by programs, so the server counts those: the agents reading the wiki.
+  app.use("*", async (c, next) => {
+    await next();
+    if (/^text\/markdown/u.test(c.res.headers.get("content-type") ?? "")) requestEvent(c, deps, config.base);
+  });
   const page = async (c: Ctx, view: Html, status: 200 | 404 = 200) =>
     c.html(await view, status, { ...HTML_HEADERS, ...(config.indexing === "none" ? { "X-Robots-Tag": "noindex" } : {}) });
   const text = (c: Ctx, body: string, type: string) =>

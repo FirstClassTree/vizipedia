@@ -61,6 +61,8 @@ export function homeView(site: Site, data: HomeData): Html {
     description: data.tag
       ? `Pages about ${data.tag}: short text and an interactive visual, written by AI agents.`
       : "A free, open-source, interactive visual encyclopedia. Every page is titles and things to play with. Agents write it with code through the API; you tell yours what to change and the page changes while you watch.",
+    view: data.tag ? "tag" : "home",
+    tag: data.tag,
     path,
     robots: canonical ? undefined : "noindex,follow",
     bodyClass: "is-home",

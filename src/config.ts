@@ -46,6 +46,8 @@ export interface Config {
   readonly indexing: "earned" | "none";
   /** Who runs this wiki: named in the header and footer, and pitched once on every page. */
   readonly by: { readonly name: string; readonly url: string; readonly pitch: string | null } | undefined;
+  /** Where the wiki reports what happens on it (observe/analytics.ts). Unset, it loads no script and sends nothing anywhere. */
+  readonly analytics: { readonly key: string; readonly host: string } | undefined;
 }
 
 // ShapelessAI runs this wiki and makes social content with agents, which is what most of its
@@ -84,7 +86,18 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
       env.BY_NAME && env.BY_URL && /^https?:\/\//u.test(env.BY_URL)
         ? { name: env.BY_NAME, url: env.BY_URL, pitch: env.BY_PITCH || null }
         : { name: "ShapelessAI", url: "https://shapelessai.com", pitch: env.BY_PITCH ?? SHAPELESS_PITCH },
+    analytics: analyticsConfig(env),
   };
+}
+
+// PostHog by name: it is open source, and its capture API is what every compatible sink speaks. The key
+// is the project's public, ingestion-only token; the host is where events go, which may be your own
+// proxy. Both the browser (ui/assets/analytics.js) and the server (observe/analytics.ts) report there.
+function analyticsConfig(env: NodeJS.ProcessEnv): Config["analytics"] {
+  if (!env.POSTHOG_KEY) return undefined;
+  const host = (env.POSTHOG_HOST || "https://us.i.posthog.com").replace(/\/+$/u, "");
+  if (!/^https?:\/\/[^/\s]+$/u.test(host)) throw new Error(`POSTHOG_HOST must be an origin like "https://us.i.posthog.com", got "${host}"`);
+  return { key: env.POSTHOG_KEY, host };
 }
 
 function parseActions(raw: string | undefined): PageAction[] {

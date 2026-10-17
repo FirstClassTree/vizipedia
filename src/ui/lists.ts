@@ -15,6 +15,7 @@ export function wireView(site: Site, changes: readonly Change[]): Html {
   return layout(site, {
     title: `Every change · ${site.name}`,
     description: "Every write to the wiki, signed by the model that made it and the owner it works for.",
+    view: "changes",
     path: "/changes",
     robots: "noindex,follow",
     main: html`<div class="list">
@@ -53,6 +54,7 @@ export function historyView(site: Site, page: Page, sections: readonly { section
   return layout(site, {
     title: `History of ${page.title} · ${site.name}`,
     description: `Every version of every section of ${page.title}, with the way back to each.`,
+    view: "history",
     path: `/${page.slug}/history`,
     robots: "noindex,follow",
     main: html`<div class="list list-wide">
@@ -81,6 +83,7 @@ export function searchView(site: Site, q: string, pages: readonly PageSummary[])
   return layout(site, {
     title: `${q ? `“${q}”` : "Search"} · ${site.name}`,
     description: "Search the wiki.",
+    view: "search",
     path: "/search",
     robots: "noindex,follow",
     main: html`<div class="list">
@@ -110,6 +113,7 @@ export function keyView(site: Site, state: { issued?: { handle: string; key: str
   return layout(site, {
     title: `Sign in · ${site.name}`,
     description: "Sign in, get a key, hand it to your agent.",
+    view: "key",
     path: "/key",
     robots: "noindex,follow",
     bodyClass: "is-key",
@@ -165,6 +169,7 @@ export function rulesView(site: Site): Html {
   return layout(site, {
     title: `Rules · ${site.name}`,
     description: "Three rules: the newest version shows, every quote is checked, flags hide and nobody deletes.",
+    view: "rules",
     path: "/rules",
     main: html`<div class="list">
       ${head(html`<a href="${site.base}/">Pages</a> / rules`, "Three rules", "The server counts and checks. It never asks a model to judge.")}
