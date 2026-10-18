@@ -2,7 +2,7 @@ import { html, raw } from "hono/html";
 import type { PageSummary } from "../domain/model.ts";
 import type { Change, Sort } from "../store/wiki.ts";
 import { layout } from "./layout.ts";
-import { clip, familyHue, type Html, ICON, map, moment, pageCard, plural, type Site, who } from "./parts.ts";
+import { clip, familyHue, type Html, homeHref, ICON, map, moment, pageCard, plural, type Site, who } from "./parts.ts";
 
 const VERB: Readonly<Record<string, string>> = {
   "page.create": "started",
@@ -51,7 +51,7 @@ export interface HomeData {
 
 export function homeView(site: Site, data: HomeData): Html {
   const path = data.tag ? `/tag/${data.tag}` : "/";
-  const link = (sort: Sort): string => `${site.base}${path}${sort === "updated" ? "" : `?sort=${sort}`}`;
+  const link = (sort: Sort): string => `${data.tag ? `${site.base}${path}` : homeHref(site)}${sort === "updated" ? "" : `?sort=${sort}`}`;
   // The home page is one page whatever its order: the hero and the map stay, only the list
   // changes (the tabs swap it in place in app.js). Search engines index the default order alone.
   const home = !data.tag;
@@ -73,7 +73,7 @@ export function homeView(site: Site, data: HomeData): Html {
       <section class="hero wrap${home ? "" : " hero-slim"}">
         ${
           data.tag
-            ? html`<p class="kicker"><a href="${site.base}/">Pages</a> / subject</p><h1>#${data.tag}</h1>`
+            ? html`<p class="kicker"><a href="${homeHref(site)}">Pages</a> / subject</p><h1>#${data.tag}</h1>`
             : html`<p class="kicker"><a href="${site.repoUrl}" rel="noopener">Open source on GitHub</a> · no edit button · every version kept</p>
               <h1>The free visual encyclopedia your agents <em>edit with code.</em></h1>
               <ol class="steps">
@@ -81,7 +81,7 @@ export function homeView(site: Site, data: HomeData): Html {
                 <li><b>2</b><span>Want it changed? <a href="${site.base}/key">Get your key</a>, hand it to your agent</span></li>
                 <li><b>3</b><span>Say what, watch it land</span></li>
               </ol>
-              <p class="hero-acts"><a class="btn btn-you btn-big" href="${site.base}/key">Edit with your agent ${raw(ICON.arrow)}</a><a class="btn" href="#map">Explore the map</a><a class="btn" href="${site.base}/random">Surprise me</a></p>`
+              <p class="hero-acts"><a class="btn btn-you btn-big" href="${site.base}/key">Edit with your agent ${raw(ICON.arrow)}</a><a class="btn" href="#map">Explore the map</a><a class="btn" href="${site.base}/random" rel="nofollow">Surprise me</a></p>`
         }
         <p class="hero-stats">${plural(data.stats.pages, "page")}<i></i>${plural(data.stats.versions, "version")} kept<i></i>${plural(data.stats.models, "model")} for ${plural(data.stats.owners, "owner")}</p>
       </section>
@@ -90,7 +90,7 @@ export function homeView(site: Site, data: HomeData): Html {
         <header class="band-head">
           <nav class="tabs" aria-label="Order">
             ${SORTS.map(([sort, label]) => html`<a href="${link(sort)}" data-sort="${sort}"${data.sort === sort ? raw(' aria-current="true"') : ""}>${label}</a>`)}
-            <a href="${site.base}/random" title="A page you did not ask for">Surprise me</a>
+            <a href="${site.base}/random" rel="nofollow" title="A page you did not ask for">Surprise me</a>
           </nav>
           ${
             data.tags.length > 0

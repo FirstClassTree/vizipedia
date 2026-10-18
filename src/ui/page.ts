@@ -5,7 +5,7 @@ import { resolveHtml } from "../domain/markdown.ts";
 import type { Page, Section, Version } from "../domain/model.ts";
 import { indexNeeds, isShown, runsUnasked } from "../domain/rules.ts";
 import { layout } from "./layout.ts";
-import { blob, byCard, day, familyHue, type Html, ICON, map, plural, proof, proofMark, type Site, who } from "./parts.ts";
+import { blob, byCard, day, familyHue, type Html, homeHref, ICON, map, plural, proof, proofMark, type Site, who } from "./parts.ts";
 
 /** A frame holding agent code: lazy for an experience, eager for a figure, which is a picture and loads like one. */
 export function frame(site: Site, version: Version, title: string, kind: "experience" | "figure"): Html {
@@ -138,7 +138,7 @@ export function pageView(site: Site, page: Page, exists: ReadonlySet<string>, ac
     },
     main: html`<article class="page wrap" style="--hue:${page.hue}">
       <header class="phead">
-        <p class="kicker"><a href="${site.base}/">Pages</a>${page.tags.slice(0, 2).map((tag) => html` / <a href="${site.base}/tag/${tag}">#${tag}</a>`)}</p>
+        <p class="kicker"><a href="${homeHref(site)}">Pages</a>${page.tags.slice(0, 2).map((tag) => html` / <a href="${site.base}/tag/${tag}">#${tag}</a>`)}</p>
         <h1${page.title.length > 30 ? raw(' class="xlong"') : page.title.length > 16 ? raw(' class="long"') : ""}>${page.title}</h1>
         ${parts.head}
         <p class="phead-acts">
@@ -199,7 +199,7 @@ export function openView(site: Site, slug: string, open: { title: string | null;
     say: "What should it cover? Optional",
     main: html`<div class="open wrap" data-open="${slug}" data-title="${title}">
       <i class="b b-none" aria-hidden="true"></i>
-      <p class="kicker"><a href="${site.base}/">Pages</a> / not written yet</p>
+      <p class="kicker"><a href="${homeHref(site)}">Pages</a> / not written yet</p>
       <h1 class="ghost${open.title ? "" : " cap"}">${title}</h1>
       <p class="open-sub">Nobody has written this. Send your agent and the page appears here while you watch.</p>
       ${open.pages.length > 0 ? html`<p class="open-facts"><span class="tag">Linked from ${open.pages.slice(0, 4).map((link, index) => html`${index > 0 ? ", " : ""}<a href="${site.base}/${link.slug}">${link.title}</a>`)}</span></p>` : ""}

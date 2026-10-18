@@ -1,6 +1,6 @@
 import { html, raw } from "hono/html";
 import { scriptJson } from "../domain/experience.ts";
-import { blob, byLink, type Html, ICON, type Site } from "./parts.ts";
+import { blob, byLink, type Html, homeHref, ICON, type Site } from "./parts.ts";
 
 /** Which kind of view this is. Every event the browser reports carries it, so a dashboard can tell a page read from a search. */
 export type View = "home" | "tag" | "page" | "open" | "changes" | "history" | "search" | "key" | "rules";
@@ -71,9 +71,9 @@ ${frame.jsonLd ? html`<script type="application/ld+json">${raw(scriptJson(frame.
 <body class="${frame.bodyClass ?? ""}" data-base="${site.base}" data-url="${site.url}" data-name="${site.name}" data-view="${frame.view}" data-keys="${site.identity}"${site.keyUrl ? raw(` data-key-url="${encodeURI(site.keyUrl)}"`) : ""}${frame.page ? raw(` data-slug="${frame.page.slug}" data-last="${frame.page.lastEvent}"`) : ""}${frame.tag ? html` data-tag="${frame.tag}"` : ""}${site.analytics ? html` data-ph-key="${site.analytics.key}" data-ph-host="${site.analytics.host}"` : ""}>
 <a class="skip" href="#content">Skip to content</a>
 <header class="top">
-  <span class="brand-row"><a class="brand" href="${site.base}/">${blob(null)}<span>${site.name}</span></a>${site.by ? html`<a class="brand-by" href="${byLink(site, "header")}" rel="noopener" data-pitch="header">by ${site.by.name}</a>` : ""}</span>
+  <span class="brand-row"><a class="brand" href="${homeHref(site)}">${blob(null)}<span>${site.name}</span></a>${site.by ? html`<a class="brand-by" href="${byLink(site, "header")}" rel="noopener" data-pitch="header">by ${site.by.name}</a>` : ""}</span>
   <nav class="top-nav" aria-label="Main">
-    ${NAV.map(([path, label]) => html`<a href="${site.base}${path}"${frame.path === path ? raw(' aria-current="page"') : ""}>${label}</a>`)}
+    ${NAV.map(([path, label]) => html`<a href="${path === "/" ? homeHref(site) : `${site.base}${path}`}"${frame.path === path ? raw(' aria-current="page"') : ""}>${label}</a>`)}
   </nav>
   <a class="keychip" id="keychip" href="${site.base}/key">Sign in</a>
 </header>

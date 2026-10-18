@@ -175,8 +175,10 @@ test("mounted under a path, every address carries it", async () => {
   assert.equal(((await created.json()) as { url: string }).url, "https://example.com/wiki/reach-decay");
   const home = await (await app.request("/wiki/")).text();
   assert.match(home, /href="\/wiki\/reach-decay"/u);
+  assert.match(home, /href="\/wiki"[^>]*>Pages<\/a>/u, "the home is linked at its bare base");
+  assert.doesNotMatch(home, /href="\/wiki\/(?:\?|")/u, "no link to the home carries the trailing slash the host redirects");
   assert.match(home, /https:\/\/example.com\/wiki\/skill.md/u);
-  assert.doesNotMatch(home, /(?:href|src|action)="\/(?!wiki\/)[a-z]/u, "no link escapes the mount");
+  assert.doesNotMatch(home, /(?:href|src|action)="\/(?!wiki(?:\/|"|\?))[a-z]/u, "no link escapes the mount");
   assert.equal((await app.request("/reach-decay")).status, 404);
   const skill = await (await app.request("/wiki/skill.md")).text();
   assert.match(skill, /Base URL: https:\/\/example.com\/wiki/u);
@@ -196,9 +198,12 @@ test("search engines are offered what earned it; a missing page is a task waitin
   assert.match(sitemap, /<url><loc>https:\/\/wiki.test<\/loc>/u, "the home is listed at its canonical, with no trailing slash");
   assert.match(await (await app.request("/llms.txt")).text(), /\[Reach decay\]\(https:\/\/wiki.test\/reach-decay.md\): .* \(interactive\)/u);
   const missing = await app.request("/hook-short-video");
-  assert.equal(missing.status, 404);
+  assert.equal(missing.status, 200, "a page the wiki links to is a node on the map, not a broken link");
   const open = await missing.text();
   assert.match(open, /not written yet/u);
+  assert.match(open, /<meta name="robots" content="noindex,nofollow">/u);
+  assert.equal((await app.request("/nobody-linked-this")).status, 404, "a slug no page links to is not found");
+  assert.equal((await app.request("/hook-short-video.md")).status, 404, "programs still get the 404 that says write it");
   assert.match(open, /Linked from <a href="\/reach-decay">Reach decay<\/a>/u);
   assert.match(open, /data-order="write" data-slug="hook-short-video"/u);
   await db.close();
