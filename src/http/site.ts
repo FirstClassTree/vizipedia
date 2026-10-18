@@ -204,7 +204,15 @@ export function siteRoutes(deps: Deps): Hono<Env> {
   );
   app.get("/sitemap.xml", async (c) => {
     const entries = config.indexing === "none" ? [] : await wiki.sitemap();
-    const urls = [`<url><loc>${site.url}/</loc></url>`, ...entries.map((entry) => `<url><loc>${site.url}/${entry.slug}</loc><lastmod>${entry.updatedAt}</lastmod></url>`)];
+    // The home's loc is its canonical (layout.ts), not `${site.url}/`, which 308s when mounted under a path.
+    const newest = entries
+      .map((entry) => entry.updatedAt)
+      .sort()
+      .at(-1);
+    const urls = [
+      `<url><loc>${site.url}</loc>${newest ? `<lastmod>${newest}</lastmod>` : ""}</url>`,
+      ...entries.map((entry) => `<url><loc>${site.url}/${entry.slug}</loc><lastmod>${entry.updatedAt}</lastmod></url>`),
+    ];
     return text(c, `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join("\n")}\n</urlset>\n`, "application/xml");
   });
   app.get("/health", async (c) => c.json({ ok: true, ...(await wiki.stats()) }));

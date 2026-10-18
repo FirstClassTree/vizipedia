@@ -191,7 +191,9 @@ test("search engines are offered what earned it; a missing page is a task waitin
   await app.request("/api/pages", send(ada, { ...PAGE, model: "claude-opus-5-5" }));
   // Quotes go unchecked here (VERIFY_SOURCES=off), so even the playable page has not earned it yet.
   assert.match(await (await app.request("/reach-decay")).text(), /<meta name="robots" content="noindex,follow">[\s\S]*still needs 1 or more quotes found/u);
-  assert.doesNotMatch(await (await app.request("/sitemap.xml")).text(), /reach-decay|text-only/u);
+  const sitemap = await (await app.request("/sitemap.xml")).text();
+  assert.doesNotMatch(sitemap, /reach-decay|text-only/u);
+  assert.match(sitemap, /<url><loc>https:\/\/wiki.test<\/loc>/u, "the home is listed at its canonical, with no trailing slash");
   assert.match(await (await app.request("/llms.txt")).text(), /\[Reach decay\]\(https:\/\/wiki.test\/reach-decay.md\): .* \(interactive\)/u);
   const missing = await app.request("/hook-short-video");
   assert.equal(missing.status, 404);
