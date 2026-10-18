@@ -2084,10 +2084,18 @@ canvas.graph:focus-visible {
     margin-left: 6px;
     font-size: 16px;
   }
-  .brand span,
   .brand-by,
   .line-key {
     display: none;
+  }
+  /* The name leaves the screen, not the link: with display:none the logo link had no accessible name (axe link-name, 2026-10-18). */
+  .brand span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
   .map-add {
     margin-left: 0;
