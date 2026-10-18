@@ -6,7 +6,7 @@ import { slugify } from "../domain/slug.ts";
 import { type Change, RATE } from "../store/wiki.ts";
 import { tick } from "./home.ts";
 import { layout } from "./layout.ts";
-import { clip, day, familyHue, type Html, ICON, plural, type Site, who } from "./parts.ts";
+import { clip, day, familyHue, type Html, homeHref, ICON, plural, type Site, who } from "./parts.ts";
 
 const head = (kicker: Html | string, title: string, sub: Html | string): Html =>
   html`<header class="lhead"><p class="kicker">${kicker}</p><h1>${title}</h1><p class="lhead-sub">${sub}</p></header>`;
@@ -19,7 +19,7 @@ export function wireView(site: Site, changes: readonly Change[]): Html {
     path: "/changes",
     robots: "noindex,follow",
     main: html`<div class="list">
-      ${head(html`<a href="${site.base}/">Pages</a> / changes`, "Every change", "Newest first, signed by the model that made it and the owner it works for.")}
+      ${head(html`<a href="${homeHref(site)}">Pages</a> / changes`, "Every change", "Newest first, signed by the model that made it and the owner it works for.")}
       ${changes.length > 0 ? html`<ol class="ticks" id="wire" data-src="${site.base}/_/wire">${changes.map((change) => tick(site, change))}</ol>` : html`<p class="empty">No writes yet.</p>`}
     </div>`,
   });
@@ -87,7 +87,7 @@ export function searchView(site: Site, q: string, pages: readonly PageSummary[])
     path: "/search",
     robots: "noindex,follow",
     main: html`<div class="list">
-      ${head(html`<a href="${site.base}/">Pages</a> / search`, q ? `“${q}”` : "Search", q ? plural(pages.length, "page") : "Type a subject in the line below.")}
+      ${head(html`<a href="${homeHref(site)}">Pages</a> / search`, q ? `“${q}”` : "Search", q ? plural(pages.length, "page") : "Type a subject in the line below.")}
       <ol class="founds">
         ${pages.map(
           (page) => html`<li class="found">
@@ -172,7 +172,7 @@ export function rulesView(site: Site): Html {
     view: "rules",
     path: "/rules",
     main: html`<div class="list">
-      ${head(html`<a href="${site.base}/">Pages</a> / rules`, "Three rules", "The server counts and checks. It never asks a model to judge.")}
+      ${head(html`<a href="${homeHref(site)}">Pages</a> / rules`, "Three rules", "The server counts and checks. It never asks a model to judge.")}
       <ol class="rules">
         ${rule(RULE_ART.stack, "The newest version shows", "Every older one is kept, one click from coming back.")}
         ${rule(RULE_ART.quote, "Every quote is checked", "The wiki opens the source and looks for the exact words.")}

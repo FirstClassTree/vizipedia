@@ -267,7 +267,12 @@ export function siteRoutes(deps: Deps): Hono<Env> {
     const found = await wiki.getPage(slug);
     if (!found) {
       if (wantsMarkdown) return c.body(`No page "${slug}". Create it with POST ${site.url}/api/pages.\n`, 404, { "Content-Type": "text/markdown; charset=utf-8" });
-      return page(c, openView(site, slug, await wiki.wantedBy(slug)), 404);
+      // A slug some page links to is a node on the map, shown as a ring: a real address that
+      // answers 200 (noindex), so a crawler does not count 81 broken links against the site
+      // (Ahrefs health 91 on 2026-10-18). A slug nobody linked is not found. Programs keep the
+      // 404 either way: the markdown form above and the API say "write it".
+      const open = await wiki.wantedBy(slug);
+      return page(c, openView(site, slug, open), open.pages.length > 0 ? 200 : 404);
     }
     if (wantsMarkdown) {
       return c.body(pageMarkdown(found, config), 200, {

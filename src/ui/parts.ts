@@ -7,6 +7,12 @@ import { familyHue } from "../domain/rules.ts";
 export type Html = HtmlEscapedString | Promise<HtmlEscapedString>;
 
 /** What every view needs to know about the wiki it is rendered in. */
+/**
+ * The home's address. Under a mount it is the bare base: "/wiki", never "/wiki/", which the host
+ * site answers with a 308 to the bare form (259 redirecting links in the 2026-10-18 Ahrefs crawl).
+ */
+export const homeHref = (site: Site): string => site.base || "/";
+
 export interface Site {
   readonly name: string;
   /** Path prefix, "" or "/wiki". */
