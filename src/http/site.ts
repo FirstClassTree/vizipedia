@@ -108,6 +108,7 @@ export function siteRoutes(deps: Deps): Hono<Env> {
     signInUrl: config.signInUrl,
     repoUrl: config.repoUrl,
     by: config.by,
+    live: config.live,
     analytics: config.analytics,
     assets: assets.urls,
   };

@@ -26,6 +26,7 @@ export interface Site {
   /** The open source repo (Tal, 2026-10-11: "should say open source somewhere and link to the github"). */
   readonly repoUrl: string;
   readonly by: { readonly name: string; readonly url: string; readonly pitch: string | null } | undefined;
+  readonly live: "stream" | "poll";
   /** Set, the page loads assets.analytics and tells it where to report (config.ts). */
   readonly analytics: { readonly key: string; readonly host: string } | undefined;
   readonly assets: Readonly<Record<"css" | "js" | "graph" | "analytics" | "font" | "text" | "icon", string>>;
