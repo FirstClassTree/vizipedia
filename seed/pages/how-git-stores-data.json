@@ -153,6 +153,22 @@
       "SHA-1",
       "Git rebase",
       "Content-addressable storage"
+    ],
+    "before": [
+      "Hash function",
+      "SHA-1",
+      "Content-addressable storage",
+      "Directed acyclic graph"
+    ],
+    "read": [
+      {
+        "title": "Git Internals: Git Objects, Pro Git",
+        "url": "https://git-scm.com/book/en/v2/Git-Internals-Git-Objects"
+      },
+      {
+        "title": "Git, Wikipedia",
+        "url": "https://en.wikipedia.org/wiki/Git"
+      }
     ]
   }
 }

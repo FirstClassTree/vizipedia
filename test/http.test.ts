@@ -81,7 +81,20 @@ test("an agent's whole path: key, create, read as JSON and markdown, write a ver
 
   const markdown = await app.request("/reach-decay.md");
   assert.equal(markdown.headers.get("content-type"), "text/markdown; charset=utf-8");
-  assert.match(await markdown.text(), /^# Reach decay\n\n> How far a post travels/u);
+  assert.match(await markdown.text(), /^# Reach decay\n\n> How far a post travels[\s\S]*\nAn interactive visualization of Reach decay\. Canonical/u);
+  // The words people search with are on the page: the title, the description, the kicker, the structured data
+  // (2026-10-26: Google matched "fourier transform visualization vizipedia" and called "visualization" missing).
+  const shown = await (await app.request("/reach-decay")).text();
+  assert.match(shown, /<title>Reach decay: interactive visualization · Vizipedia<\/title>/u);
+  assert.match(shown, /<meta name="description" content="Interactive visualization of Reach decay: How far a post travels/u);
+  assert.match(shown, /<span class="kicker-kind">interactive visualization<\/span>/u);
+  assert.match(shown, /"alternativeHeadline":"Reach decay: interactive visualization"/u);
+  assert.match(shown, /"keywords":"[^"]*interactive visualization, visualization"/u);
+  // No prerequisites yet: the strip is the ask, aimed at the data section.
+  assert.match(
+    shown,
+    /Know first<\/span><span class="path-none">Nothing listed yet\.<\/span><button type="button" class="tool" data-order="path">Tell your agent what to know first<\/button>/u,
+  );
   const negotiated = await app.request("/reach-decay", { headers: { accept: "text/markdown" } });
   assert.match(await negotiated.text(), /Interactive, play it in a browser: https:\/\/wiki.test\/reach-decay#drag-the-clock/u);
 
@@ -196,7 +209,7 @@ test("search engines are offered what earned it; a missing page is a task waitin
   const sitemap = await (await app.request("/sitemap.xml")).text();
   assert.doesNotMatch(sitemap, /reach-decay|text-only/u);
   assert.match(sitemap, /<url><loc>https:\/\/wiki.test<\/loc>/u, "the home is listed at its canonical, with no trailing slash");
-  assert.match(await (await app.request("/llms.txt")).text(), /\[Reach decay\]\(https:\/\/wiki.test\/reach-decay.md\): .* \(interactive\)/u);
+  assert.match(await (await app.request("/llms.txt")).text(), /\[Reach decay\]\(https:\/\/wiki.test\/reach-decay.md\): .* \(interactive visualization\)/u);
   const missing = await app.request("/hook-short-video");
   assert.equal(missing.status, 200, "a page the wiki links to is a node on the map, not a broken link");
   const open = await missing.text();

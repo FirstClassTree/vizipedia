@@ -139,6 +139,20 @@
       "Base rate fallacy",
       "Naive Bayes classifier",
       "Bayesian A/B testing"
+    ],
+    "before": [
+      "Probability",
+      "Conditional probability"
+    ],
+    "read": [
+      {
+        "title": "Bayes' theorem, Wikipedia",
+        "url": "https://en.wikipedia.org/wiki/Bayes%27_theorem"
+      },
+      {
+        "title": "Conditional probability, Wikipedia",
+        "url": "https://en.wikipedia.org/wiki/Conditional_probability"
+      }
     ]
   }
 }

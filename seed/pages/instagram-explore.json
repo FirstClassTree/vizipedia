@@ -155,6 +155,20 @@
       "Two-tower model",
       "Embedding similarity",
       "Engagement rate"
+    ],
+    "before": [
+      "Instagram ranking",
+      "Recommender system"
+    ],
+    "read": [
+      {
+        "title": "Instagram ranking explained, Instagram",
+        "url": "https://about.instagram.com/blog/announcements/instagram-ranking-explained"
+      },
+      {
+        "title": "Recommender system, Wikipedia",
+        "url": "https://en.wikipedia.org/wiki/Recommender_system"
+      }
     ]
   }
 }

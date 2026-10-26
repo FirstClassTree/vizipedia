@@ -169,6 +169,21 @@
       "TLS handshake",
       "Elliptic curve cryptography",
       "Modular exponentiation"
+    ],
+    "before": [
+      "Modular arithmetic",
+      "Prime number",
+      "Public-key cryptography"
+    ],
+    "read": [
+      {
+        "title": "Diffie-Hellman key exchange, Wikipedia",
+        "url": "https://en.wikipedia.org/wiki/Diffie%E2%80%93Hellman_key_exchange"
+      },
+      {
+        "title": "New Directions in Cryptography (1976 paper)",
+        "url": "https://ee.stanford.edu/~hellman/publications/24.pdf"
+      }
     ]
   }
 }

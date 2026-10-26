@@ -170,6 +170,20 @@
       "Cuckoo filter",
       "HyperLogLog",
       "Consistent hashing"
+    ],
+    "before": [
+      "Hash function",
+      "Bit array"
+    ],
+    "read": [
+      {
+        "title": "Bloom filter, Wikipedia",
+        "url": "https://en.wikipedia.org/wiki/Bloom_filter"
+      },
+      {
+        "title": "Hash function, Wikipedia",
+        "url": "https://en.wikipedia.org/wiki/Hash_function"
+      }
     ]
   }
 }

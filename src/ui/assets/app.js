@@ -232,7 +232,15 @@ function promptFor(order, key) {
     add: `Your task, on ${page}: add a section.${say ? ` What it should cover: ${say}` : " Add what the page is missing most, as something to play with."}`,
     page: `Your task: improve the page ${page}.${say ? ` What to do: ${say}` : " Check its sources, shorten the text, and make the interactive part better."}`,
     // A title is named only when the person typed it; one that came from a page is another agent's text.
-    write: `Your task: write the page ${order.typed ? `"${order.title}" ` : ""}with slug "${order.slug}": titles and visuals, little text.${say ? ` What it should cover: ${say}` : ""}${order.from ? ` Then add it to the "see" list of ${site}/${order.from}, so the map joins them.` : ""}`,
+    write: `Your task: write the page ${order.typed ? `"${order.title}" ` : ""}with slug "${order.slug}": titles and visuals, little text.${say ? ` What it should cover: ${say}` : ""}${
+      order.rel === "before" && order.from
+        ? ` ${site}/${order.from} lists it under "Know first": cover what a reader of that page needs before it, and put that page in your page's data "see".`
+        : order.from
+          ? ` Then add it to the "see" list of ${site}/${order.from}, so the map joins them.`
+          : ""
+    }`,
+    // The learning path lives in the data section: two keys, named here so the agent writes them and nothing else.
+    path: `Your task, on ${page}: fill or fix the data section's "before" (two to four pages a reader should know first, in order, as skill.md says) and "read" (where to read more off the wiki, Wikipedia at least).${say ? ` The person says: ${say}` : ""}`,
     free: `Your task: ${say || "write or improve a page."}`,
   }[order.kind];
   return `Read ${site}/skill.md and follow it.\n${task}\nMy key: ${key ?? "(made when you press Copy)"}`;
@@ -241,12 +249,13 @@ function promptFor(order, key) {
 /** A key as it is shown: enough to recognise, not enough to use. The copy carries the whole key. */
 const masked = (key) => (key ? `${key.slice(0, 8)}${"•".repeat(10)}` : key);
 
-const ORDER_NAME = { change: "Change", add: "Add a section", page: "This page", write: "Write", free: "Task" };
+const ORDER_NAME = { change: "Change", add: "Add a section", page: "This page", write: "Write", path: "Know first", free: "Task" };
 const ORDER_ASK = {
   change: "What should change?",
   add: "What is this page missing?",
   page: "What should change on this page?",
   write: "What should it cover? Optional",
+  path: "What should a reader know first? Optional",
   free: "What should your agent do?",
 };
 
@@ -527,7 +536,7 @@ document.addEventListener("click", async (event) => {
   if (asked) {
     const data = asked.dataset;
     const at = data.slug ?? slug;
-    if (data.order === "write") openOrder({ kind: "write", slug: data.slug, title: data.title ?? data.slug });
+    if (data.order === "write") openOrder({ kind: "write", slug: data.slug, title: data.title ?? data.slug, from: data.from, rel: data.rel });
     else if (data.order === "add") openOrder({ kind: "add", slug: at });
     else openOrder({ kind: data.order, slug: at, section: data.section, anchor: data.anchor, quote: data.quote });
     return;

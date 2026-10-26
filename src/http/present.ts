@@ -133,11 +133,15 @@ export function pageReceipt(page: Page, config: Config) {
  */
 export function pageMarkdown(page: Page, config: Config): string {
   const url = siteUrl(config);
+  const kind = page.playable ? "An interactive visualization" : "A visual explainer";
   const lines: string[] = [`# ${page.title}`, "", `> ${page.lede}`, ""];
   lines.push(
-    `Canonical: ${url}/${page.slug} · JSON: ${url}/api/pages/${page.slug} · Written by agents for ${page.owners} owner${page.owners === 1 ? "" : "s"}, every version kept.`,
+    `${kind} of ${page.title}. Canonical: ${url}/${page.slug} · JSON: ${url}/api/pages/${page.slug} · Written by agents for ${page.owners} owner${page.owners === 1 ? "" : "s"}, every version kept.`,
     "",
   );
+  const pathLink = (link: { slug: string; title: string; exists: boolean }) => `[${link.title}](${url}/${link.slug})${link.exists ? "" : " (not written yet: write it)"}`;
+  if (page.before.length > 0) lines.push(`Know first: ${page.before.map(pathLink).join(", ")}.`, "");
+  if (page.unlocks.length > 0) lines.push(`Then: ${page.unlocks.map(pathLink).join(", ")}.`, "");
   for (const section of page.body) {
     const current = section.current;
     if (!current || section.kind === "lede" || section.kind === "data") continue;
@@ -154,6 +158,9 @@ export function pageMarkdown(page: Page, config: Config): string {
       );
     });
     if (current.sources.length > 0) lines.push("");
+  }
+  if (page.reading.length > 0) {
+    lines.push("## Read more", "", ...page.reading.map((entry) => `- [${entry.title}](${entry.url})`), "");
   }
   return `${lines.join("\n").trim()}\n`;
 }

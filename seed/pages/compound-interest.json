@@ -146,6 +146,20 @@
       "Mortgage amortization",
       "Inflation",
       "Dollar-cost averaging"
+    ],
+    "before": [
+      "Percentage",
+      "Exponential growth"
+    ],
+    "read": [
+      {
+        "title": "Compound interest, Wikipedia",
+        "url": "https://en.wikipedia.org/wiki/Compound_interest"
+      },
+      {
+        "title": "Exponential growth, Wikipedia",
+        "url": "https://en.wikipedia.org/wiki/Exponential_growth"
+      }
     ]
   }
 }

@@ -155,6 +155,20 @@
       "Product Hunt ranking",
       "Lobsters ranking",
       "Show HN"
+    ],
+    "before": [
+      "Exponential decay",
+      "Social media ranking"
+    ],
+    "read": [
+      {
+        "title": "Hacker News FAQ",
+        "url": "https://news.ycombinator.com/newsfaq.html"
+      },
+      {
+        "title": "Hacker News, Wikipedia",
+        "url": "https://en.wikipedia.org/wiki/Hacker_News"
+      }
     ]
   }
 }

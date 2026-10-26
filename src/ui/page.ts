@@ -2,10 +2,10 @@ import { html, raw } from "hono/html";
 import type { PageAction } from "../config.ts";
 import { FRAME_SANDBOX } from "../domain/experience.ts";
 import { resolveHtml } from "../domain/markdown.ts";
-import type { Page, Section, Version } from "../domain/model.ts";
+import type { Page, PageLink, Section, Version } from "../domain/model.ts";
 import { indexNeeds, isShown, runsUnasked } from "../domain/rules.ts";
 import { layout } from "./layout.ts";
-import { blob, byCard, day, familyHue, type Html, homeHref, ICON, map, plural, proof, proofMark, type Site, who } from "./parts.ts";
+import { blob, byCard, capital, day, familyHue, type Html, homeHref, host, ICON, map, plural, proof, proofMark, type Site, visualKind, who } from "./parts.ts";
 
 /** A frame holding agent code: lazy for an experience, eager for a figure, which is a picture and loads like one. */
 export function frame(site: Site, version: Version, title: string, kind: "experience" | "figure"): Html {
@@ -109,14 +109,46 @@ export function liveFragment(site: Site, page: Page, exists: ReadonlySet<string>
   return html`<div data-last="${page.lastEvent}">${parts.head}${parts.cover}${parts.sections}</div>`;
 }
 
+/**
+ * A page a reader should know first, or one this page unlocks. An unwritten prerequisite is
+ * the invitation: it opens the task for the reader's agent, hung from this page (Tal, 2026-10-26:
+ * "we invite the user to add it himself with his agent").
+ */
+const pathChip = (site: Site, link: PageLink, from: string): Html =>
+  link.exists
+    ? html`<a class="chip" href="${site.base}/${link.slug}">${link.title}</a>`
+    : html`<button type="button" class="chip chip-open" data-order="write" data-slug="${link.slug}" data-title="${link.title}" data-from="${from}" data-rel="before" title="Nobody has written this yet. Send your agent.">${link.title}<span class="chip-plus" aria-hidden="true">+</span></button>`;
+
+/**
+ * The learning path through a page: what to know first, and what it unlocks. The strip is
+ * there even when empty, because the empty state is the ask: tell your agent what comes first.
+ */
+function path(site: Site, page: Page): Html {
+  // One task whether the list is empty or not: fill or change the page's "before" and "read" (app.js, order "path").
+  const ask = html`<button type="button" class="tool" data-order="path">${page.before.length > 0 ? "Change" : "Tell your agent what to know first"}</button>`;
+  return html`<nav class="path" aria-label="Learning path">
+    <p class="path-row"><span class="path-label">Know first</span>${
+      page.before.length > 0
+        ? html`<span class="chips">${page.before.map((link) => pathChip(site, link, page.slug))}</span>`
+        : html`<span class="path-none">Nothing listed yet.</span>`
+    }${ask}</p>
+    ${page.unlocks.length > 0 ? html`<p class="path-row"><span class="path-label">Then</span><span class="chips">${page.unlocks.map((link) => pathChip(site, link, page.slug))}</span></p>` : ""}
+  </nav>`;
+}
+
 export function pageView(site: Site, page: Page, exists: ReadonlySet<string>, actions: readonly PageAction[], indexing: "earned" | "none"): Html {
   const parts = live(site, page, exists);
   const dataSection = page.body.find((section) => section.kind === "data");
   const needs = indexNeeds(page);
+  // The words a person types when they want to see a subject, not read about it: "<subject>
+  // visualization" (Tal, 2026-10-26: Google matched the page only with "vizipedia" in the
+  // query, and marked "visualization" missing). The title, the description, the kicker and the
+  // structured data all say it, so a search for the picture finds the picture.
+  const kind = visualKind(page);
   return layout(site, {
-    title: `${page.title} · ${site.name}`,
+    title: `${page.title}: ${kind} · ${site.name}`,
     image: page.cover?.poster ? `${site.url}/x/${page.cover.version}/poster` : undefined,
-    description: page.lede,
+    description: `${capital(kind)} of ${page.title}: ${page.lede}`,
     view: "page",
     path: `/${page.slug}`,
     page: { slug: page.slug, lastEvent: page.lastEvent },
@@ -125,22 +157,30 @@ export function pageView(site: Site, page: Page, exists: ReadonlySet<string>, ac
     graph: true,
     jsonLd: {
       "@context": "https://schema.org",
-      "@type": page.playable ? ["Article", "LearningResource"] : "Article",
+      "@type": ["Article", "LearningResource"],
       headline: page.title,
+      alternativeHeadline: `${page.title}: ${kind}`,
       description: page.lede,
       url: `${site.url}/${page.slug}`,
       dateCreated: page.createdAt,
       dateModified: page.updatedAt,
       isAccessibleForFree: true,
-      ...(page.tags.length > 0 ? { keywords: page.tags.join(", ") } : {}),
-      ...(page.playable ? { interactivityType: "active", learningResourceType: "interactive simulation" } : {}),
+      about: { "@type": "Thing", name: page.title },
+      keywords: [...page.tags, kind, "visualization"].join(", "),
+      learningResourceType: page.playable ? "interactive simulation" : "visual explainer",
+      ...(page.playable ? { interactivityType: "active" } : {}),
+      // Prerequisites and next steps are the learning path, in the vocabulary answer engines read.
+      ...(page.before.length > 0 ? { competencyRequired: page.before.map((link) => link.title) } : {}),
+      ...(page.unlocks.length > 0 ? { teaches: page.unlocks.map((link) => `Prepares for: ${link.title}`) } : {}),
+      ...(page.reading.length > 0 ? { citation: page.reading.map((entry) => ({ "@type": "CreativeWork", name: entry.title, url: entry.url })) } : {}),
       publisher: { "@type": "Organization", name: site.name, url: site.url },
     },
     main: html`<article class="page wrap" style="--hue:${page.hue}">
       <header class="phead">
-        <p class="kicker"><a href="${homeHref(site)}">Pages</a>${page.tags.slice(0, 2).map((tag) => html` / <a href="${site.base}/tag/${tag}">#${tag}</a>`)}</p>
+        <p class="kicker"><a href="${homeHref(site)}">Pages</a>${page.tags.slice(0, 2).map((tag) => html` / <a href="${site.base}/tag/${tag}">#${tag}</a>`)}<span class="kicker-kind">${kind}</span></p>
         <h1${page.title.length > 30 ? raw(' class="xlong"') : page.title.length > 16 ? raw(' class="long"') : ""}>${page.title}</h1>
         ${parts.head}
+        ${path(site, page)}
         <p class="phead-acts">
           <button type="button" class="btn btn-you" data-order="page">Change this page ${raw(ICON.arrow)}</button>
           <a class="btn" href="${site.base}/${page.slug}/history">History</a>
@@ -170,6 +210,11 @@ export function pageView(site: Site, page: Page, exists: ReadonlySet<string>, ac
                 ${page.linksTo.map((link) => html`<a class="chip${link.exists ? "" : " chip-open"}" href="${site.base}/${link.slug}"${link.exists ? "" : raw(' rel="nofollow"')}>${link.title}</a>`)}
                 ${page.linkedFrom.filter((link) => !page.linksTo.some((other) => other.slug === link.slug)).map((link) => html`<a class="chip" href="${site.base}/${link.slug}">${link.title}</a>`)}
               </p>`
+            : ""
+        }
+        ${
+          page.reading.length > 0
+            ? html`<section class="reading"><h2>Read more</h2><ul>${page.reading.map((entry) => html`<li><a href="${entry.url}" rel="nofollow ugc noopener noreferrer" target="_blank">${entry.title}</a> <span class="src-host">${host(entry.url)}</span></li>`)}</ul></section>`
             : ""
         }
         ${byCard(site, page.slug)}

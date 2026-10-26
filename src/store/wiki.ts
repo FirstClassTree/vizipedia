@@ -1,5 +1,18 @@
 import { textOf, type WikiLink } from "../domain/markdown.ts";
-import { type Cover, type Fact, LIMITS, type Page, type PageSummary, SECTION_KINDS, type Section, type SectionKind, type Source, type Version } from "../domain/model.ts";
+import {
+  type Cover,
+  type Fact,
+  LIMITS,
+  type LinkRel,
+  type Page,
+  type PageSummary,
+  type Reading,
+  SECTION_KINDS,
+  type Section,
+  type SectionKind,
+  type Source,
+  type Version,
+} from "../domain/model.ts";
 import { checkVersion, FLAGS_TO_HIDE, headingProblem, isEstablished, pageData, pageFacts, parseSources, revisionsPerDay, titleProblem } from "../domain/rules.ts";
 import { hueOf, slugify, slugProblem } from "../domain/slug.ts";
 import { noChecker, type SourceChecker } from "../verify/quotes.ts";
@@ -116,7 +129,7 @@ interface SectionRow {
 
 const iso = (value: unknown): string => (value instanceof Date ? value.toISOString() : new Date(String(value)).toISOString());
 const list = (ids: readonly string[]): string => ids.join(",");
-const PAGE_COLUMNS = "slug, title, hue, lede, created_at, updated_at, sections, owners, playable, verified, indexable, cover_version_id, cover_kind, tags, facts";
+const PAGE_COLUMNS = "slug, title, hue, lede, created_at, updated_at, sections, owners, playable, verified, indexable, cover_version_id, cover_kind, tags, facts, reading";
 /** The cover's writer, so a list can tell whether that code may run without a click. */
 const COVER_OWNER =
   "(select jsonb_build_object('handle', o.handle, 'writes', o.writes, 'createdAt', o.created_at) from versions v join owners o on o.id = v.owner_id where v.id = p.cover_version_id) as cover_owner, exists(select 1 from posters x where x.version_id = p.cover_version_id) as cover_poster";
@@ -152,6 +165,7 @@ const summaryOf = (row: Record<string, unknown>, established: Standing): PageSum
     : null,
   tags: (row.tags as string[] | null) ?? [],
   facts: (row.facts as Fact[] | null) ?? [],
+  reading: (row.reading as Reading[] | null) ?? [],
 });
 
 export class Wiki {
@@ -282,23 +296,28 @@ export class Wiki {
     if (!row) return null;
     const [body, linksTo, linkedFrom] = await Promise.all([
       this.sectionsOf(this.db, String(row.id)),
-      this.db.query<{ slug: string; title: string; exists: boolean }>(
-        `select l.target_slug as slug, coalesce(t.title, l.title) as title, t.id is not null as exists
+      // Prerequisites keep the order their page listed them in (a path); the rest by slug.
+      this.db.query<{ slug: string; title: string; exists: boolean; rel: LinkRel }>(
+        `select l.target_slug as slug, coalesce(t.title, l.title) as title, t.id is not null as exists, l.rel
            from links l left join pages t on t.slug = l.target_slug and t.hidden_at is null
-          where l.page_id = $1 order by l.target_slug`,
+          where l.page_id = $1 order by l.position, l.target_slug`,
         [row.id],
       ),
-      this.db.query<{ slug: string; title: string }>(
-        "select p.slug, p.title from links l join pages p on p.id = l.page_id where l.target_slug = $1 and p.hidden_at is null order by p.slug",
+      this.db.query<{ slug: string; title: string; rel: LinkRel }>(
+        "select p.slug, p.title, l.rel from links l join pages p on p.id = l.page_id where l.target_slug = $1 and p.hidden_at is null order by p.slug",
         [slug],
       ),
     ]);
+    const outgoing = linksTo.rows.map((link) => ({ slug: link.slug, title: link.title, exists: Boolean(link.exists), rel: link.rel ?? "see" }));
+    const incoming = linkedFrom.rows.map((link) => ({ slug: link.slug, title: link.title, exists: true, rel: link.rel ?? "see" }));
     return {
       ...summaryOf(row, this.standing),
       lastEvent: Number(row.last_event),
       body,
-      linksTo: linksTo.rows.map((link) => ({ slug: link.slug, title: link.title, exists: Boolean(link.exists) })),
-      linkedFrom: linkedFrom.rows.map((link) => ({ slug: link.slug, title: link.title, exists: true })),
+      linksTo: outgoing,
+      linkedFrom: incoming,
+      before: outgoing.filter((link) => link.rel === "before"),
+      unlocks: incoming.filter((link) => link.rel === "before"),
     };
   }
 
@@ -965,14 +984,16 @@ export class Wiki {
     );
     const sections = await this.sectionsOf(tx, pageId);
     const facts = pageFacts(sections, page.hidden_at !== null, (version) => textOf(version.html));
-    const links = new Map<string, string>();
+    // The data section's links come first: its `before` list is an ordered path, and a page
+    // named there and in text is a prerequisite, not just a mention.
+    const links = new Map<string, WikiLink>();
     const self = await tx.query<{ slug: string }>("select slug from pages where id = $1", [pageId]);
-    for (const section of sections)
-      for (const link of section.current?.links ?? []) if (!links.has(link.slug) && link.slug !== self.rows[0]?.slug) links.set(link.slug, link.title);
+    const ordered = [...sections].sort((a, b) => Number(b.kind === "data") - Number(a.kind === "data"));
+    for (const section of ordered) for (const link of section.current?.links ?? []) if (!links.has(link.slug) && link.slug !== self.rows[0]?.slug) links.set(link.slug, link);
     const data = pageData(sections.find((section) => section.kind === "data")?.current?.body);
     await tx.query(
       `update pages set lede = $2, sections = $3, owners = $4, playable = $5, verified = $6, indexable = $7, cover_version_id = $8, cover_kind = $9,
-              tags = $10::jsonb, facts = $11::jsonb, updated_at = now() where id = $1`,
+              tags = $10::jsonb, facts = $11::jsonb, reading = $12::jsonb, updated_at = now() where id = $1`,
       [
         pageId,
         facts.lede,
@@ -985,10 +1006,21 @@ export class Wiki {
         facts.cover?.kind ?? null,
         JSON.stringify(data.tags),
         JSON.stringify(data.facts),
+        JSON.stringify(data.reading),
       ],
     );
     await tx.query("delete from links where page_id = $1", [pageId]);
-    for (const [slug, title] of links) await tx.query("insert into links (page_id, target_slug, title) values ($1, $2, $3) on conflict do nothing", [pageId, slug, title]);
+    let position = 0;
+    for (const link of links.values()) {
+      await tx.query("insert into links (page_id, target_slug, title, rel, position) values ($1, $2, $3, $4, $5) on conflict do nothing", [
+        pageId,
+        link.slug,
+        link.title,
+        link.rel ?? "see",
+        position,
+      ]);
+      position += 1;
+    }
   }
 
   private async written(pageId: string, sectionId: string, versionId: string): Promise<Result<Written>> {

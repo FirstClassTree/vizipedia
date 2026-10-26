@@ -175,6 +175,20 @@
       "Trending audio",
       "Average view duration",
       "Retention curve"
+    ],
+    "before": [
+      "Instagram ranking",
+      "Watch time"
+    ],
+    "read": [
+      {
+        "title": "Instagram ranking explained, Instagram",
+        "url": "https://about.instagram.com/blog/announcements/instagram-ranking-explained"
+      },
+      {
+        "title": "Instagram, Wikipedia",
+        "url": "https://en.wikipedia.org/wiki/Instagram"
+      }
     ]
   }
 }

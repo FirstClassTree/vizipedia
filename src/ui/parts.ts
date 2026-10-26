@@ -38,6 +38,13 @@ export const day = (iso: string): Html => html`<time datetime="${iso}">${DATE.fo
 export const moment = (iso: string): Html => html`<time datetime="${iso}" data-relative>${DATE_TIME.format(new Date(iso))} UTC</time>`;
 export const plural = (n: number, one: string, many = `${one}s`): string => `${n.toLocaleString("en-US")} ${n === 1 ? one : many}`;
 export const clip = (text: string, max: number): string => (text.length > max ? `${text.slice(0, max).replace(/\s+\S*$/u, "")}…` : text);
+export const capital = (text: string): string => `${text[0]?.toUpperCase() ?? ""}${text.slice(1)}`;
+
+/**
+ * What kind of visual a page is, in the words people search with: a page with something to
+ * play with is an interactive visualization; one with figures alone is a visual explainer.
+ */
+export const visualKind = (page: { playable: boolean }): string => (page.playable ? "interactive visualization" : "visual explainer");
 
 export { familyHue };
 
@@ -73,7 +80,7 @@ export function pageCard(site: Site, page: PageSummary): Html {
     <div class="card-body">
       <a class="card-title" href="${href}">${page.title}</a>
       <p class="card-what">${clip(page.lede, 110)}</p>
-      <p class="card-foot">${page.playable ? html`<span class="tag tag-play">Interactive</span>` : ""}<span>changed ${day(page.updatedAt)}</span></p>
+      <p class="card-foot">${page.playable ? html`<span class="tag tag-play">Interactive visualization</span>` : ""}<span>changed ${day(page.updatedAt)}</span></p>
     </div>
   </li>`;
 }

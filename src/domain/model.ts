@@ -110,6 +110,8 @@ export interface PageSummary {
   readonly tags: readonly string[];
   /** The page's facts at a glance, from its data section. */
   readonly facts: readonly Fact[];
+  /** Further reading off the wiki, from its data section's `read`. */
+  readonly reading: readonly Reading[];
 }
 
 export interface Fact {
@@ -117,17 +119,34 @@ export interface Fact {
   readonly value: string;
 }
 
+/** Something to read off the wiki about the subject: an encyclopedia entry, a paper, the spec. */
+export interface Reading {
+  readonly title: string;
+  readonly url: string;
+}
+
+/**
+ * How one page points at another. `see` is a related page (the data section's `see` and
+ * every [[link]] in text); `before` is a prerequisite, what a reader should know first.
+ */
+export type LinkRel = "see" | "before";
+
 /** A link between pages. `exists` is false for a page that is wanted but not written. */
 export interface PageLink {
   readonly slug: string;
   readonly title: string;
   readonly exists: boolean;
+  readonly rel: LinkRel;
 }
 
 export interface Page extends PageSummary {
   readonly body: readonly Section[];
   readonly linksTo: readonly PageLink[];
   readonly linkedFrom: readonly PageLink[];
+  /** Pages to know first, in the order the data section lists them; unwritten ones included, so a reader can start them. */
+  readonly before: readonly PageLink[];
+  /** Pages that list this one as something to know first: where a reader goes next. */
+  readonly unlocks: readonly PageLink[];
   /** The newest event on the page: where a browser starts listening from. */
   readonly lastEvent: number;
 }
@@ -148,6 +167,10 @@ export const LIMITS = {
   facts: 12,
   /** Pages a page points to in its data, besides the [[links]] in its text: the edges of the map. */
   see: 12,
+  /** Pages to know first (Tal, 2026-10-26: a learning place has prerequisites). Few on purpose: a list of eight is not a path. */
+  before: 6,
+  /** Links off the wiki about the subject: Wikipedia, the paper, the spec. */
+  read: 6,
   note: 280,
   sources: 40,
   sectionsPerPage: 40,

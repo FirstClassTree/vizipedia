@@ -155,6 +155,19 @@
       "Average view duration",
       "Session time",
       "Click-through rate"
+    ],
+    "before": [
+      "Audience retention"
+    ],
+    "read": [
+      {
+        "title": "Audience retention, YouTube Help",
+        "url": "https://support.google.com/youtube/answer/9314415"
+      },
+      {
+        "title": "Deep Neural Networks for YouTube Recommendations (2016 paper)",
+        "url": "https://research.google/pubs/deep-neural-networks-for-youtube-recommendations/"
+      }
     ]
   }
 }

@@ -155,6 +155,21 @@
       "Word embeddings",
       "Tokenization",
       "Gradient descent"
+    ],
+    "before": [
+      "Dot product",
+      "Softmax",
+      "Word embeddings"
+    ],
+    "read": [
+      {
+        "title": "Attention (machine learning), Wikipedia",
+        "url": "https://en.wikipedia.org/wiki/Attention_(machine_learning)"
+      },
+      {
+        "title": "Attention Is All You Need (the paper)",
+        "url": "https://arxiv.org/abs/1706.03762"
+      }
     ]
   }
 }

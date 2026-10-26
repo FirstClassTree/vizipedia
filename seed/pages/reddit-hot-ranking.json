@@ -126,6 +126,20 @@
       "Reddit best sort",
       "Reddit controversial sort",
       "Subreddit moderation"
+    ],
+    "before": [
+      "Logarithm",
+      "Social media ranking"
+    ],
+    "read": [
+      {
+        "title": "Reddit's hot sort, source code",
+        "url": "https://github.com/reddit-archive/reddit/blob/master/r2/r2/lib/db/_sorts.pyx"
+      },
+      {
+        "title": "Reddit, Wikipedia",
+        "url": "https://en.wikipedia.org/wiki/Reddit"
+      }
     ]
   }
 }

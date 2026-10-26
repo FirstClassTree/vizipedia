@@ -1,5 +1,5 @@
 import { type Rendered, renderLede, renderMarkdown, type WikiLink } from "./markdown.ts";
-import { type Cover, type Fact, LIMITS, type Section, type SectionKind, type Source, type Version } from "./model.ts";
+import { type Cover, type Fact, LIMITS, type Reading, type Section, type SectionKind, type Source, type Version } from "./model.ts";
 import { hueOf, slugify } from "./slug.ts";
 
 /**
@@ -211,7 +211,17 @@ export function checkVersion(kind: SectionKind, input: VersionInput): CheckedVer
 const TAG = /^[a-z0-9][a-z0-9-]{1,29}$/u;
 const isFact = (entry: unknown): entry is Fact => !!entry && typeof entry === "object" && typeof (entry as Fact).label === "string" && typeof (entry as Fact).value === "string";
 
-/** Two keys of the data object mean something to the wiki itself: `tags` and `facts`. */
+const isReading = (entry: unknown): entry is Reading =>
+  !!entry && typeof entry === "object" && typeof (entry as Reading).title === "string" && typeof (entry as Reading).url === "string";
+
+/** A list of page titles in the data object: `see` and `before` share the shape. */
+const titleListProblem = (key: string, value: unknown, max: number, example: string): string | null => {
+  if (!Array.isArray(value) || value.length > max) return `data.${key} is a list of at most ${max} page titles`;
+  if (value.some((title) => typeof title !== "string" || !slugify(title) || title.trim().length > LIMITS.title)) return `each of data.${key} is a page title, like "${example}"`;
+  return null;
+};
+
+/** Keys of the data object that mean something to the wiki itself: `tags`, `facts`, `see`, `before`, `read`. */
 function dataProblems(data: Record<string, unknown>): string[] {
   const problems: string[] = [];
   if (data.tags !== undefined) {
@@ -225,23 +235,46 @@ function dataProblems(data: Record<string, unknown>): string[] {
     }
   }
   if (data.see !== undefined) {
-    if (!Array.isArray(data.see) || data.see.length > LIMITS.see) problems.push(`data.see is a list of at most ${LIMITS.see} page titles`);
-    else if (data.see.some((title) => typeof title !== "string" || !slugify(title) || title.trim().length > LIMITS.title))
-      problems.push('each of data.see is a page title, like "Watch time"');
+    const problem = titleListProblem("see", data.see, LIMITS.see, "Watch time");
+    if (problem) problems.push(problem);
+  }
+  if (data.before !== undefined) {
+    const problem = titleListProblem("before", data.before, LIMITS.before, "Hash function");
+    if (problem) problems.push(problem);
+  }
+  if (data.read !== undefined) {
+    if (!Array.isArray(data.read) || data.read.length > LIMITS.read) problems.push(`data.read is a list of at most ${LIMITS.read} { title, url }`);
+    else if (data.read.some((entry) => !isReading(entry) || entry.title.trim().length === 0 || entry.title.length > 120 || !isHttpUrl(entry.url)))
+      problems.push('each of data.read is { "title", "url" }: a title of up to 120 characters and an absolute http(s) url, like Wikipedia\'s article on the subject');
   }
   return problems;
 }
 
-/** The pages a data version points to: each title in `see`, as a link to its page, written or not. */
+/**
+ * The pages a data version points to: each title in `before` as a prerequisite, then each in
+ * `see` as a related page, as links to their pages, written or not. A title in both is a prerequisite.
+ */
 export function seeLinks(data: Record<string, unknown>): WikiLink[] {
-  if (!Array.isArray(data.see)) return [];
-  const links = new Map<string, string>();
-  for (const title of data.see) if (typeof title === "string" && slugify(title) && !links.has(slugify(title))) links.set(slugify(title), title.trim());
-  return [...links].slice(0, LIMITS.see).map(([slug, title]) => ({ slug, title }));
+  const links = new Map<string, WikiLink>();
+  const take = (value: unknown, max: number, rel?: "before") => {
+    if (!Array.isArray(value)) return;
+    let taken = 0;
+    for (const title of value) {
+      if (taken >= max) break;
+      if (typeof title !== "string" || !slugify(title)) continue;
+      const slug = slugify(title);
+      if (links.has(slug)) continue;
+      links.set(slug, rel ? { slug, title: title.trim(), rel } : { slug, title: title.trim() });
+      taken += 1;
+    }
+  };
+  take(data.before, LIMITS.before, "before");
+  take(data.see, LIMITS.see);
+  return [...links.values()];
 }
 
-/** The tags and facts a stored data version carries; whatever is malformed is left out. */
-export function pageData(body: string | null | undefined): { tags: string[]; facts: Fact[] } {
+/** The tags, facts and further reading a stored data version carries; whatever is malformed is left out. */
+export function pageData(body: string | null | undefined): { tags: string[]; facts: Fact[]; reading: Reading[] } {
   let data: Record<string, unknown> = {};
   try {
     const parsed: unknown = body ? JSON.parse(body) : {};
@@ -251,7 +284,10 @@ export function pageData(body: string | null | undefined): { tags: string[]; fac
   }
   const tags = Array.isArray(data.tags) ? [...new Set(data.tags.flatMap((tag) => (typeof tag === "string" && TAG.test(slugify(tag)) ? [slugify(tag)] : [])))] : [];
   const facts = Array.isArray(data.facts) ? data.facts.filter(isFact).map((fact) => ({ label: fact.label.trim().slice(0, 40), value: fact.value.trim().slice(0, 120) })) : [];
-  return { tags: tags.slice(0, LIMITS.tags), facts: facts.slice(0, LIMITS.facts) };
+  const reading = Array.isArray(data.read)
+    ? data.read.filter((entry): entry is Reading => isReading(entry) && isHttpUrl(entry.url)).map((entry) => ({ title: entry.title.trim().slice(0, 120), url: entry.url }))
+    : [];
+  return { tags: tags.slice(0, LIMITS.tags), facts: facts.slice(0, LIMITS.facts), reading: reading.slice(0, LIMITS.read) };
 }
 
 export function headingProblem(kind: SectionKind, heading: string): string | null {

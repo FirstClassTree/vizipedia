@@ -138,6 +138,20 @@
       "Mastodon home timeline",
       "Threads recommendations",
       "Collaborative filtering"
+    ],
+    "before": [
+      "AT Protocol",
+      "Social media ranking"
+    ],
+    "read": [
+      {
+        "title": "Custom feeds, Bluesky docs",
+        "url": "https://docs.bsky.app/docs/starter-templates/custom-feeds"
+      },
+      {
+        "title": "Bluesky, Wikipedia",
+        "url": "https://en.wikipedia.org/wiki/Bluesky"
+      }
     ]
   }
 }
