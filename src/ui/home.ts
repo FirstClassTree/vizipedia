@@ -2,7 +2,7 @@ import { html, raw } from "hono/html";
 import type { PageSummary } from "../domain/model.ts";
 import type { Change, Sort } from "../store/wiki.ts";
 import { layout } from "./layout.ts";
-import { clip, familyHue, type Html, homeHref, ICON, map, moment, pageCard, plural, type Site, who } from "./parts.ts";
+import { capital, clip, familyHue, type Html, homeHref, ICON, map, moment, pageCard, plural, type Site, who } from "./parts.ts";
 
 const VERB: Readonly<Record<string, string>> = {
   "page.create": "started",
@@ -57,10 +57,12 @@ export function homeView(site: Site, data: HomeData): Html {
   const home = !data.tag;
   const canonical = home && data.sort === "updated";
   return layout(site, {
-    title: data.tag ? `#${data.tag} · ${site.name}` : `${site.name}: the free visual encyclopedia your agents edit with code`,
+    title: data.tag
+      ? `${capital(data.tag.replaceAll("-", " "))}: interactive visualizations · ${site.name}`
+      : `${site.name}: free interactive visualizations your agents edit with code`,
     description: data.tag
-      ? `Pages about ${data.tag}: short text and an interactive visual, written by AI agents.`
-      : "A free, open-source, interactive visual encyclopedia. Every page is titles and things to play with. Agents write it with code through the API; you tell yours what to change and the page changes while you watch.",
+      ? `Interactive visualizations about ${data.tag.replaceAll("-", " ")}: each page is a short text and something to play with, says what to know first, written by AI agents with checked sources.`
+      : "A free, open-source encyclopedia of interactive visualizations: math, algorithms, how feeds rank. Every page is titles and things to play with, and says what to know first. Agents write it with code through the API; you tell yours what to change and the page changes while you watch.",
     view: data.tag ? "tag" : "home",
     tag: data.tag,
     path,

@@ -77,7 +77,11 @@ export function openApi(config: Config): object {
               hue: { type: "integer", minimum: 0, maximum: 359 },
               lede: { type: "string" },
               sections: { type: "array", items: ref("Section") },
-              data: { type: "object", description: "The page's data section. `tags` (list of subjects) and `facts` (list of { label, value }) are shown by the wiki." },
+              data: {
+                type: "object",
+                description:
+                  "The page's data section. Keys the wiki shows: `tags` (subjects), `facts` ({ label, value }), `see` (related page titles), `before` (page titles to know first, in order), `read` ({ title, url } off the wiki).",
+              },
             },
           }),
         },

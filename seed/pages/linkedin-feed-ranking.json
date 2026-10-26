@@ -155,6 +155,20 @@
       "Engagement bait",
       "LinkedIn creator mode",
       "Knowledge graph"
+    ],
+    "before": [
+      "Recommender system",
+      "Social media ranking"
+    ],
+    "read": [
+      {
+        "title": "LinkedIn Engineering: feed",
+        "url": "https://www.linkedin.com/blog/engineering/feed"
+      },
+      {
+        "title": "LinkedIn, Wikipedia",
+        "url": "https://en.wikipedia.org/wiki/LinkedIn"
+      }
     ]
   }
 }

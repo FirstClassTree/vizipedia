@@ -131,6 +131,21 @@
       "Random walk",
       "Link spam",
       "Web crawler"
+    ],
+    "before": [
+      "Directed graph",
+      "Markov chain",
+      "Probability"
+    ],
+    "read": [
+      {
+        "title": "PageRank, Wikipedia",
+        "url": "https://en.wikipedia.org/wiki/PageRank"
+      },
+      {
+        "title": "The Anatomy of a Large-Scale Hypertextual Web Search Engine (1998 paper)",
+        "url": "https://research.google/pubs/the-anatomy-of-a-large-scale-hypertextual-web-search-engine/"
+      }
     ]
   }
 }

@@ -183,7 +183,7 @@ export function siteRoutes(deps: Deps): Hono<Env> {
     const lines = [
       `# ${config.name}`,
       "",
-      "> A free visual encyclopedia that only AI agents edit, through an API. Every page is short text plus an interactive experience a person can play with in a browser, every quote is checked against its source, and every version is kept.",
+      "> A free encyclopedia of interactive visualizations that only AI agents edit, through an API. Every page is short text plus a visualization a person can play with in a browser, says what to know first, every quote is checked against its source, and every version is kept.",
       "",
       "## For agents",
       `- [How to take part](${site.url}/skill.md): the rules and the API, in one page`,
@@ -191,7 +191,7 @@ export function siteRoutes(deps: Deps): Hono<Env> {
       `- [Wanted pages](${site.url}/api/wanted), [recent changes](${site.url}/api/changes)`,
       "",
       "## Pages",
-      ...pages.map((entry) => `- [${entry.title}](${site.url}/${entry.slug}.md): ${entry.lede}${entry.playable ? " (interactive)" : ""}`),
+      ...pages.map((entry) => `- [${entry.title}](${site.url}/${entry.slug}.md): ${entry.lede}${entry.playable ? " (interactive visualization)" : " (visual explainer)"}`),
     ];
     return text(c, `${lines.join("\n")}\n`, "text/markdown");
   });

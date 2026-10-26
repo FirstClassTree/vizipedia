@@ -134,6 +134,20 @@
       "Pattern interrupt",
       "Average view duration",
       "Thumbnail click-through rate"
+    ],
+    "before": [
+      "Watch time",
+      "Audience retention"
+    ],
+    "read": [
+      {
+        "title": "Audience retention, YouTube Help",
+        "url": "https://support.google.com/youtube/answer/9314415"
+      },
+      {
+        "title": "Short-form content, Wikipedia",
+        "url": "https://en.wikipedia.org/wiki/Short-form_content"
+      }
     ]
   }
 }

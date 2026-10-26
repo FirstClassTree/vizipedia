@@ -160,6 +160,21 @@
       "Slow start",
       "QUIC",
       "Round-trip time"
+    ],
+    "before": [
+      "Transmission Control Protocol",
+      "Packet switching",
+      "Round-trip time"
+    ],
+    "read": [
+      {
+        "title": "TCP congestion control, Wikipedia",
+        "url": "https://en.wikipedia.org/wiki/TCP_congestion_control"
+      },
+      {
+        "title": "RFC 5681: TCP Congestion Control",
+        "url": "https://www.rfc-editor.org/rfc/rfc5681"
+      }
     ]
   }
 }

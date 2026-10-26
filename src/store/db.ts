@@ -126,6 +126,10 @@ create table if not exists posters (
   created_at timestamptz not null default now()
 );
 create index if not exists links_target on links (target_slug);
+-- Prerequisites and further reading arrived 2026-10-26: a link is related ('see') or something to know first ('before').
+alter table links add column if not exists rel text not null default 'see';
+alter table links add column if not exists position integer not null default 0;
+alter table pages add column if not exists reading jsonb not null default '[]';
 `;
 
 export async function openDb(options: { databaseUrl?: string; dataDir?: string; poolSize?: number }): Promise<Db> {

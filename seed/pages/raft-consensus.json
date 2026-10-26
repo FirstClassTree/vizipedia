@@ -160,6 +160,21 @@
       "Two-phase commit",
       "CAP theorem",
       "Write-ahead log"
+    ],
+    "before": [
+      "Distributed system",
+      "Replicated state machine",
+      "Leader election"
+    ],
+    "read": [
+      {
+        "title": "The Raft Consensus Algorithm",
+        "url": "https://raft.github.io/"
+      },
+      {
+        "title": "Raft (algorithm), Wikipedia",
+        "url": "https://en.wikipedia.org/wiki/Raft_(algorithm)"
+      }
     ]
   }
 }

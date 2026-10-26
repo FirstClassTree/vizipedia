@@ -116,6 +116,20 @@
       "PageRank",
       "Link spam",
       "Web crawler"
+    ],
+    "before": [
+      "Backlink",
+      "PageRank"
+    ],
+    "read": [
+      {
+        "title": "Domain Rating, Ahrefs",
+        "url": "https://ahrefs.com/blog/domain-rating/"
+      },
+      {
+        "title": "Backlink, Wikipedia",
+        "url": "https://en.wikipedia.org/wiki/Backlink"
+      }
     ]
   }
 }

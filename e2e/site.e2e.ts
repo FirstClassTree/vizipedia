@@ -374,6 +374,88 @@ test("the map: pages are dots joined by their links, and naming a page puts it o
   await page.close();
 });
 
+test("the map is still when it is shown: the layout settles before the first frame, so the home page does not shake", async () => {
+  const { page, errors } = await watched(1440, 900);
+  await page.goto(`${origin}/`);
+  const canvas = page.locator("canvas.graph");
+  await canvas.scrollIntoViewIfNeeded();
+  await page.waitForFunction(() => Number(document.querySelector<HTMLCanvasElement>("canvas.graph")?.dataset.nodes) > 20, undefined, { timeout: 15_000 });
+  // Keep the pointer off the map: a hover redraws on purpose. The pixels are read from the
+  // canvas itself, not a screenshot: the line at the bottom of the page floats over it with a caret.
+  await page.mouse.move(5, 5);
+  const pixels = () =>
+    page.evaluate(() => {
+      const c = document.querySelector<HTMLCanvasElement>("canvas.graph");
+      const data = c?.getContext("2d")?.getImageData(0, 0, c.width, c.height).data;
+      if (!data) return "";
+      let hash = 0;
+      for (let i = 0; i < data.length; i += 7) hash = (hash * 31 + (data[i] ?? 0)) >>> 0;
+      return `${data.length}:${hash}`;
+    });
+  const first = await pixels();
+  await page.waitForTimeout(400);
+  const second = await pixels();
+  await page.waitForTimeout(900);
+  const third = await pixels();
+  assert.ok(first !== "" && first === second && second === third, "the map moved between frames: the layout was not settled before it was shown");
+  // Every node is in view: nothing was thrown off the canvas.
+  const outside = await page.evaluate(() => {
+    const c = document.querySelector<HTMLCanvasElement>("canvas.graph");
+    if (!c) return -1;
+    const ctx = c.getContext("2d");
+    if (!ctx) return -1;
+    const { width, height } = c;
+    const edge = 6;
+    const bands = [
+      ctx.getImageData(0, 0, width, edge),
+      ctx.getImageData(0, height - edge, width, edge),
+      ctx.getImageData(0, 0, edge, height),
+      ctx.getImageData(width - edge, 0, edge, height),
+    ];
+    // A painted pixel at the very edge means a node or a label was clipped.
+    return bands.reduce((sum, band) => {
+      let painted = 0;
+      for (let i = 3; i < band.data.length; i += 4) if ((band.data[i] ?? 0) > 0) painted += 1;
+      return sum + painted;
+    }, 0);
+  });
+  assert.equal(outside, 0, "something is drawn against the canvas edge: the map does not fit");
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test("the learning path: a page says what to know first, an unwritten prerequisite is the task to write it, and the prerequisite says what it unlocks", async () => {
+  const created = await write(await keyFor("ada"), "/api/pages", {
+    ...PAGE,
+    title: "Reach on LinkedIn",
+    data: { before: ["Reach decay", "Dwell time"], read: [{ title: "LinkedIn, Wikipedia", url: "https://en.wikipedia.org/wiki/LinkedIn" }] },
+  });
+  assert.equal(created.status, 201, await created.text());
+  const { page, errors } = await watched(1280, 800);
+  await page.goto(`${origin}/reach-on-linkedin`);
+  assert.equal(await page.title(), "Reach on LinkedIn: interactive visualization · Vizipedia");
+  const path = page.locator("nav.path");
+  await path.waitFor();
+  assert.equal(await path.locator("a.chip", { hasText: "Reach decay" }).getAttribute("href"), "/reach-decay", "a written prerequisite is a link");
+  assert.equal(await page.locator(".reading a", { hasText: "LinkedIn, Wikipedia" }).getAttribute("href"), "https://en.wikipedia.org/wiki/LinkedIn");
+  // The unwritten one is the invitation: one click hands the task to the reader's agent, with this page named as the one it serves.
+  await path.locator("button.chip-open", { hasText: "Dwell time" }).click();
+  const prompt = (await page.locator("#sheet-prompt").textContent()) ?? "";
+  assert.match(prompt, /write the page with slug "dwell-time"/u);
+  assert.match(prompt, new RegExp(`${origin}/reach-on-linkedin lists it under "Know first"`, "u"));
+  assert.doesNotMatch(prompt, /Dwell time/u, "the title another agent wrote never enters the person's task");
+  // The prerequisite page points forward.
+  await page.goto(`${origin}/reach-decay`);
+  const then = page.locator("nav.path .path-row", { hasText: "Then" });
+  await then.waitFor();
+  assert.equal(await then.locator("a.chip", { hasText: "Reach on LinkedIn" }).getAttribute("href"), "/reach-on-linkedin");
+  // No prerequisites listed: the strip asks for them, as a task.
+  await page.locator('nav.path [data-order="path"]').click();
+  assert.match((await page.locator("#sheet-prompt").textContent()) ?? "", /fill or fix the data section's "before"/u);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
 test("with a PostHog key the page reports what the reader does to that host and nowhere else; the key-less wiki above reports nothing", async (t) => {
   // A stand-in PostHog: it serves the library the loader asks for and keeps every event it is sent.
   // The library it serves is the smallest thing that honours what the wiki configured: before_send

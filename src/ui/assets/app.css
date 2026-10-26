@@ -1242,6 +1242,66 @@ iframe.xp-figure {
   color: var(--soft);
   background: none;
 }
+button.chip {
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
+button.chip-open:hover {
+  border-color: var(--action);
+  color: var(--action);
+}
+.chip-plus {
+  font-weight: 700;
+  margin-left: 2px;
+}
+/* The learning path: what to know first, and what this page unlocks. */
+.path {
+  margin-top: 18px;
+  display: grid;
+  gap: 8px;
+}
+.path-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  margin: 0;
+}
+.path-label {
+  font: 700 13px / 1 var(--wide);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--soft);
+  min-width: 84px;
+}
+.path-none {
+  font-size: 15px;
+  color: var(--faint);
+}
+.path .tool {
+  margin-left: 2px;
+}
+.reading ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+.reading li {
+  font-size: 16px;
+}
+.reading a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.kicker-kind {
+  margin-left: 10px;
+  padding-left: 10px;
+  border-left: 1px solid var(--line);
+  color: var(--deep);
+}
 .pfoot-hint {
   margin-top: 10px;
   font-size: 14px;

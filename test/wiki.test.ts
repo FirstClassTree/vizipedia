@@ -18,7 +18,7 @@ test("a page is its lede, its sections, and one version each, signed by owner an
   ok(await trusted.wiki.createPage(await trusted.as("ada"), PAGE));
   assert.equal((await trusted.wiki.listPages({ limit: 5 }))[0]?.cover?.gated, false, "an established owner's cover runs on cards");
   await trusted.db.close();
-  assert.deepEqual(page.linksTo, [{ slug: "hook-short-video", title: "Hook (short video)", exists: false }]);
+  assert.deepEqual(page.linksTo, [{ slug: "hook-short-video", title: "Hook (short video)", exists: false, rel: "see" }]);
   const current = page.body[2]?.current;
   assert.deepEqual(current?.by, { owner: "ada", ownerName: null, model: "claude-opus-5-5", client: "test" });
   assert.equal(current?.number, 1);
@@ -194,6 +194,54 @@ test("the map: a page's see list and its [[links]] are edges, an unwritten page 
     (await wiki.wanted()).map((entry) => entry.slug),
     ["hook-short-video", "watch-time"],
   );
+  await db.close();
+});
+
+test("the learning path: `before` is a prerequisite in order, written or not; the page it names lists this one under `unlocks`; `read` is further reading", async () => {
+  const { wiki, as, db } = await freshWiki({ trusted: ["ada"] });
+  ok(
+    await wiki.createPage(await as("ada"), {
+      ...PAGE,
+      data: {
+        before: ["Watch time", "Hook (short video)"],
+        // A title in both lists is a prerequisite, not just a mention.
+        see: ["Hook (short video)", "Reach"],
+        read: [{ title: "Reach (Wikipedia)", url: "https://en.wikipedia.org/wiki/Reach" }],
+      },
+    }),
+  );
+  const page = await wiki.getPage("reach-decay");
+  assert.deepEqual(
+    page?.before.map((link) => [link.slug, link.exists]),
+    [
+      ["watch-time", false],
+      ["hook-short-video", false],
+    ],
+    "prerequisites keep the order their page listed them in",
+  );
+  assert.deepEqual(
+    page?.linksTo.map((link) => [link.slug, link.rel]),
+    [
+      ["watch-time", "before"],
+      ["hook-short-video", "before"],
+      ["reach", "see"],
+    ],
+  );
+  assert.deepEqual(page?.reading, [{ title: "Reach (Wikipedia)", url: "https://en.wikipedia.org/wiki/Reach" }]);
+  assert.deepEqual(page?.unlocks, []);
+  // Writing the prerequisite: it now says which page it prepares for.
+  ok(await wiki.createPage(await as("ada"), { ...PAGE, title: "Watch time", data: {} }));
+  const prerequisite = await wiki.getPage("watch-time");
+  assert.deepEqual(prerequisite?.before, []);
+  assert.deepEqual(prerequisite?.unlocks, [{ slug: "reach-decay", title: "Reach decay", exists: true, rel: "before" }]);
+  assert.equal((await wiki.getPage("reach-decay"))?.before[0]?.exists, true, "the chip turns into a link once the page exists");
+  // The limits are explained, not enforced silently.
+  const tooMany = await wiki.createPage(await as("ada"), { ...PAGE, title: "Other page", data: { before: ["a", "b", "c", "d", "e", "f", "g"] } });
+  assert.equal(!tooMany.ok && tooMany.status, 422);
+  if (!tooMany.ok) assert.match(tooMany.problems?.join("\n") ?? "", /data\.before is a list of at most 6/u);
+  const badRead = await wiki.createPage(await as("ada"), { ...PAGE, title: "Other page", data: { read: [{ title: "x", url: "javascript:alert(1)" }] } });
+  assert.equal(!badRead.ok && badRead.status, 422);
+  if (!badRead.ok) assert.match(badRead.problems?.join("\n") ?? "", /data\.read is \{ "title", "url" \}/u);
   await db.close();
 });
 

@@ -171,6 +171,21 @@
       "Spectrogram",
       "JPEG compression",
       "Convolution"
+    ],
+    "before": [
+      "Sine wave",
+      "Frequency",
+      "Complex number"
+    ],
+    "read": [
+      {
+        "title": "Fourier transform, Wikipedia",
+        "url": "https://en.wikipedia.org/wiki/Fourier_transform"
+      },
+      {
+        "title": "An Interactive Guide to the Fourier Transform, BetterExplained",
+        "url": "https://betterexplained.com/articles/an-interactive-guide-to-the-fourier-transform/"
+      }
     ]
   }
 }

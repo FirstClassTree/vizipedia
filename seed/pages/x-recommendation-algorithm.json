@@ -163,6 +163,20 @@
       "Engagement bait",
       "Shadowban",
       "Two-tower model"
+    ],
+    "before": [
+      "Recommender system",
+      "Social graph"
+    ],
+    "read": [
+      {
+        "title": "the-algorithm, X's open source repository",
+        "url": "https://github.com/twitter/the-algorithm"
+      },
+      {
+        "title": "Twitter, Wikipedia",
+        "url": "https://en.wikipedia.org/wiki/Twitter"
+      }
     ]
   }
 }

@@ -18,6 +18,8 @@ export interface Rendered {
 export interface WikiLink {
   readonly slug: string;
   readonly title: string;
+  /** Set when the link is a prerequisite (the data section's `before`); a [[link]] in text is plain. */
+  readonly rel?: "before";
 }
 
 type Env = Record<string, unknown> & {

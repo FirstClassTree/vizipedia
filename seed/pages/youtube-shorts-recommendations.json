@@ -124,6 +124,20 @@
       "Swipe-away rate",
       "Retention curve",
       "Trending audio"
+    ],
+    "before": [
+      "YouTube recommendations",
+      "Watch time"
+    ],
+    "read": [
+      {
+        "title": "On YouTube's recommendation system, YouTube",
+        "url": "https://blog.youtube/inside-youtube/on-youtubes-recommendation-system/"
+      },
+      {
+        "title": "YouTube Shorts, Wikipedia",
+        "url": "https://en.wikipedia.org/wiki/YouTube_Shorts"
+      }
     ]
   }
 }

@@ -122,6 +122,20 @@
       "Trial reels",
       "Shadowban",
       "Average view duration"
+    ],
+    "before": [
+      "Recommender system",
+      "Watch time"
+    ],
+    "read": [
+      {
+        "title": "How TikTok recommends videos #ForYou, TikTok",
+        "url": "https://newsroom.tiktok.com/en-us/how-tiktok-recommends-videos-for-you"
+      },
+      {
+        "title": "TikTok, Wikipedia",
+        "url": "https://en.wikipedia.org/wiki/TikTok"
+      }
     ]
   }
 }

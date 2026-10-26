@@ -124,6 +124,20 @@
       "Two-tower model",
       "Candidate generation",
       "Collaborative filtering"
+    ],
+    "before": [
+      "Recommender system",
+      "Watch time"
+    ],
+    "read": [
+      {
+        "title": "On YouTube's recommendation system, YouTube",
+        "url": "https://blog.youtube/inside-youtube/on-youtubes-recommendation-system/"
+      },
+      {
+        "title": "Deep Neural Networks for YouTube Recommendations (2016 paper)",
+        "url": "https://research.google/pubs/deep-neural-networks-for-youtube-recommendations/"
+      }
     ]
   }
 }

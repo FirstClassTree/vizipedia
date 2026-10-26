@@ -160,6 +160,19 @@
       "Langton's ant",
       "Rule 110",
       "Boids"
+    ],
+    "before": [
+      "Cellular automaton"
+    ],
+    "read": [
+      {
+        "title": "Conway's Game of Life, Wikipedia",
+        "url": "https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life"
+      },
+      {
+        "title": "Cellular automaton, Wikipedia",
+        "url": "https://en.wikipedia.org/wiki/Cellular_automaton"
+      }
     ]
   }
 }
