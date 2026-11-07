@@ -1,8 +1,10 @@
 import { html, raw } from "hono/html";
 import type { HtmlEscapedString } from "hono/utils/html";
+import type { Config } from "../config.ts";
 import { FRAME_SANDBOX } from "../domain/experience.ts";
 import type { Cover, PageSummary, Source, Version } from "../domain/model.ts";
 import { familyHue } from "../domain/rules.ts";
+import type { TitlePart } from "./fit.ts";
 
 export type Html = HtmlEscapedString | Promise<HtmlEscapedString>;
 
@@ -26,6 +28,8 @@ export interface Site {
   /** The open source repo (Tal, 2026-10-11: "should say open source somewhere and link to the github"). */
   readonly repoUrl: string;
   readonly by: { readonly name: string; readonly url: string; readonly pitch: string | null } | undefined;
+  /** Who runs the wiki as schema.org nodes, carried by every page (config.ts, BY_JSONLD). */
+  readonly publisher: Config["publisher"];
   readonly live: "stream" | "poll";
   /** Set, the page loads assets.analytics and tells it where to report (config.ts). */
   readonly analytics: { readonly key: string; readonly host: string } | undefined;
@@ -87,6 +91,19 @@ export function pageCard(site: Site, page: PageSummary): Html {
 }
 
 /** A link to whoever runs this wiki, tagged with where on the wiki it was clicked. */
+/** The title part that names the wiki: the first to go when a title runs long, since the words of the subject are what a search matches. */
+export const brandPart = (site: Site): TitlePart => ({ text: ` · ${site.name}`, drop: 1 });
+
+/**
+ * Who publishes a page, for its structured data: the host's Organization by its "@id" when one is
+ * configured (layout.ts puts the node itself on every page), else who runs the wiki, else the wiki.
+ */
+export function publisherOf(site: Site): Record<string, unknown> {
+  const organization = site.publisher?.organization;
+  if (organization) return typeof organization["@id"] === "string" ? { "@id": organization["@id"] } : organization;
+  return site.by ? { "@type": "Organization", name: site.by.name, url: site.by.url } : { "@type": "Organization", name: site.name, url: site.url };
+}
+
 export function byLink(site: Site, place: string, page?: string): string {
   if (!site.by) return "";
   const url = new URL(site.by.url);

@@ -6,14 +6,14 @@ import { slugify } from "../domain/slug.ts";
 import { type Change, RATE } from "../store/wiki.ts";
 import { tick } from "./home.ts";
 import { layout } from "./layout.ts";
-import { clip, day, familyHue, type Html, homeHref, ICON, plural, type Site, who } from "./parts.ts";
+import { brandPart, clip, day, familyHue, type Html, homeHref, ICON, plural, type Site, who } from "./parts.ts";
 
 const head = (kicker: Html | string, title: string, sub: Html | string): Html =>
   html`<header class="lhead"><p class="kicker">${kicker}</p><h1>${title}</h1><p class="lhead-sub">${sub}</p></header>`;
 
 export function wireView(site: Site, changes: readonly Change[]): Html {
   return layout(site, {
-    title: `Every change · ${site.name}`,
+    title: ["Every change", brandPart(site)],
     description: "Every write to the wiki, signed by the model that made it and the owner it works for.",
     view: "changes",
     path: "/changes",
@@ -52,7 +52,7 @@ function versionRow(site: Site, section: Section, version: Version): Html {
 export function historyView(site: Site, page: Page, sections: readonly { section: Section; versions: readonly Version[] }[], changes: readonly Change[]): Html {
   const shown = sections.filter(({ section }) => isShown(section.kind) || section.versions > 1);
   return layout(site, {
-    title: `History of ${page.title} · ${site.name}`,
+    title: [`History of ${page.title}`, brandPart(site)],
     description: `Every version of every section of ${page.title}, with the way back to each.`,
     view: "history",
     path: `/${page.slug}/history`,
@@ -81,7 +81,7 @@ export function searchView(site: Site, q: string, pages: readonly PageSummary[])
   const slug = slugify(q);
   const exact = pages.some((page) => page.slug === slug);
   return layout(site, {
-    title: `${q ? `“${q}”` : "Search"} · ${site.name}`,
+    title: [q ? `“${q}”` : "Search", brandPart(site)],
     description: "Search the wiki.",
     view: "search",
     path: "/search",
@@ -111,7 +111,7 @@ export function keyView(site: Site, state: { issued?: { handle: string; key: str
   // One account for the product and the wiki: a person signs in where the product signs them in, and comes back here.
   const signIn = site.identity === "remote" && site.signInUrl ? site.signInUrl.replace("{next}", encodeURIComponent(`${site.base}/key`)) : null;
   return layout(site, {
-    title: `Sign in · ${site.name}`,
+    title: ["Sign in", brandPart(site)],
     description: "Sign in, get a key, hand it to your agent.",
     view: "key",
     path: "/key",
@@ -167,7 +167,7 @@ const RULE_ART = {
 export function rulesView(site: Site): Html {
   const rule = (art: string, title: string, line: string): Html => html`<li><span class="rule-art">${raw(art)}</span><h2>${title}</h2><p>${line}</p></li>`;
   return layout(site, {
-    title: `Rules · ${site.name}`,
+    title: ["Rules", brandPart(site)],
     description: "Three rules: the newest version shows, every quote is checked, flags hide and nobody deletes.",
     view: "rules",
     path: "/rules",

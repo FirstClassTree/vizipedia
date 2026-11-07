@@ -2,7 +2,7 @@ import { html, raw } from "hono/html";
 import type { PageSummary } from "../domain/model.ts";
 import type { Change, Sort } from "../store/wiki.ts";
 import { layout } from "./layout.ts";
-import { capital, clip, familyHue, type Html, homeHref, ICON, map, moment, pageCard, plural, type Site, who } from "./parts.ts";
+import { brandPart, capital, clip, familyHue, type Html, homeHref, ICON, map, moment, pageCard, plural, publisherOf, type Site, who } from "./parts.ts";
 
 const VERB: Readonly<Record<string, string>> = {
   "page.create": "started",
@@ -56,13 +56,16 @@ export function homeView(site: Site, data: HomeData): Html {
   // changes (the tabs swap it in place in app.js). Search engines index the default order alone.
   const home = !data.tag;
   const canonical = home && data.sort === "updated";
+  // The home has no picture of its own: a link preview shows the newest page that has one.
+  const cover = data.pages.find((page) => page.cover?.poster)?.cover;
   return layout(site, {
     title: data.tag
-      ? `${capital(data.tag.replaceAll("-", " "))}: interactive visualizations · ${site.name}`
-      : `${site.name}: free interactive visualizations your agents edit with code`,
+      ? [capital(data.tag.replaceAll("-", " ")), { text: ": interactive visualizations", drop: 2 }, brandPart(site)]
+      : [`${site.name}: free interactive visualizations`, { text: " your", drop: 1 }, " agents edit with code"],
     description: data.tag
-      ? `Interactive visualizations about ${data.tag.replaceAll("-", " ")}: each page is a short text and something to play with, says what to know first, written by AI agents with checked sources.`
-      : "A free, open-source encyclopedia of interactive visualizations: math, algorithms, how feeds rank. Every page is titles and things to play with, and says what to know first. Agents write it with code through the API; you tell yours what to change and the page changes while you watch.",
+      ? `Interactive visualizations about ${data.tag.replaceAll("-", " ")}: each page is short text and something to play with, written by AI agents with checked sources.`
+      : "A free, open-source encyclopedia of interactive visualizations: math, algorithms, how feeds rank. Agents write every page with code; you steer yours.",
+    image: cover ? `${site.url}/x/${cover.version}/poster` : undefined,
     view: data.tag ? "tag" : "home",
     tag: data.tag,
     path,
@@ -70,7 +73,7 @@ export function homeView(site: Site, data: HomeData): Html {
     bodyClass: "is-home",
     graph: home,
     say: "Search, or name a page to write",
-    jsonLd: data.tag ? undefined : { "@context": "https://schema.org", "@type": "WebSite", name: site.name, url: site.url, isAccessibleForFree: true },
+    jsonLd: data.tag ? undefined : { "@type": "WebSite", name: site.name, url: site.url, isAccessibleForFree: true, publisher: publisherOf(site) },
     main: html`<div class="home">
       <section class="hero wrap${home ? "" : " hero-slim"}">
         ${

@@ -254,7 +254,7 @@ test("the operator can take a page or a version down, and it is gone everywhere"
 });
 
 test("the home page lists pages by subject and order, with facts on the page", async () => {
-  const { app, db } = await boot({ TRUSTED_OWNERS: "ada" });
+  const { app, db } = await boot({ TRUSTED_OWNERS: "ada", BY_NAME: "Acme", BY_URL: "https://acme.example" });
   const ada = await keyFor(app, "ada");
   await app.request("/api/pages", send(ada, { ...PAGE, model: "claude-opus-5-5", data: { tags: ["Instagram", "reach"], facts: [{ label: "Most reach by", value: "hour 6" }] } }));
   const home = await (await app.request("/")).text();
@@ -276,7 +276,7 @@ test("the home page lists pages by subject and order, with facts on the page", a
   assert.doesNotMatch(await (await app.request("/tag/reach")).text(), /class="graph"/u);
   const page = await (await app.request("/reach-decay")).text();
   assert.match(page, /<dt>Most reach by<\/dt><dd>hour 6<\/dd>/u);
-  assert.match(page, /Made by ShapelessAI/u);
+  assert.match(page, /Made by Acme/u);
   const tags = (await (await app.request("/api/tags")).json()) as { tags: { tag: string }[] };
   assert.deepEqual(
     tags.tags.map((entry) => entry.tag),

@@ -90,7 +90,8 @@ Everything the site shows is in the API, and every page is also markdown (`/<slu
 | `PUBLIC_ORIGIN` | `http://localhost:$PORT` | The address people and agents reach the wiki at. |
 | `BASE_PATH` | none | Mount the wiki under a path of another site, for example `/wiki`. |
 | `SITE_NAME` | `Vizipedia` | |
-| `BY_NAME`, `BY_URL`, `BY_PITCH` | ShapelessAI | Who runs this wiki: named in the header and footer, and pitched in one line on every page. |
+| `BY_NAME`, `BY_URL`, `BY_PITCH` | none | Who runs this wiki: named in the header and footer, and pitched in one line on every page. |
+| `BY_JSONLD` | none | Who runs this wiki as [schema.org](https://schema.org/Organization) JSON-LD: an `Organization` node with at least `name` and an absolute `url`, or a list of nodes with one (its founder, say). Every page carries the nodes and names the Organization as its `publisher`, by its `@id` when it has one. Give it the `@id` your own site's pages use and search engines read your site and the wiki as one publisher. |
 | `DATABASE_URL` | none | A Postgres to use instead of the embedded one. Same SQL either way. |
 | `DB_POOL` | 10 | Connections each process keeps to that Postgres. Instances times this must stay under what the database allows. |
 | `DATA_DIR` | `./data` | Where the embedded database lives. |
