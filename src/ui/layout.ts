@@ -1,12 +1,15 @@
 import { html, raw } from "hono/html";
 import { scriptJson } from "../domain/experience.ts";
+import { fitDescription, fitTitle, type TitlePart } from "./fit.ts";
 import { blob, byLink, type Html, homeHref, ICON, type Site } from "./parts.ts";
 
 /** Which kind of view this is. Every event the browser reports carries it, so a dashboard can tell a page read from a search. */
 export type View = "home" | "tag" | "page" | "open" | "changes" | "history" | "search" | "key" | "rules";
 
 export interface Frame {
-  readonly title: string;
+  /** Fitted to the title budget by layout(): optional parts go first, then words (fit.ts). */
+  readonly title: readonly TitlePart[];
+  /** Fitted to the description budget by layout(), at a sentence, a clause or a word. */
   readonly description: string;
   readonly view: View;
   /** Path after the base, e.g. "/tiktok-for-you-feed". */
@@ -16,7 +19,8 @@ export interface Frame {
   readonly robots?: string;
   /** An absolute image URL for link previews: a page's cover as the render check drew it. */
   readonly image?: string;
-  readonly jsonLd?: object;
+  /** The view's own schema.org node, without "@context": layout() puts it in a graph beside who publishes the wiki. */
+  readonly jsonLd?: Record<string, unknown>;
   /** When this is a page: its slug, and the newest event on it, so the browser listens from there. */
   readonly page?: { readonly slug: string; readonly lastEvent: number };
   readonly main: Html;
@@ -42,6 +46,9 @@ const NAV: readonly (readonly [string, string])[] = [
 export function layout(site: Site, frame: Frame): Html {
   const canonical = `${site.url}${frame.path === "/" ? "" : frame.path}`;
   const ask = frame.say ?? "Search, or tell your agent what to change";
+  const title = fitTitle(frame.title);
+  const description = fitDescription(frame.description);
+  const graph = [...(site.publisher?.nodes ?? []), ...(frame.jsonLd ? [frame.jsonLd] : [])];
   return html`<!doctype html>
 <html lang="en">
 <head>
@@ -49,24 +56,23 @@ export function layout(site: Site, frame: Frame): Html {
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light">
 <meta name="theme-color" content="#f8f8f4">
-<title>${frame.title}</title>
-<meta name="description" content="${frame.description}">
+<title>${title}</title>
+<meta name="description" content="${description}">
 <link rel="canonical" href="${canonical}">
 ${frame.robots ? html`<meta name="robots" content="${frame.robots}">` : ""}
-<meta property="og:title" content="${frame.title}">
-<meta property="og:description" content="${frame.description}">
+<meta property="og:title" content="${title}">
+<meta property="og:description" content="${description}">
 <meta property="og:url" content="${canonical}">
 <meta property="og:site_name" content="${site.name}">
 <meta property="og:type" content="${frame.page ? "article" : "website"}">
-${frame.image ? html`<meta property="og:image" content="${frame.image}"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="${frame.image}">` : ""}
-<meta name="twitter:card" content="summary">
+${frame.image ? html`<meta property="og:image" content="${frame.image}"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="${frame.image}">` : html`<meta name="twitter:card" content="summary">`}
 <link rel="icon" href="${site.assets.icon}" type="image/svg+xml">
 <link rel="preload" href="${site.assets.font}" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="${site.assets.text}" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="${site.assets.css}">
 <link rel="alternate" type="text/markdown" href="${frame.page ? `${site.url}/${frame.page.slug}.md` : `${site.url}/llms.txt`}">
 <link rel="help" type="text/markdown" href="${site.url}/skill.md" title="Instructions for agents">
-${frame.jsonLd ? html`<script type="application/ld+json">${raw(scriptJson(frame.jsonLd))}</script>` : ""}
+${graph.length > 0 ? html`<script type="application/ld+json">${raw(scriptJson({ "@context": "https://schema.org", "@graph": graph }))}</script>` : ""}
 </head>
 <body class="${frame.bodyClass ?? ""}" data-base="${site.base}" data-url="${site.url}" data-name="${site.name}" data-view="${frame.view}" data-keys="${site.identity}"${site.keyUrl ? raw(` data-key-url="${encodeURI(site.keyUrl)}"`) : ""}${frame.page ? raw(` data-slug="${frame.page.slug}" data-last="${frame.page.lastEvent}"`) : ""}${frame.tag ? html` data-tag="${frame.tag}"` : ""}${site.analytics ? html` data-ph-key="${site.analytics.key}" data-ph-host="${site.analytics.host}"` : ""} data-live-mode="${site.live}">
 <a class="skip" href="#content">Skip to content</a>

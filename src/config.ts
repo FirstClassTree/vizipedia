@@ -44,15 +44,18 @@ export interface Config {
   readonly live: "stream" | "poll";
   /** "none" keeps the whole wiki out of search engines, whatever a page has earned. */
   readonly indexing: "earned" | "none";
-  /** Who runs this wiki: named in the header and footer, and pitched once on every page. */
+  /** Who runs this wiki: named in the header and footer, and pitched once on every page. Unset, the wiki names nobody. */
   readonly by: { readonly name: string; readonly url: string; readonly pitch: string | null } | undefined;
+  /**
+   * Who runs this wiki, as schema.org nodes (BY_JSONLD): an Organization and whatever it points at,
+   * such as its founder. Every page carries them and names the Organization as its publisher, so a
+   * page cited alone still says who stands behind it, and the host site and the wiki are one entity
+   * to a search engine (give the Organization the same "@id" the host's own pages use).
+   */
+  readonly publisher: { readonly nodes: readonly Record<string, unknown>[]; readonly organization: Record<string, unknown> } | undefined;
   /** Where the wiki reports what happens on it (observe/analytics.ts). Unset, it loads no script and sends nothing anywhere. */
   readonly analytics: { readonly key: string; readonly host: string } | undefined;
 }
-
-// ShapelessAI runs this wiki and makes social content with agents, which is what most of its
-// pages are about: one line on every page says so, once (Tal, 2026-10-09: "plug ShapelessAI more").
-const SHAPELESS_PITCH = "Put this to work: agents that make and post your social content. Free to start.";
 
 export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const port = Number(env.PORT ?? 4173);
@@ -82,10 +85,8 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
     actions: parseActions(env.PAGE_ACTIONS),
     live: env.LIVE === "poll" ? "poll" : "stream",
     indexing: env.INDEXING === "none" ? "none" : "earned",
-    by:
-      env.BY_NAME && env.BY_URL && /^https?:\/\//u.test(env.BY_URL)
-        ? { name: env.BY_NAME, url: env.BY_URL, pitch: env.BY_PITCH || null }
-        : { name: "ShapelessAI", url: "https://shapelessai.com", pitch: env.BY_PITCH ?? SHAPELESS_PITCH },
+    by: env.BY_NAME && env.BY_URL && /^https?:\/\//u.test(env.BY_URL) ? { name: env.BY_NAME, url: env.BY_URL, pitch: env.BY_PITCH || null } : undefined,
+    publisher: publisherConfig(env.BY_JSONLD),
     analytics: analyticsConfig(env),
   };
 }
@@ -98,6 +99,23 @@ function analyticsConfig(env: NodeJS.ProcessEnv): Config["analytics"] {
   const host = (env.POSTHOG_HOST || "https://us.i.posthog.com").replace(/\/+$/u, "");
   if (!/^https?:\/\/[^/\s]+$/u.test(host)) throw new Error(`POSTHOG_HOST must be an origin like "https://us.i.posthog.com", got "${host}"`);
   return { key: env.POSTHOG_KEY, host };
+}
+
+const isOrganization = (node: Record<string, unknown>): boolean => [node["@type"]].flat().some((type) => typeof type === "string" && /Organization$/u.test(type));
+
+function publisherConfig(raw: string | undefined): Config["publisher"] {
+  if (!raw) return undefined;
+  const parsed: unknown = JSON.parse(raw);
+  const nodes = (Array.isArray(parsed) ? parsed : [parsed]).map((node) => {
+    if (!node || typeof node !== "object" || Array.isArray(node)) throw new Error("BY_JSONLD must be a JSON-LD node or a list of them");
+    const { "@context": _context, ...rest } = node as Record<string, unknown>;
+    return rest;
+  });
+  const organization = nodes.find(isOrganization);
+  if (!organization || typeof organization.name !== "string" || typeof organization.url !== "string" || !/^https?:\/\//u.test(organization.url)) {
+    throw new Error('BY_JSONLD needs an Organization node (any "@type" ending in Organization) with a name and an absolute url');
+  }
+  return { nodes, organization };
 }
 
 function parseActions(raw: string | undefined): PageAction[] {

@@ -5,7 +5,26 @@ import { resolveHtml } from "../domain/markdown.ts";
 import type { Page, PageLink, Section, Version } from "../domain/model.ts";
 import { indexNeeds, isShown, runsUnasked } from "../domain/rules.ts";
 import { layout } from "./layout.ts";
-import { blob, byCard, capital, day, familyHue, type Html, homeHref, host, ICON, map, plural, proof, proofMark, type Site, visualKind, who } from "./parts.ts";
+import {
+  blob,
+  brandPart,
+  byCard,
+  capital,
+  day,
+  familyHue,
+  type Html,
+  homeHref,
+  host,
+  ICON,
+  map,
+  plural,
+  proof,
+  proofMark,
+  publisherOf,
+  type Site,
+  visualKind,
+  who,
+} from "./parts.ts";
 
 /** A frame holding agent code: lazy for an experience, eager for a figure, which is a picture and loads like one. */
 export function frame(site: Site, version: Version, title: string, kind: "experience" | "figure"): Html {
@@ -146,7 +165,7 @@ export function pageView(site: Site, page: Page, exists: ReadonlySet<string>, ac
   // structured data all say it, so a search for the picture finds the picture.
   const kind = visualKind(page);
   return layout(site, {
-    title: `${page.title}: ${kind} · ${site.name}`,
+    title: [page.title, { text: `: ${kind}`, drop: 2 }, brandPart(site)],
     image: page.cover?.poster ? `${site.url}/x/${page.cover.version}/poster` : undefined,
     description: `${capital(kind)} of ${page.title}: ${page.lede}`,
     view: "page",
@@ -156,7 +175,6 @@ export function pageView(site: Site, page: Page, exists: ReadonlySet<string>, ac
     say: "What should change on this page?",
     graph: true,
     jsonLd: {
-      "@context": "https://schema.org",
       "@type": ["Article", "LearningResource"],
       headline: page.title,
       alternativeHeadline: `${page.title}: ${kind}`,
@@ -173,7 +191,7 @@ export function pageView(site: Site, page: Page, exists: ReadonlySet<string>, ac
       ...(page.before.length > 0 ? { competencyRequired: page.before.map((link) => link.title) } : {}),
       ...(page.unlocks.length > 0 ? { teaches: page.unlocks.map((link) => `Prepares for: ${link.title}`) } : {}),
       ...(page.reading.length > 0 ? { citation: page.reading.map((entry) => ({ "@type": "CreativeWork", name: entry.title, url: entry.url })) } : {}),
-      publisher: { "@type": "Organization", name: site.name, url: site.url },
+      publisher: publisherOf(site),
     },
     main: html`<article class="page wrap" style="--hue:${page.hue}">
       <header class="phead">
@@ -236,7 +254,7 @@ export function pageView(site: Site, page: Page, exists: ReadonlySet<string>, ac
 export function openView(site: Site, slug: string, open: { title: string | null; pages: readonly { slug: string; title: string }[] }): Html {
   const title = open.title ?? slug.replaceAll("-", " ");
   return layout(site, {
-    title: `${title}: not written yet · ${site.name}`,
+    title: [title, { text: ": not written yet", drop: 2 }, brandPart(site)],
     description: `No agent has written "${title}" yet.`,
     view: "open",
     path: `/${slug}`,
